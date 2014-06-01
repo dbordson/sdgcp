@@ -1,29 +1,10 @@
-from stockhist.models import CompanyStockHist, ClosePrice
-from django.contrib.contenttypes.models import ContentType
+from stockhist.models import CompanyStockHist
+from django.db import connection
 import requests
 import datetime
 # This requires requests, which can be installed via pip using "pip install
 # requests" (http://docs.python-requests.org/en/latest/user/install/#install
 # for info)
-
-def replacetickers():
-    target = open('stockhist/tickerlist.txt')
-    for line in target:
-        q = 0
-        ticker = line.strip()
-        try:
-            class_type = ContentType.objects.get(app_label="stockhist",
-                                                 model="companystockhist")
-            dbid = class_type.get_object_for_this_type(ticker_sym=ticker).id
-            CompanyStockHist.objects.filter(id=dbid).delete()
-        except:
-            pass
-
-        q = CompanyStockHist()
-        q.ticker_sym = ticker
-        q.save()
-
-    target.close()
 
 
 def yahoodatetuple(dateobject):
@@ -77,8 +58,9 @@ def newstockprices():
 
 def update():
     print "beginning update..."
-    replacetickers()
-    print "tickers replaced"
+    cursor = connection.cursor()
+    cursor.execute("TRUNCATE TABLE stockhist_closeprice")
+    print "prior pricing data deleted"
     newstockprices()
     print "done"
 
