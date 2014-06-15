@@ -22,3 +22,11 @@ class ClosePrice(models.Model):
     def __unicode__(self):
         return u"%s, %s, %s" % (self.companystockhist, self.close_price,
                                 self.close_date)
+
+
+class CIK(models.Model):
+    cik_num = models.CharField(max_length=10)
+    companystockhist = models.ForeignKey(CompanyStockHist)
+
+    def __unicode__(self):
+        return self.cik_num
