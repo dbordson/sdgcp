@@ -26,7 +26,7 @@ class ClosePrice(models.Model):
 
 class CIK(models.Model):
     cik_num = models.CharField(max_length=10)
-    companystockhist = models.ForeignKey(CompanyStockHist)
+    companystockhist = models.OneToOneField(CompanyStockHist, primary_key=True)
 
     def __unicode__(self):
         return self.cik_num
