@@ -7,6 +7,6 @@ urlpatterns = patterns('',
     # Examples:
     url(r'^$', 'hellodjango.views.home', name='home'),
     # url(r'^blog/', include('blog.urls')),
-    url(r'^stockhist/', include('stockhist.urls')),
+    url(r'^sdapp/', include('sdapp.urls')),
     url(r'^admin/', include(admin.site.urls)),
 )

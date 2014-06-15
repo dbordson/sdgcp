@@ -1,7 +1,7 @@
 from django.conf.urls import patterns, url
 from django.views.generic import ListView
-from stockhist.models import CompanyStockHist
-from stockhist.views import detail
+from sdapp.models import CompanyStockHist
+from sdapp.views import detail
 
 
 urlpatterns = \
@@ -10,6 +10,6 @@ urlpatterns = \
                  ListView.as_view(
                      queryset=CompanyStockHist.objects.order_by('-ticker_sym'),
                      context_object_name='ticker_sym_avail',
-                     template_name='stockhist/index.html')),
+                     template_name='sdapp/index.html')),
              url(r'^(?P<ticker_sym>\w+)/$', detail, name='detail'),
              )

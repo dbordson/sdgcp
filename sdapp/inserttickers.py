@@ -1,4 +1,4 @@
-from stockhist.models import CompanyStockHist
+from sdapp.models import CompanyStockHist
 from django.db import connection
 import requests
 import datetime
@@ -59,7 +59,7 @@ def newstockprices():
 def update():
     print "beginning update..."
     cursor = connection.cursor()
-    cursor.execute("TRUNCATE TABLE stockhist_closeprice")
+    cursor.execute("TRUNCATE TABLE sdapp_closeprice")
     print "prior pricing data deleted"
     newstockprices()
     print "done"
