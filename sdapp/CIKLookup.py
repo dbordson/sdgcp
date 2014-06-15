@@ -1,5 +1,4 @@
 from sdapp.models import CompanyStockHist, CIK
-from django.db import connection
 import requests
 # This requires requests, which can be installed via pip using "pip install
 # requests" (http://docs.python-requests.org/en/latest/user/install/#install
@@ -29,20 +28,13 @@ def CIKFind(ticker):
 def newciks():
     for entry in CompanyStockHist.objects.all():
         print entry
+        try:
+            entry.cik
+            pass
+        except:
+            CIKnum = CIKFind(str(entry.ticker_sym))
+            d = CIK(cik_num=CIKnum, companystockhist=entry)
+            d.save()
 
 
-
-
-for line in tickerlines:
-    tickerend = line.find('\t')
-    ticker = line[:tickerend].replace('.','')
-    name = line[tickerend+1:]
-    line.strip()
-    #print line.find("\t")
-
-    target.write(CIKFind(ticker) + '  ' + ticker + '  ' + name)
-
-source.close()
-target.close()
-
-print "Done.  Check CIKList.txt in this folder for results."
+newciks()
