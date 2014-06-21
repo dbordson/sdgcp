@@ -7,19 +7,19 @@ import xmltolist4
 
 # This code will work best if the stored files are in a subdirectory of
 # the current working directory.
-cwd = os.getcwd()
+dropboxdir = os.path.expanduser('~/Dropbox')
 
 print "test"
 
 #Here the program begins
 print "Welcome to the nonderivative transaction parser"
 
-if not(os.path.isfile(cwd + '/AutomatedFTP/CIKs.txt')):
-    target = open(cwd + '/AutomatedFTP/CIKs.txt', 'w')
+if not(os.path.isfile(dropboxdir + '/AutomatedFTP/CIKs.txt')):
+    target = open(dropboxdir + '/AutomatedFTP/CIKs.txt', 'w')
     print>>target, '882095'
     target.close()
 CIKs = []
-with open(cwd + '/AutomatedFTP/CIKs.txt') as infile:
+with open(dropboxdir + '/AutomatedFTP/CIKs.txt') as infile:
     for line in infile:
         CIKs.append(line.strip())
 print "Using CIKs:", CIKs
@@ -75,6 +75,10 @@ for CIK in CIKs:
 meanlist = []
 for item in ndxnlist:
     meanlist.append(item[13])
+if meanlist[0] == 'plh':
+    meanlist = [0]
+print float(sum(meanlist))
+print len(meanlist)
 print "average", float(sum(meanlist)) / len(meanlist)
 
 print "The total number of files reviewed was:", totaldirectorylength
