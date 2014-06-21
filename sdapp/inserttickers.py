@@ -6,6 +6,9 @@ import datetime
 # requests" (http://docs.python-requests.org/en/latest/user/install/#install
 # for info)
 
+# Relevant Variables
+years = 1
+
 
 def yahoodatetuple(dateobject):
     mindex = dateobject.month - 1
@@ -34,7 +37,7 @@ def tickerprices(entry):
     urlbase = 'http://ichart.yahoo.com/table.csv?s='
     ticker = entry.ticker_sym
     today = datetime.date.today()
-    startday = datetime.date(today.year - 10, today.month, today.day + 1)
+    startday = datetime.date(today.year - years, today.month, today.day + 1)
     startdaytuple = yahoodatetuple(startday)
     todaytuple = yahoodatetuple(today)
     csvurl = urlbase + ticker + '&a=%s&b=%s&c=%s' % startdaytuple \
