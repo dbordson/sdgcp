@@ -30,3 +30,5 @@ class CIK(models.Model):
 
     def __unicode__(self):
         return self.cik_num
+
+# class Form345Entry(models.Model):
