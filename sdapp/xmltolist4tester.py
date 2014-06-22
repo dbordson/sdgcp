@@ -9,7 +9,7 @@ from sdapp.models import CIK, Form345Entry
 # the current working directory.
 
 
-def formentryinsert():
+def formentryinsert(form):
     # dropboxdir = os.path.expanduser('~/Dropbox')
 
     print "test"
@@ -28,11 +28,11 @@ def formentryinsert():
     # print "Using CIKs:", CIKs
     # print " "
 
-    print "What Form? (3, 4, 4/A, 5)"
-    print "Also, just press enter for form 4"
-    form = raw_input()
-    if form == "":
-        form = '4'
+    # print "What Form? (3, 4, 4/A, 5)"
+    # print "Also, just press enter for form 4"
+    # form = raw_input()
+    # if form == "":
+    #     form = '4'
     print "We'll work with form", form
 
     ndxnlist = []
@@ -219,7 +219,13 @@ def formentryinsert():
     # [26] = (form 5 only) Form 4 Transactions Reported
     # [27] = Form Type
 
-formentryinsert()
+
+def formiteration():
+    formstoiterate = ['3', '4', '4/A', '5']
+    for form in formstoiterate:
+        formentryinsert(form)
+
+formiteration()
 
 
 
