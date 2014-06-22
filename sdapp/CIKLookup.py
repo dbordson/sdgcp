@@ -32,7 +32,7 @@ def newciks():
             entry.cik
             pass
         except:
-            CIKnum = CIKFind(str(entry.ticker_sym))
+            CIKnum = str(int(CIKFind(str(entry.ticker_sym))))
             d = CIK(cik_num=CIKnum, companystockhist=entry)
             d.save()
 

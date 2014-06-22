@@ -15,7 +15,7 @@ def textattribute(function):
     try:
         a = function.text
     except AttributeError:
-        a = 'AttributeError'
+        a = None
 
     return a
 
@@ -24,7 +24,7 @@ def floattextattribute(function):
     try:
         a = float(function.text)
     except AttributeError:
-        a = 'AttributeError'
+        a = None
 
     return a
 
@@ -64,10 +64,10 @@ def xn4parse(xmlfilename):
             #print "Found a grandchild"
             NonDerivXn = ['err', 'err', 'err', 'err', 'err',
                           'err', 'err', 'err', 'err', 'err',
-                          'plh', 'err', 'err', 'err', 'err',
-                          'err', 'plh', 'plh', 'plh', 'err',
-                          'err',    0,  'err', 'err', 'plh',
-                          'plh', 'plh',   '4']
+                          None,  'err', 'err', 'err', 'err',
+                          'err', None,  None,  None,  'err',
+                          'err',    0,  'err', 'err', None,
+                          None,  None,    '4']
             NonDerivXn[0] = textattribute(root.find('periodOfReport'))
             NonDerivXn[1] = textattribute(root.find('issuer/issuerCik'))
             NonDerivXn[2] = textattribute(root.find(
@@ -108,19 +108,19 @@ def xn4parse(xmlfilename):
             # For the type of filer (officer, director, etc.) sometimes a
             # negative response is 0 and sometimes it is an omission. The below
             # code conforms these conventions.
-            if NonDerivXn[4] == 'AttributeError':
+            if NonDerivXn[4] == None:
                 NonDerivXn[4] = '0'
-            if NonDerivXn[5] == 'AttributeError':
+            if NonDerivXn[5] == None:
                 NonDerivXn[5] = '0'
-            if NonDerivXn[6] == 'AttributeError':
+            if NonDerivXn[6] == None:
                 NonDerivXn[6] = '0'
-            if NonDerivXn[7] == 'AttributeError':
+            if NonDerivXn[7] == None:
                 NonDerivXn[7] = '0'
 
             # Handles errors due to blank officer title entry for non-officer
             # filers (e.g. directors).
             if NonDerivXn[8] == 'AttributeError' and NonDerivXn[5] == str(0):
-                NonDerivXn[8] = 'N/A'
+                NonDerivXn[8] = None
 
             #10b5-1 transaction finder
 
@@ -148,8 +148,8 @@ def xn4parse(xmlfilename):
                        'err', 'err', 'err', 'err', 'err',
                        'err', 'err', 'err', 'err', 'err',
                        'err', 'err', 'err', 'err', 'err',
-                       'err',    0,  'err', 'err', 'plh',
-                       'plh', 'plh',   '4']
+                       'err',    0,  'err', 'err', None,
+                       None,  None,    '4']
             DerivXn[0] = textattribute(root.find('periodOfReport'))
             DerivXn[1] = textattribute(root.find('issuer/issuerCik'))
             DerivXn[2] = textattribute(root.find(
@@ -193,32 +193,35 @@ def xn4parse(xmlfilename):
             # For the type of filer (officer, director, etc.) sometimes a
             # negative response is 0 and sometimes it is an omission. The below
             # code conforms these conventions.
-            if DerivXn[4] == 'AttributeError':
+            if DerivXn[4] == None:
                 DerivXn[4] = '0'
-            if DerivXn[5] == 'AttributeError':
+            if DerivXn[5] == None:
                 DerivXn[5] = '0'
-            if DerivXn[6] == 'AttributeError':
+            if DerivXn[6] == None:
                 DerivXn[6] = '0'
-            if DerivXn[7] == 'AttributeError':
+            if DerivXn[7] == None:
                 DerivXn[7] = '0'
 
             # Handles errors due to blank officer title entry for non-officer
             # filers (e.g. directors).
             if DerivXn[8] == 'AttributeError' and DerivXn[5] == str(0):
-                DerivXn[8] = 'N/A'
+                DerivXn[8] = None
 
             # Handles errors when no conversion or price per share is
             # provided (e.g. for RSUs that convert 1:1)
             if DerivXn[10] == 'AttributeError':
-                DerivXn[10] = 'Not in form'
+                DerivXn[10] = None
+
+            if DerivXn[13] == 'AttributeError':
+                DerivXn[13] = None
 
             if DerivXn[14] == 'AttributeError':
-                DerivXn[14] = 'Not in form'
+                DerivXn[14] = None
 
             # Handles errors when no expiration date is provided (e.g. for
             # phantom stock units that don't expire)
             if DerivXn[16] == 'AttributeError':
-                DerivXn[16] = 'N/A'
+                DerivXn[16] = None
 
             #10b5-1 transaction finder
             for fnotereturn in child2.iter('footnoteId'):
@@ -265,8 +268,8 @@ def xn5parse(xmlfilename):
             #print "Found a grandchild"
             NonDerivXn = ['err', 'err', 'err', 'err', 'err',
                           'err', 'err', 'err', 'err', 'err',
-                          'plh', 'err', 'err', 'err', 'err',
-                          'err', 'plh', 'plh', 'plh', 'err',
+                          None,  'err', 'err', 'err', 'err',
+                          'err', None,  None,  None,  'err',
                           'err',    0,  'err', 'err', 'err',
                           'err', 'err',   '5']
             NonDerivXn[0] = textattribute(root.find('periodOfReport'))
@@ -309,19 +312,19 @@ def xn5parse(xmlfilename):
             # For the type of filer (officer, director, etc.) sometimes a
             # negative response is 0 and sometimes it is an omission. The below
             # code conforms these conventions.
-            if NonDerivXn[4] == 'AttributeError':
+            if NonDerivXn[4] == None:
                 NonDerivXn[4] = '0'
-            if NonDerivXn[5] == 'AttributeError':
+            if NonDerivXn[5] == None:
                 NonDerivXn[5] = '0'
-            if NonDerivXn[6] == 'AttributeError':
+            if NonDerivXn[6] == None:
                 NonDerivXn[6] = '0'
-            if NonDerivXn[7] == 'AttributeError':
+            if NonDerivXn[7] == None:
                 NonDerivXn[7] = '0'
 
             # Handles errors due to blank officer title entry for non-officer
             # filers (e.g. directors).
             if NonDerivXn[8] == 'AttributeError' and NonDerivXn[5] == str(0):
-                NonDerivXn[8] = 'N/A'
+                NonDerivXn[8] = None
 
             #10b5-1 transaction finder
 
@@ -397,32 +400,35 @@ def xn5parse(xmlfilename):
             # For the type of filer (officer, director, etc.) sometimes a
             # negative response is 0 and sometimes it is an omission. The below
             # code conforms these conventions.
-            if DerivXn[4] == 'AttributeError':
+            if DerivXn[4] == None:
                 DerivXn[4] = '0'
-            if DerivXn[5] == 'AttributeError':
+            if DerivXn[5] == None:
                 DerivXn[5] = '0'
-            if DerivXn[6] == 'AttributeError':
+            if DerivXn[6] == None:
                 DerivXn[6] = '0'
-            if DerivXn[7] == 'AttributeError':
+            if DerivXn[7] == None:
                 DerivXn[7] = '0'
 
             # Handles errors due to blank officer title entry for non-officer
             # filers (e.g. directors).
             if DerivXn[8] == 'AttributeError' and DerivXn[5] == str(0):
-                DerivXn[8] = 'N/A'
+                DerivXn[8] = None
 
             # Handles errors when no conversion or price per share is
             # provided (e.g. for RSUs that convert 1:1)
             if DerivXn[10] == 'AttributeError':
-                DerivXn[10] = 'Not in form'
+                DerivXn[10] = None
+
+            if DerivXn[13] == 'AttributeError':
+                DerivXn[13] = None
 
             if DerivXn[14] == 'AttributeError':
-                DerivXn[14] = 'Not in form'
+                DerivXn[14] = None
 
             # Handles errors when no expiration date is provided (e.g. for
             # phantom stock units that don't expire)
             if DerivXn[16] == 'AttributeError':
-                DerivXn[16] = 'N/A'
+                DerivXn[16] = None
 
             #10b5-1 transaction finder
             for fnotereturn in child2.iter('footnoteId'):
@@ -483,10 +489,10 @@ def xn3parse(xmlfilename):
             #print "Found a grandchild"
             NonDerivH = ['err', 'err', 'err', 'err', 'err',
                          'err', 'err', 'err', 'err', 'err',
-                         'plh', 'plh', 'plh', 'plh', 'plh',
-                         'plh', 'plh', 'plh', 'plh', 'err',
-                         'err',    0,  'err', 'err', 'plh',
-                         'plh', 'plh',   '3']
+                         None,  None,  None,  None,  None, 
+                         None,  None,  None,  None,  'err',
+                         'err',    0,  'err', 'err', None, 
+                         None,  None,    '3']
             NonDerivH[0] = textattribute(root.find('periodOfReport'))
             NonDerivH[1] = textattribute(root.find('issuer/issuerCik'))
             NonDerivH[2] = textattribute(root.find(
@@ -522,13 +528,13 @@ def xn3parse(xmlfilename):
             # For the type of filer (officer, director, etc.) sometimes a
             # negative response is 0 and sometimes it is an omission. The below
             # code conforms these conventions.
-            if NonDerivH[4] == 'AttributeError':
+            if NonDerivH[4] == None:
                 NonDerivH[4] = '0'
-            if NonDerivH[5] == 'AttributeError':
+            if NonDerivH[5] == None:
                 NonDerivH[5] = '0'
-            if NonDerivH[6] == 'AttributeError':
+            if NonDerivH[6] == None:
                 NonDerivH[6] = '0'
-            if NonDerivH[7] == 'AttributeError':
+            if NonDerivH[7] == None:
                 NonDerivH[7] = '0'
             # Handles errors due to blank officer title entry for non-officer
             # filers (e.g. directors).
@@ -561,10 +567,10 @@ def xn3parse(xmlfilename):
     #       print "Found a grandchild"
             DerivH = ['err', 'err', 'err', 'err', 'err',
                       'err', 'err', 'err', 'err', 'err',
-                      'err', 'plh', 'plh', 'plh', 'plh',
-                      'plh', 'err', 'err', 'err', 'plh',
-                      'err',    0,  'err', 'err', 'plh',
-                      'plh', 'plh',   '3']
+                      'err', None,  None,  None,  None, 
+                      None,  'err', 'err', 'err', None, 
+                      'err',    0,  'err', 'err', None, 
+                      None,  None,    '3']
             DerivH[0] = textattribute(root.find('periodOfReport'))
             DerivH[1] = textattribute(root.find('issuer/issuerCik'))
             DerivH[2] = textattribute(root.find(
@@ -602,20 +608,20 @@ def xn3parse(xmlfilename):
             # For the type of filer (officer, director, etc.) sometimes a
             # negative response is 0 and sometimes it is an omission. The below
             # code conforms these conventions.
-            if DerivH[4] == 'AttributeError':
+            if DerivH[4] == None:
                 DerivH[4] = '0'
-            if DerivH[5] == 'AttributeError':
+            if DerivH[5] == None:
                 DerivH[5] = '0'
-            if DerivH[6] == 'AttributeError':
+            if DerivH[6] == None:
                 DerivH[6] = '0'
-            if DerivH[7] == 'AttributeError':
+            if DerivH[7] == None:
                 DerivH[7] = '0'
             # Handles errors due to blank officer title entry for non-officer
             # filers (e.g. directors).
             if DerivH[8] == 'AttributeError' and DerivH[5] == str(0):
-                DerivH[8] = 'N/A'
+                DerivH[8] = None
             if DerivH[10] == 'AttributeError':
-                DerivH[10] = 'Not in form'
+                DerivH[10] = None
 
             # Handles errors when no expiration date is provided (e.g. for
             # phantom stock units that don't expire)
