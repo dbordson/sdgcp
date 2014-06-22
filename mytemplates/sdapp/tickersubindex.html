@@ -1,0 +1,9 @@
+{% if ticker_sym_avail %}
+    <ul>
+    {% for companystockhist in ticker_sym_avail %}
+        <li><a href="/sdapp/{{ companystockhist.ticker_sym }}/stockprices">{{ companystockhist.ticker_sym }}</a></li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No tickers are available.</p>
+{% endif %}
