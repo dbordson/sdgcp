@@ -3,7 +3,7 @@
         <th>cikidforticker</th>
         <th>entry_internal_id</th>
         <th>period_of_report</th>
- <!--       <th>issuer_cik</th>
+        <th>issuer_cik</th>
         <th>reporting_owner_cik</th>
         <th>reporting_owner_name</th>
         <th>is_director</th>
@@ -30,7 +30,7 @@
         <th>five_form_three_holdings</th>
         <th>five_form_four_transactions</th>
         <th>form_type</th>
-        <th>deriv_or_nonderiv</th> -->
+        <th>deriv_or_nonderiv</th>
     </thead>
 
     {% for entry in entrylist %}
@@ -38,7 +38,7 @@
         <td style="text-align:center;">{{ cikidforticker }}</td>
         <td style="text-align:center;">{{ entry.entry_internal_id }}</td>
         <td style="text-align:center;">{{ entry.period_of_report }}</td>
-<!--        <td style="text-align:center;">{{ entry.issuer_cik }}</td>
+        <td style="text-align:center;">{{ entry.issuer_cik }}</td>
         <td style="text-align:center;">{{ entry.reporting_owner_cik }}</td>
         <td style="text-align:center;">{{ entry.reporting_owner_name }}</td>
         <td style="text-align:center;">{{ entry.is_director }}</td>
@@ -65,7 +65,7 @@
         <td style="text-align:center;">{{ entry.five_form_three_holdings }}</td>
         <td style="text-align:center;">{{ entry.five_form_four_transactions }}</td>
         <td style="text-align:center;">{{ entry.form_type }}</td>
-        <td style="text-align:center;">{{ entry.deriv_or_nonderiv }}</td> -->
+        <td style="text-align:center;">{{ entry.deriv_or_nonderiv }}</td>
     </tr>
     {% endfor %}
 </table>
