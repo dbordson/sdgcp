@@ -22,7 +22,7 @@ def textattribute(function):
 
 def floattextattribute(function):
     try:
-        a = float(function.text)
+        a = round(float(function.text), 4)
     except AttributeError:
         a = None
 

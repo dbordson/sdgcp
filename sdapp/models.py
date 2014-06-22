@@ -37,27 +37,27 @@ class Form345Entry(models.Model):
     period_of_report = models.CharField(max_length=12, null=True)
     issuer_cik = models.ForeignKey(CIK, null=True)
     reporting_owner_cik = models.CharField(max_length=10, null=True)
-    reporting_owner_name = models.CharField(max_length=40, null=True)
+    reporting_owner_name = models.CharField(max_length=80, null=True)
     is_director = models.BooleanField()
     is_officer = models.BooleanField()
     is_ten_percent = models.BooleanField()
     is_something_else = models.BooleanField()
-    reporting_owner_title = models.CharField(max_length=40, null=True)
-    security_title = models.CharField(max_length=40, null=True)
-    conversion_price = models.DecimalField(max_digits=12, decimal_places=4,
+    reporting_owner_title = models.CharField(max_length=80, null=True)
+    security_title = models.CharField(max_length=80, null=True)
+    conversion_price = models.DecimalField(max_digits=15, decimal_places=4,
                                            null=True)
     transaction_date = models.DateField(null=True)
     transaction_code = models.CharField(max_length=2, null=True)
-    transaction_shares = models.DecimalField(max_digits=12, decimal_places=4,
+    transaction_shares = models.DecimalField(max_digits=15, decimal_places=4,
                                              null=True)
-    xn_price_per_share = models.DecimalField(max_digits=12, decimal_places=4,
+    xn_price_per_share = models.DecimalField(max_digits=15, decimal_places=4,
                                              null=True)
     xn_acq_disp_code = models.CharField(max_length=2, null=True)
     expiration_date = models.DateField(null=True)
-    underlying_title = models.CharField(max_length=40, null=True)
-    underlying_shares = models.DecimalField(max_digits=12, decimal_places=4,
+    underlying_title = models.CharField(max_length=80, null=True)
+    underlying_shares = models.DecimalField(max_digits=15, decimal_places=4,
                                             null=True)
-    shares_following_xn = models.DecimalField(max_digits=12, decimal_places=4,
+    shares_following_xn = models.DecimalField(max_digits=15, decimal_places=4,
                                               null=True)
     direct_or_indirect = models.CharField(max_length=2, null=True)
     tenbfive_note = models.IntegerField(null=True)
