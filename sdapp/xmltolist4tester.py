@@ -12,11 +12,6 @@ from sdapp.models import CIK, Form345Entry
 def formentryinsert(form):
     # dropboxdir = os.path.expanduser('~/Dropbox')
 
-    print "test"
-
-    #Here the program begins
-    print "Welcome to the nonderivative transaction parser"
-
     # if not(os.path.isfile(dropboxdir + '/AutomatedFTP/CIKs.txt')):
     #     target = open(dropboxdir + '/AutomatedFTP/CIKs.txt', 'w')
     #     print>>target, '882095'
@@ -79,7 +74,7 @@ def formentryinsert(form):
     meanlist = []
     for item in ndxnlist:
         meanlist.append(item[13])
-    if meanlist[0] == 'plh':
+    if meanlist[0] == None:
         meanlist = [0]
     print float(sum(meanlist))
     print len(meanlist)
@@ -115,7 +110,8 @@ def formentryinsert(form):
     for entry in ndxnlist:
         int_id = str(entry[0]) + str(entry[1]) + str(entry[2]) +\
             'N' + str(entry[22]) + '-' + str(entry[27])
-        if len(Form345Entry.objects.filter(entry_internal_id=int_id)) == 0:
+        if len(Form345Entry.objects.filter(entry_internal_id=int_id)) == 0\
+           and len(CIK.objects.filter(cik_num=str(int(entry[1])))) != 0:
             issuercik = CIK.objects.filter(cik_num=str(int(entry[1])))[0]
             entrytosave =\
                 Form345Entry(entry_internal_id=int_id,
