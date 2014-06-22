@@ -106,6 +106,9 @@ for line in parseerrorlist:
 print "Let's save these entries"
 #NonDeriv xn file for John C. Martin
 
+# for entry in ndxnlist:
+    #
+
 if form == '4' or form == '4/A' or form == '5':
     i = 0
     if form == '4':
