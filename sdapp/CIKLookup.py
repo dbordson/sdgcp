@@ -1,4 +1,4 @@
-from sdapp.models import CompanyStockHist, CIK
+from sdapp.models import CompanyStockHist, IssuerCIK
 import requests
 # This requires requests, which can be installed via pip using "pip install
 # requests" (http://docs.python-requests.org/en/latest/user/install/#install
@@ -29,11 +29,11 @@ def newciks():
     for entry in CompanyStockHist.objects.all():
         print entry
         try:
-            entry.cik
+            entry.issuercik
             pass
         except:
             CIKnum = str(int(CIKFind(str(entry.ticker_sym))))
-            d = CIK(cik_num=CIKnum, companystockhist=entry)
+            d = IssuerCIK(cik_num=CIKnum, companystockhist=entry)
             d.save()
 
 

@@ -3,7 +3,7 @@
 import os
 import xmlmanager
 import xmltolist4
-from sdapp.models import CIK, Form345Entry
+from sdapp.models import IssuerCIK, Form345Entry
 
 # This code will work best if the stored files are in a subdirectory of
 # the current working directory.
@@ -41,7 +41,7 @@ def formentryinsert(form):
     parseerrorlist = []
     totaldirectorylength = 0
 
-    for CIKentry in CIK.objects.all():
+    for CIKentry in IssuerCIK.objects.all():
         print CIKentry
         xmlfiledirectory = xmlmanager.filemapper(CIKentry, form)
         #Here is the magic where we call the xnparser,
@@ -106,18 +106,27 @@ def formentryinsert(form):
 
     print "Let's save these entries"
     #NonDeriv xn file for John C. Martin
-
+    all_entries = Form345Entry.objects.all()
+    id_list = []
+    for entry in all_entries:
+        id_list.append(entry.entry_internal_id)
+    existingciks = []
+    all_ciks = IssuerCIK.objects.all()
+    for entry in all_ciks:
+        existingciks.append(entry.cik_num)
+    entries = []
+    print "build nonderiv entry list"
     for entry in ndxnlist:
         int_id = str(entry[0]) + str(entry[1]) + str(entry[2]) +\
             'N' + str(entry[22]) + '-' + str(entry[27])
-        if len(Form345Entry.objects.filter(entry_internal_id=int_id)) == 0\
-           and len(CIK.objects.filter(cik_num=str(int(entry[1])))) != 0:
-            issuercik = CIK.objects.filter(cik_num=str(int(entry[1])))[0]
+        if int_id not in id_list and str(int(entry[1])) in existingciks:
+            issuercik = all_ciks.filter(cik_num=str(int(entry[1])))[0]
             entrytosave =\
                 Form345Entry(entry_internal_id=int_id,
                              period_of_report=entry[0],
                              issuer_cik=issuercik,
-                             reporting_owner_cik=entry[2],
+                             issuer_cik_num=entry[1],
+                             reporting_owner_cik_num=entry[2],
                              reporting_owner_name=entry[3],
                              is_director=entry[4],
                              is_officer=entry[5],
@@ -145,18 +154,23 @@ def formentryinsert(form):
                              form_type=entry[27],
                              deriv_or_nonderiv='N'
                              )
-            entrytosave.save()
-
+            entries.append(entrytosave)
+    print 'saving'
+    Form345Entry.objects.bulk_create(entries)
+    print 'done'
+    entries = []
+    print "build deriv entry list"
     for entry in dxnlist:
         int_id = str(entry[0]) + str(entry[1]) + str(entry[2]) +\
             'D' + str(entry[22]) + '-' + str(entry[27])
-        if len(Form345Entry.objects.filter(entry_internal_id=int_id)) == 0:
-            issuercik = CIK.objects.filter(cik_num=str(int(entry[1])))[0]
+        if int_id not in id_list and str(int(entry[1])) in existingciks:
+            issuercik = all_ciks.filter(cik_num=str(int(entry[1])))[0]
             entrytosave =\
                 Form345Entry(entry_internal_id=int_id,
                              period_of_report=entry[0],
                              issuer_cik=issuercik,
-                             reporting_owner_cik=entry[2],
+                             issuer_cik_num=entry[1],
+                             reporting_owner_cik_num=entry[2],
                              reporting_owner_name=entry[3],
                              is_director=entry[4],
                              is_officer=entry[5],
@@ -184,7 +198,10 @@ def formentryinsert(form):
                              form_type=entry[27],
                              deriv_or_nonderiv='D'
                              )
-            entrytosave.save()
+            entries.append(entrytosave)
+    print 'saving'
+    Form345Entry.objects.bulk_create(entries)
+    print 'done'
     # Derivative Transaction List Key:
     # [0] = Period Of Report
     # [1] = Issuer CIK
