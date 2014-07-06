@@ -34,12 +34,13 @@ def affiliationdetail(request, ticker_sym):
     issuer = IssuerCIK.objects.get(companystockhist_id=stockid)
     affiliationlist = Affiliation.objects.filter(issuer=issuer)
     return render_to_response('sdapp/affiliationdetail.html',
-                              {'affiliationlist': affiliationlist})
+                              {'cikidforticker': 1,
+                               'affiliationlist': affiliationlist})
 
 
 def holdingdetail(request, ticker_sym):
     stockid = CompanyStockHist.objects.get(ticker_sym=ticker_sym)
     issuer = IssuerCIK.objects.get(companystockhist_id=stockid)
     holdinglist = Holding.objects.filter(issuer=issuer)
-    return render_to_response('sdapp/affiliationdetail.html',
+    return render_to_response('sdapp/holdingdetail.html',
                               {'holdinglist': holdinglist})
