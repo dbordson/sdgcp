@@ -1,5 +1,6 @@
 from django.shortcuts import render_to_response
-from sdapp.models import CompanyStockHist, ClosePrice, IssuerCIK, Form345Entry
+from sdapp.models import CompanyStockHist, ClosePrice, IssuerCIK,\
+    Form345Entry, Affiliation, Holding
 
 
 def options(request, ticker_sym):
@@ -26,3 +27,19 @@ def formentrydetail(request, ticker_sym):
                               {'entrylist': entrylist,
                                'cikforticker': cikforticker,
                                'cikidforticker': cikidforticker})
+
+
+def affiliationdetail(request, ticker_sym):
+    stockid = CompanyStockHist.objects.get(ticker_sym=ticker_sym)
+    issuer = IssuerCIK.objects.get(companystockhist_id=stockid)
+    affiliationlist = Affiliation.objects.filter(issuer=issuer)
+    return render_to_response('sdapp/affiliationdetail.html',
+                              {'affiliationlist': affiliationlist})
+
+
+def holdingdetail(request, ticker_sym):
+    stockid = CompanyStockHist.objects.get(ticker_sym=ticker_sym)
+    issuer = IssuerCIK.objects.get(companystockhist_id=stockid)
+    holdinglist = Holding.objects.filter(issuer=issuer)
+    return render_to_response('sdapp/affiliationdetail.html',
+                              {'holdinglist': holdinglist})

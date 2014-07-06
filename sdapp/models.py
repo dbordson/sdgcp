@@ -58,7 +58,7 @@ class Affiliation(models.Model):
     most_recent_filing = models.DateField(null=True)
 
     def __unicode__(self):
-        return self.title
+        return unicode(self.title) or u''
 
 
 class Holding(models.Model):
@@ -71,9 +71,13 @@ class Holding(models.Model):
     deriv_or_nonderiv = models.CharField(max_length=1, null=True)
     expiration_date = models.DateField(null=True)
     underlying_title = models.CharField(max_length=80, null=True)
+    underlying_shares = models.DecimalField(max_digits=15, decimal_places=4,
+                                            null=True)
+    first_xn = models.DateField(null=True)
+    most_recent_xn = models.DateField(null=True)
 
     def __unicode__(self):
-        return self.security_title
+        return unicode(self.security_title) or u''
 
 
 class Form345Entry(models.Model):
