@@ -160,9 +160,12 @@ def new_holding(title, expdate, affiliationentries, affiliation):
     holdingentries = affiliationentries.filter(security_title=title)\
         .filter(expiration_date=expdate)
     if holdingentries.exclude(transaction_date__isnull=True).exists():
-        latestxn = holdingentries\
+        latestxndate = holdingentries\
             .exclude(transaction_date__isnull=True)\
-            .order_by('-transaction_date')[0]
+            .order_by('-transaction_date')[0].transaction_date
+        latestxn = holdingentries\
+            .filter(transaction_date=latestxndate)\
+            .order_by('-transaction_number')[0]
         firstxn = holdingentries\
             .exclude(transaction_date__isnull=True)\
             .order_by('transaction_date')[0]
@@ -192,9 +195,12 @@ def new_holding(title, expdate, affiliationentries, affiliation):
 
 def update_holding(holding, title, expdate, holdingentries, affiliation):
     if holdingentries.exclude(transaction_date__isnull=True).exists():
-        latestxn = holdingentries\
+        latestxndate = holdingentries\
             .exclude(transaction_date__isnull=True)\
-            .order_by('-transaction_date')[0]
+            .order_by('-transaction_date')[0].transaction_date
+        latestxn = holdingentries\
+            .filter(transaction_date=latestxndate)\
+            .order_by('-transaction_number')[0]
         holding.most_recent_xn = latestxn\
             .transaction_date
         holding.units_held = latestxn.shares_following_xn
