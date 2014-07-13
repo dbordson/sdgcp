@@ -8,6 +8,13 @@ from sdapp.models import IssuerCIK, Form345Entry
 # This code will work best if the stored files are in a subdirectory of
 # the current working directory.
 
+def binary_to_boolean(inputbinary):
+    if inputbinary == '1':
+        return True
+    else:
+        return False
+
+
 
 def formentryinsert(form):
     # dropboxdir = os.path.expanduser('~/Dropbox')
@@ -120,7 +127,13 @@ def formentryinsert(form):
         int_id = str(entry[0]) + str(entry[1]) + str(entry[2]) +\
             'N' + str(entry[22]) + '-' + str(entry[27])
         if int_id not in id_list and str(int(entry[1])) in existingciks:
+            
+            is_director = binary_to_boolean(str(entry[4]))
+            is_officer = binary_to_boolean(str(entry[5]))
+            is_ten_percent = binary_to_boolean(str(entry[6]))
+            is_something_else = binary_to_boolean(str(entry[7]))
             issuercik = all_ciks.filter(cik_num=str(int(entry[1])))[0]
+
             entrytosave =\
                 Form345Entry(entry_internal_id=int_id,
                              period_of_report=entry[0],
@@ -128,10 +141,10 @@ def formentryinsert(form):
                              issuer_cik_num=entry[1],
                              reporting_owner_cik_num=entry[2],
                              reporting_owner_name=entry[3],
-                             is_director=entry[4],
-                             is_officer=entry[5],
-                             is_ten_percent=entry[6],
-                             is_something_else=entry[7],
+                             is_director=is_director,
+                             is_officer=is_officer,
+                             is_ten_percent=is_ten_percent,
+                             is_something_else=is_something_else,
                              reporting_owner_title=entry[8],
                              security_title=entry[9],
                              conversion_price=entry[10],
@@ -164,7 +177,13 @@ def formentryinsert(form):
         int_id = str(entry[0]) + str(entry[1]) + str(entry[2]) +\
             'D' + str(entry[22]) + '-' + str(entry[27])
         if int_id not in id_list and str(int(entry[1])) in existingciks:
+
+            is_director = binary_to_boolean(str(entry[4]))
+            is_officer = binary_to_boolean(str(entry[5]))
+            is_ten_percent = binary_to_boolean(str(entry[6]))
+            is_something_else = binary_to_boolean(str(entry[7]))
             issuercik = all_ciks.filter(cik_num=str(int(entry[1])))[0]
+
             entrytosave =\
                 Form345Entry(entry_internal_id=int_id,
                              period_of_report=entry[0],
@@ -172,10 +191,10 @@ def formentryinsert(form):
                              issuer_cik_num=entry[1],
                              reporting_owner_cik_num=entry[2],
                              reporting_owner_name=entry[3],
-                             is_director=entry[4],
-                             is_officer=entry[5],
-                             is_ten_percent=entry[6],
-                             is_something_else=entry[7],
+                             is_director=is_director,
+                             is_officer=is_officer,
+                             is_ten_percent=is_ten_percent,
+                             is_something_else=is_something_else,
                              reporting_owner_title=entry[8],
                              security_title=entry[9],
                              conversion_price=entry[10],
