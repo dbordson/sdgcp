@@ -19,7 +19,7 @@ def update_reportingpersons():
             xns = all_entries.filter(reporting_owner_cik_num=ciknum).\
                 exclude(period_of_report__isnull=True).\
                 order_by('-period_of_report')
-            if len(xns) > 0:
+            if xns.exists():
                 latest_xn = xns[0]
             else:
                 xns = all_entries.filter(reporting_owner_cik_num=ciknum)
@@ -50,7 +50,7 @@ def new_affiliation(all_issuer_ciks, issuer_cik, person, name, personentries):
 
     affiliationentries = personentries\
         .filter(issuer_cik_num=issuer_cik)
-    if len(affiliationentries.exclude(period_of_report__isnull=True)) != 0:
+    if affiliationentries.exclude(period_of_report__isnull=True).exists():
         latestentry = affiliationentries\
             .exclude(period_of_report__isnull=True)\
             .order_by('-period_of_report')[0]
@@ -61,15 +61,21 @@ def new_affiliation(all_issuer_ciks, issuer_cik, person, name, personentries):
         newaffiliation.most_recent_filing = latestentry\
             .period_of_report
         governingentry = latestentry
-    else:
-        governingentry = affiliationentries[0]
-    newaffiliation.title = governingentry.reporting_owner_title
-    newaffiliation.is_director = governingentry.is_director
-    newaffiliation.is_officer = governingentry.is_officer
-    newaffiliation.is_ten_percent = governingentry.is_ten_percent
-    newaffiliation.is_something_else = governingentry.is_something_else
+        newaffiliation.title = governingentry.reporting_owner_title
+        newaffiliation.is_director = governingentry.is_director
+        newaffiliation.is_officer = governingentry.is_officer
+        newaffiliation.is_ten_percent = governingentry.is_ten_percent
+        newaffiliation.is_something_else = governingentry.is_something_else
+        return newaffiliation
+    # else:
+    #     governingentry = affiliationentries[0]
+    # newaffiliation.title = governingentry.reporting_owner_title
+    # newaffiliation.is_director = governingentry.is_director
+    # newaffiliation.is_officer = governingentry.is_officer
+    # newaffiliation.is_ten_percent = governingentry.is_ten_percent
+    # newaffiliation.is_something_else = governingentry.is_something_else
 
-    return newaffiliation
+    return None
 
 
 def update_affiliation(affiliationupd, all_issuer_ciks, issuer_cik, person,
@@ -79,21 +85,27 @@ def update_affiliation(affiliationupd, all_issuer_ciks, issuer_cik, person,
     affiliationupd.person_name = name
     affiliationentries = personentries\
         .filter(issuer_cik_num=issuer_cik)
-    if len(affiliationentries.exclude(period_of_report__isnull=True)) != 0:
+    if affiliationentries.exclude(period_of_report__isnull=True).exists():
         latestentry = affiliationentries\
             .exclude(period_of_report__isnull=True)\
             .order_by('-period_of_report')[0]
         affiliationupd.most_recent_filing = latestentry\
             .period_of_report
         governingentry = latestentry
-    else:
-        governingentry = affiliationentries[0]
-    affiliationupd.title = governingentry.reporting_owner_title
-    affiliationupd.is_director = governingentry.is_director
-    affiliationupd.is_officer = governingentry.is_officer
-    affiliationupd.is_ten_percent = governingentry.is_ten_percent
-    affiliationupd.is_something_else = governingentry.is_something_else
-    affiliationupd.save()
+        affiliationupd.title = governingentry.reporting_owner_title
+        affiliationupd.is_director = governingentry.is_director
+        affiliationupd.is_officer = governingentry.is_officer
+        affiliationupd.is_ten_percent = governingentry.is_ten_percent
+        affiliationupd.is_something_else = governingentry.is_something_else
+        affiliationupd.save()
+    # else:
+    #     governingentry = affiliationentries[0]
+    # affiliationupd.title = governingentry.reporting_owner_title
+    # affiliationupd.is_director = governingentry.is_director
+    # affiliationupd.is_officer = governingentry.is_officer
+    # affiliationupd.is_ten_percent = governingentry.is_ten_percent
+    # affiliationupd.is_something_else = governingentry.is_something_else
+    # affiliationupd.save()
 
 
 def revise_affiliations():
@@ -113,18 +125,18 @@ def revise_affiliations():
         for issuer_cik in personissuerciks:
             aff_set = old_affiliations.filter(issuer_cik_num=issuer_cik)\
                 .filter(reporting_owner_cik_num=person_cik)
-            if len(aff_set) == 0:
+            if not aff_set.exists():
                 newaffiliation = new_affiliation(all_issuer_ciks, issuer_cik,
                                                  person, name, personentries)
-                entries.append(newaffiliation)
-            if len(aff_set) != 0:
+                if newaffiliation is not None:
+                    entries.append(newaffiliation)
+            if aff_set.exists():
                 # if there is already an entry we determine whether to update
                 affiliationentries = personentries\
-                    .filter(issuer_cik_num=issuer_cik)
-                if len(affiliationentries
-                        .exclude(period_of_report__isnull=True)) != 0:
+                    .filter(issuer_cik_num=issuer_cik)\
+                    .exclude(period_of_report__isnull=True)
+                if affiliationentries.exists():
                     latestentry = affiliationentries\
-                        .exclude(period_of_report__isnull=True)\
                         .order_by('-period_of_report')[0]
                     if latestentry.period_of_report !=\
                             aff_set[0].most_recent_filing:
@@ -147,7 +159,7 @@ def new_holding(title, expdate, affiliationentries, affiliation):
 
     holdingentries = affiliationentries.filter(security_title=title)\
         .filter(expiration_date=expdate)
-    if len(holdingentries.exclude(transaction_date__isnull=True)) != 0:
+    if holdingentries.exclude(transaction_date__isnull=True).exists():
         latestxn = holdingentries\
             .exclude(transaction_date__isnull=True)\
             .order_by('-transaction_date')[0]
@@ -162,22 +174,24 @@ def new_holding(title, expdate, affiliationentries, affiliation):
         newholding.underlying_title = latestxn.underlying_title
         newholding.underlying_shares = latestxn.underlying_shares
 
-    elif len(holdingentries
-             .exclude(period_of_report__isnull=True)
-             .order_by('-period_of_report')) != 0:
-        governingentry = holdingentries\
-            .exclude(period_of_report__isnull=True)\
-            .order_by('-period_of_report')[0]
-        newholding.units_held = governingentry.shares_following_xn
-        newholding.deriv_or_nonderiv = governingentry.deriv_or_nonderiv
-        newholding.underlying_title = governingentry.underlying_title
-        newholding.underlying_shares = governingentry.underlying_shares
+        return newholding
 
-    return newholding
+    # elif len(holdingentries
+    #          .exclude(period_of_report__isnull=True)
+    #          .order_by('-period_of_report')) != 0:
+    #     governingentry = holdingentries\
+    #         .exclude(period_of_report__isnull=True)\
+    #         .order_by('-period_of_report')[0]
+    #     newholding.units_held = governingentry.shares_following_xn
+    #     newholding.deriv_or_nonderiv = governingentry.deriv_or_nonderiv
+    #     newholding.underlying_title = governingentry.underlying_title
+    #     newholding.underlying_shares = governingentry.underlying_shares
+
+    return None
 
 
 def update_holding(holding, title, expdate, holdingentries, affiliation):
-    if len(holdingentries.exclude(transaction_date__isnull=True)) != 0:
+    if holdingentries.exclude(transaction_date__isnull=True).exists():
         latestxn = holdingentries\
             .exclude(transaction_date__isnull=True)\
             .order_by('-transaction_date')[0]
@@ -187,17 +201,16 @@ def update_holding(holding, title, expdate, holdingentries, affiliation):
         holding.deriv_or_nonderiv = latestxn.deriv_or_nonderiv
         holding.underlying_title = latestxn.underlying_title
         holding.underlying_shares = latestxn.underlying_shares
+        holding.save()
 
-    elif len(holdingentries
-             .exclude(period_of_report__isnull=True)
-             .order_by('-period_of_report')) != 0:
-        governingentry = holdingentries[0]
-        holding.units_held = governingentry.shares_following_xn
-        holding.deriv_or_nonderiv = governingentry.deriv_or_nonderiv
-        holding.underlying_title = governingentry.underlying_title
-        holding.underlying_shares = governingentry.underlying_shares
-
-    holding.save()
+    # elif len(holdingentries
+    #          .exclude(period_of_report__isnull=True)
+    #          .order_by('-period_of_report')) != 0:
+    #     governingentry = holdingentries[0]
+    #     holding.units_held = governingentry.shares_following_xn
+    #     holding.deriv_or_nonderiv = governingentry.deriv_or_nonderiv
+    #     holding.underlying_title = governingentry.underlying_title
+    #     holding.underlying_shares = governingentry.underlying_shares
 
 
 def revise_holdings():
@@ -230,7 +243,7 @@ def revise_holdings():
             titleexpirationdates = affiliationentries\
                 .filter(security_title=title)\
                 .values_list('expiration_date', flat=True).distinct()
-            if len(titleexpirationdates) == 0:
+            if not titleexpirationdates.exists():
                 titleset = [title, None]
                 title_expiration_list.append(titleset)
             else:
@@ -243,19 +256,20 @@ def revise_holdings():
             title, expdate = title_and_date_set
             titledate_holding = old_holdings.filter(security_title=title)\
                 .filter(expiration_date=expdate)
-            if len(titledate_holding) == 0:
+            if not titledate_holding.exists():
                 newholding = new_holding(title, expdate, affiliationentries,
                                          affiliation)
-                entries.append(newholding)
-            if len(titledate_holding) != 0:
+                if newholding is not None:
+                    entries.append(newholding)
+            if titledate_holding.exists():
                 # if there is already an entry we determine whether to update
                 holdingentries = affiliationentries\
                     .filter(security_title=title)\
                     .filter(expiration_date=expdate)
-                if len(holdingentries
-                        .exclude(period_of_report__isnull=True)) != 0:
-                    latestentry = holdingentries\
-                        .exclude(period_of_report__isnull=True)\
+                nonullholdingentries = holdingentries\
+                    .exclude(period_of_report__isnull=True)
+                if nonullholdingentries.exists():
+                    latestentry = nonullholdingentries\
                         .order_by('-period_of_report')[0]
                     if latestentry.transaction_date !=\
                             titledate_holding[0].most_recent_xn:
