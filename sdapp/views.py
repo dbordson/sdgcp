@@ -32,15 +32,16 @@ def formentrydetail(request, ticker_sym):
 def affiliationdetail(request, ticker_sym):
     stockid = CompanyStockHist.objects.get(ticker_sym=ticker_sym)
     issuer = IssuerCIK.objects.get(companystockhist_id=stockid)
-    affiliationlist = Affiliation.objects.filter(issuer=issuer)
+    affiliationlist = Affiliation.objects.filter(issuer=issuer).\
+        order_by('-most_recent_filing')
     return render_to_response('sdapp/affiliationdetail.html',
-                              {'cikidforticker': 1,
-                               'affiliationlist': affiliationlist})
+                              {'affiliationlist': affiliationlist})
 
 
 def holdingdetail(request, ticker_sym):
     stockid = CompanyStockHist.objects.get(ticker_sym=ticker_sym)
     issuer = IssuerCIK.objects.get(companystockhist_id=stockid)
-    holdinglist = Holding.objects.filter(issuer=issuer)
+    holdinglist = Holding.objects.filter(issuer=issuer).\
+        order_by('owner')
     return render_to_response('sdapp/holdingdetail.html',
                               {'holdinglist': holdinglist})
