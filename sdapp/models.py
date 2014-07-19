@@ -5,10 +5,20 @@ from django.db import models
 #
 
 
+class IssuerCIK(models.Model):
+    cik_num = models.CharField(max_length=10)
+    # Adapt this for companies with more than one public stock (GOOG)
+    # to do this, we will need to update the ticker finder script
+
+    def __unicode__(self):
+        return self.cik_num
+
+
 class CompanyStockHist(models.Model):
     ticker_sym = models.CharField(max_length=5)
     # stockhistories = models.ForeignKey(StockHistories)
     # last_update = models.DateField(auto_now=True)
+    issuer = models.ForeignKey(IssuerCIK, null=True)
 
     def __unicode__(self):
         return self.ticker_sym
@@ -17,22 +27,11 @@ class CompanyStockHist(models.Model):
 class ClosePrice(models.Model):
     close_price = models.DecimalField(max_digits=12, decimal_places=4)
     close_date = models.DateField()
-    companystockhist = models.ForeignKey(CompanyStockHist)
+    companystockhist = models.ForeignKey(CompanyStockHist, null=True)
 
     def __unicode__(self):
         return u"%s, %s, %s" % (self.companystockhist, self.close_price,
                                 self.close_date)
-
-
-class IssuerCIK(models.Model):
-    cik_num = models.CharField(max_length=10)
-    companystockhist = models.OneToOneField(CompanyStockHist, primary_key=True)
-
-    # Adapt this for companies with more than one public stock (GOOG)
-    # to do this, we will need to update the ticker finder script
-
-    def __unicode__(self):
-        return self.cik_num
 
 
 class ReportingPerson(models.Model):

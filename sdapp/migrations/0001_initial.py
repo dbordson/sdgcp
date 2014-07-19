@@ -8,10 +8,18 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
+        # Adding model 'IssuerCIK'
+        db.create_table(u'sdapp_issuercik', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('cik_num', self.gf('django.db.models.fields.CharField')(max_length=10)),
+        ))
+        db.send_create_signal(u'sdapp', ['IssuerCIK'])
+
         # Adding model 'CompanyStockHist'
         db.create_table(u'sdapp_companystockhist', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('ticker_sym', self.gf('django.db.models.fields.CharField')(max_length=5)),
+            ('issuer', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['sdapp.IssuerCIK'], null=True)),
         ))
         db.send_create_signal(u'sdapp', ['CompanyStockHist'])
 
@@ -20,16 +28,9 @@ class Migration(SchemaMigration):
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('close_price', self.gf('django.db.models.fields.DecimalField')(max_digits=12, decimal_places=4)),
             ('close_date', self.gf('django.db.models.fields.DateField')()),
-            ('companystockhist', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['sdapp.CompanyStockHist'])),
+            ('companystockhist', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['sdapp.CompanyStockHist'], null=True)),
         ))
         db.send_create_signal(u'sdapp', ['ClosePrice'])
-
-        # Adding model 'IssuerCIK'
-        db.create_table(u'sdapp_issuercik', (
-            ('cik_num', self.gf('django.db.models.fields.CharField')(max_length=10)),
-            ('companystockhist', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['sdapp.CompanyStockHist'], unique=True, primary_key=True)),
-        ))
-        db.send_create_signal(u'sdapp', ['IssuerCIK'])
 
         # Adding model 'ReportingPerson'
         db.create_table(u'sdapp_reportingperson', (
@@ -68,6 +69,9 @@ class Migration(SchemaMigration):
             ('deriv_or_nonderiv', self.gf('django.db.models.fields.CharField')(max_length=1, null=True)),
             ('expiration_date', self.gf('django.db.models.fields.DateField')(null=True)),
             ('underlying_title', self.gf('django.db.models.fields.CharField')(max_length=80, null=True)),
+            ('underlying_shares', self.gf('django.db.models.fields.DecimalField')(null=True, max_digits=15, decimal_places=4)),
+            ('first_xn', self.gf('django.db.models.fields.DateField')(null=True)),
+            ('most_recent_xn', self.gf('django.db.models.fields.DateField')(null=True)),
         ))
         db.send_create_signal(u'sdapp', ['Holding'])
 
@@ -111,14 +115,14 @@ class Migration(SchemaMigration):
 
 
     def backwards(self, orm):
+        # Deleting model 'IssuerCIK'
+        db.delete_table(u'sdapp_issuercik')
+
         # Deleting model 'CompanyStockHist'
         db.delete_table(u'sdapp_companystockhist')
 
         # Deleting model 'ClosePrice'
         db.delete_table(u'sdapp_closeprice')
-
-        # Deleting model 'IssuerCIK'
-        db.delete_table(u'sdapp_issuercik')
 
         # Deleting model 'ReportingPerson'
         db.delete_table(u'sdapp_reportingperson')
@@ -154,12 +158,13 @@ class Migration(SchemaMigration):
             'Meta': {'object_name': 'ClosePrice'},
             'close_date': ('django.db.models.fields.DateField', [], {}),
             'close_price': ('django.db.models.fields.DecimalField', [], {'max_digits': '12', 'decimal_places': '4'}),
-            'companystockhist': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.CompanyStockHist']"}),
+            'companystockhist': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.CompanyStockHist']", 'null': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
         },
         u'sdapp.companystockhist': {
             'Meta': {'object_name': 'CompanyStockHist'},
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'issuer': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.IssuerCIK']", 'null': 'True'}),
             'ticker_sym': ('django.db.models.fields.CharField', [], {'max_length': '5'})
         },
         u'sdapp.form345entry': {
@@ -203,17 +208,20 @@ class Migration(SchemaMigration):
             'affiliation': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.Affiliation']"}),
             'deriv_or_nonderiv': ('django.db.models.fields.CharField', [], {'max_length': '1', 'null': 'True'}),
             'expiration_date': ('django.db.models.fields.DateField', [], {'null': 'True'}),
+            'first_xn': ('django.db.models.fields.DateField', [], {'null': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'issuer': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.IssuerCIK']"}),
+            'most_recent_xn': ('django.db.models.fields.DateField', [], {'null': 'True'}),
             'owner': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.ReportingPerson']"}),
             'security_title': ('django.db.models.fields.CharField', [], {'max_length': '80', 'null': 'True'}),
+            'underlying_shares': ('django.db.models.fields.DecimalField', [], {'null': 'True', 'max_digits': '15', 'decimal_places': '4'}),
             'underlying_title': ('django.db.models.fields.CharField', [], {'max_length': '80', 'null': 'True'}),
             'units_held': ('django.db.models.fields.DecimalField', [], {'null': 'True', 'max_digits': '15', 'decimal_places': '4'})
         },
         u'sdapp.issuercik': {
             'Meta': {'object_name': 'IssuerCIK'},
             'cik_num': ('django.db.models.fields.CharField', [], {'max_length': '10'}),
-            'companystockhist': ('django.db.models.fields.related.OneToOneField', [], {'to': u"orm['sdapp.CompanyStockHist']", 'unique': 'True', 'primary_key': 'True'})
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
         },
         u'sdapp.reportingperson': {
             'Meta': {'object_name': 'ReportingPerson'},

@@ -21,20 +21,20 @@ def CIKFind(ticker):
 
     if len(ciknum) > 11:
         ciknum = 'NO CIK FOUND'
-
+    print ciknum
     return ciknum
 
 
 def newciks():
     for entry in CompanyStockHist.objects.all():
         print entry
-        try:
-            entry.issuercik
-            pass
-        except:
+        if entry.issuer == None:
             CIKnum = str(int(CIKFind(str(entry.ticker_sym))))
-            d = IssuerCIK(cik_num=CIKnum, companystockhist=entry)
-            d.save()
+            a = IssuerCIK(CIKnum)
+            a.cik_num = CIKnum
+            a.save()
+            entry.issuer = a
+            entry.save()
 
 
 newciks()

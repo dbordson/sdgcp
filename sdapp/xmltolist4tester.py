@@ -8,12 +8,12 @@ from sdapp.models import IssuerCIK, Form345Entry
 # This code will work best if the stored files are in a subdirectory of
 # the current working directory.
 
+
 def binary_to_boolean(inputbinary):
     if inputbinary == '1':
         return True
     else:
         return False
-
 
 
 def formentryinsert(form):
@@ -81,7 +81,7 @@ def formentryinsert(form):
     meanlist = []
     for item in ndxnlist:
         meanlist.append(item[13])
-    if meanlist[0] == None:
+    if meanlist[0] is None:
         meanlist = [0]
     print float(sum(meanlist))
     print len(meanlist)

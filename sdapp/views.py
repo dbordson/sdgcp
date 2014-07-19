@@ -18,9 +18,10 @@ def pricedetail(request, ticker_sym):
 
 
 def formentrydetail(request, ticker_sym):
-    stockid = CompanyStockHist.objects.get(ticker_sym=ticker_sym)
-    cikforticker = IssuerCIK.objects.filter(companystockhist_id=stockid)[0]
-    cikidforticker = cikforticker.companystockhist_id
+    # stockid = CompanyStockHist.objects.get(ticker_sym=ticker_sym)
+    cikforticker = \
+        IssuerCIK.objects.filter(companystockhist__ticker_sym=ticker_sym)[0]
+    cikidforticker = cikforticker.cik_num
     entrylist = Form345Entry.objects.filter(issuer_cik_id=cikidforticker)
     # pricelist = ClosePrice.objects.filter(companystockhist=stockid)
     return render_to_response('sdapp/entrydetail.html',
@@ -30,8 +31,9 @@ def formentrydetail(request, ticker_sym):
 
 
 def affiliationdetail(request, ticker_sym):
-    stockid = CompanyStockHist.objects.get(ticker_sym=ticker_sym)
-    issuer = IssuerCIK.objects.get(companystockhist_id=stockid)
+    # stockid = CompanyStockHist.objects.get(ticker_sym=ticker_sym)
+    issuer = \
+        IssuerCIK.objects.filter(companystockhist__ticker_sym=ticker_sym)[0]
     affiliationlist = Affiliation.objects.filter(issuer=issuer).\
         order_by('-most_recent_filing')
     return render_to_response('sdapp/affiliationdetail.html',
@@ -39,8 +41,9 @@ def affiliationdetail(request, ticker_sym):
 
 
 def holdingdetail(request, ticker_sym):
-    stockid = CompanyStockHist.objects.get(ticker_sym=ticker_sym)
-    issuer = IssuerCIK.objects.get(companystockhist_id=stockid)
+    # stockid = CompanyStockHist.objects.get(ticker_sym=ticker_sym)
+    issuer = \
+        IssuerCIK.objects.filter(companystockhist__ticker_sym=ticker_sym)[0]
     holdinglist = Holding.objects.filter(issuer=issuer).\
         order_by('owner')
     return render_to_response('sdapp/holdingdetail.html',
