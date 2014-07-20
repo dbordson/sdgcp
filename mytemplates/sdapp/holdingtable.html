@@ -1,3 +1,89 @@
+<h1>{{ ticker_sym }} Holding Table </h1>
+<table border="1" cellspacing="0" cellpadding="1" style="width:200px">
+<thead>
+    <th style="text-align:left;"  colspan="5">Non-Derivative Holdings</th>
+</thead>
+{% for sectitle, holdings in stockholdinglists %}
+    <thead>
+        <th colspan="5">{{ sectitle }} Holdings</th>
+    </thead>
+    <thead>
+        <th>Holder</th>
+        <th>Title</th>
+        <th>Units Held</th>
+        <th>Expiration Date</th>
+        <th>Most Recent Transaction</th>
+    </thead>
+    {% for holding in holdings %}
+    <tr>
+        <td style="text-align:center;">{{ holding.owner }}</td>
+        <td style="text-align:center;">{{ holding.affiliation }}</td>
+        <td style="text-align:right;">{{ holding.units_held }}</td>
+        <td style="text-align:center;">{{ holding.expiration_date }}</td>
+        <td style="text-align:center;">{{ holding.most_recent_xn }}</td>
+    </tr>
+    {% endfor %}
+
+{% endfor %}
+
+
+<table border="1" cellspacing="0" cellpadding="1" style="width:200px">
+<thead>
+    <th style="text-align:left;" colspan="8">Derivative Holdings</th>
+</thead>
+{% for sectitle, holdings in derivholdinglists %}
+    <thead>
+        <th colspan="8">{{ sectitle }} Holdings</th>
+    </thead>
+    <thead>
+        <th>Holder</th>
+        <th>Title</th>
+        <th>Units Held</th>
+        <th>Expiration Date</th>
+        <th>Conversion Price</th>
+        <th>Underlying Title</th>
+        <th>Underlying Shares</th>
+        <th>Most Recent Transaction</th>
+    </thead>
+    {% for holding in holdings %}
+    <tr>
+        <td style="text-align:center;">{{ holding.owner }}</td>
+        <td style="text-align:center;">{{ holding.affiliation }}</td>
+        <td style="text-align:right;">{{ holding.units_held }}</td>
+        <td style="text-align:center;">{{ holding.expiration_date }}</td>
+        <th style="text-align:center;">{{ holding.conversion_price }}</td>
+        <td style="text-align:center;">{{ holding.underlying_title }}</td>
+        <td style="text-align:center;">{{ holding.underlying_shares }}</td>
+        <td style="text-align:center;">{{ holding.most_recent_xn }}</td>
+    </tr>
+    {% endfor %}
+
+{% endfor %}
+
+<!--
+
+    {% for entry in holdinglist %}
+    <tr>
+        <td style="text-align:center;">{{ entry.issuer }}</td>
+        <td style="text-align:center;">{{ entry.owner }}</td>
+        <td style="text-align:center;">{{ entry.affiliation }}</td>
+        <td style="text-align:center;">{{ entry.security_title }}</td>
+        <td style="text-align:center;">{{ entry.units_held }}</td>
+        <td style="text-align:center;">{{ entry.deriv_or_nonderiv }}</td>
+        <td style="text-align:center;">{{ entry.expiration_date }}</td>
+        <td style="text-align:center;">{{ entry.underlying_title }}</td>
+        <td style="text-align:center;">{{ entry.underlying_shares }}</td>
+        <td style="text-align:center;">{{ entry.first_xn }}</td>
+        <td style="text-align:center;">{{ entry.most_recent_xn }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+
+
+
+
+
 <table border="1" cellspacing="0" cellpadding="1" style="width:200px">
     <thead>
         <th>issuer</th>
@@ -29,3 +115,4 @@
     </tr>
     {% endfor %}
 </table>
+

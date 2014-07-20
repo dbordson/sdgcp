@@ -59,17 +59,41 @@ def holdingtable(request, ticker_sym):
     affiliationset = Affiliation.objects.filter(issuer=issuer)\
         .filter(most_recent_filing__gte=startdate)
     holdingset = Holding.objects.filter(issuer=issuer)\
-        .filter(affiliation__in=affiliationset).order_by('owner')
+        .filter(affiliation__in=affiliationset).order_by('owner')\
+        .exclude(units_held=0.0)
     stockholdingset = holdingset.filter(deriv_or_nonderiv='N')
-    stockholdingtitles = stockholdingset.values('security_title').distinct()
+    stockholdingtitles = list(set(stockholdingset
+                              .values_list('security_title', flat=True)
+                              .distinct()))
+    stockholdinglists = []
+    for title in stockholdingtitles:
+        stockholdinglist = []
+        stockholdinglist.append(title)
+        titleholdings = stockholdingset.filter(security_title=title)\
+            .order_by('-units_held')[:5]
+        print titleholdings.values_list('owner', flat=True)
+        stockholdinglist.append(titleholdings)
+        stockholdinglists.append(stockholdinglist)
+        print title
+        print stockholdinglist
 
     derivholdingset = holdingset.filter(deriv_or_nonderiv='D')
-    derivholdingtitles = stockholdingset.values('security_title').distinct()
+    derivholdingtitles = list(set(derivholdingset
+                              .values_list('security_title', flat=True)
+                              .distinct()))
+    derivholdinglists = []
+    for title in derivholdingtitles:
+        derivholdinglist = []
+        derivholdinglist.append(title)
+        titleholdings = derivholdingset.filter(security_title=title)\
+            .order_by('-units_held')[:5]
+        derivholdinglist.append(titleholdings)
+        derivholdinglists.append(derivholdinglist)
+    print stockholdinglists
     return render_to_response('sdapp/holdingtable.html',
-                              {'startdate': startdate,
-                               'affiliationset': affiliationset,
-                               'stockholdingset': stockholdingset,
+                              {'ticker_sym': ticker_sym,
+                               'startdate': startdate,
                                'stockholdingtitles': stockholdingtitles,
-                               'derivholdingset': derivholdingset,
-                               'derivholdingtitles': derivholdingtitles})
-
+                               'affiliationset': affiliationset,
+                               'stockholdinglists': stockholdinglists,
+                               'derivholdinglists': derivholdinglists})
