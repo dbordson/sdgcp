@@ -21,4 +21,6 @@ urlpatterns = \
                  name='formentrydetail'),
              url(r'^(?P<ticker_sym>\w+)/holdings$', holdingdetail,
                  name='formentrydetail'),
+             url(r'^(?P<ticker_sym>\w+)/holdings$', holdingdetail,
+                 name='formentrydetail'),
              )

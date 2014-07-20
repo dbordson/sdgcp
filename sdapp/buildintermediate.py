@@ -170,10 +170,10 @@ def new_holding(title, expdate, affiliationentries, affiliation):
             .exclude(transaction_date__isnull=True)\
             .order_by('transaction_date')[0]
         newholding.first_xn = firstxn.transaction_date
-        newholding.most_recent_xn = latestxn\
-            .transaction_date
+        newholding.most_recent_xn = latestxn.transaction_date
         newholding.units_held = latestxn.shares_following_xn
         newholding.deriv_or_nonderiv = latestxn.deriv_or_nonderiv
+        newholding.conversion_price = latestxn.conversion_price
         newholding.underlying_title = latestxn.underlying_title
         newholding.underlying_shares = latestxn.underlying_shares
 
@@ -205,6 +205,7 @@ def update_holding(holding, title, expdate, holdingentries, affiliation):
             .transaction_date
         holding.units_held = latestxn.shares_following_xn
         holding.deriv_or_nonderiv = latestxn.deriv_or_nonderiv
+        holding.conversion_price = latestxn.conversion_price
         holding.underlying_title = latestxn.underlying_title
         holding.underlying_shares = latestxn.underlying_shares
         holding.save()

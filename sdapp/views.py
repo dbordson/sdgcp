@@ -1,6 +1,7 @@
 from django.shortcuts import render_to_response
 from sdapp.models import CompanyStockHist, ClosePrice, IssuerCIK,\
     Form345Entry, Affiliation, Holding
+import datetime
 
 
 def options(request, ticker_sym):
@@ -48,3 +49,27 @@ def holdingdetail(request, ticker_sym):
         order_by('owner')
     return render_to_response('sdapp/holdingdetail.html',
                               {'holdinglist': holdinglist})
+
+
+def holdingtable(request, ticker_sym):
+    issuer = \
+        IssuerCIK.objects.filter(companystockhist__ticker_sym=ticker_sym)[0]
+    lookbackdays = 548
+    startdate = datetime.date.today() - datetime.timedelta(lookbackdays)
+    affiliationset = Affiliation.objects.filter(issuer=issuer)\
+        .filter(most_recent_filing__gte=startdate)
+    holdingset = Holding.objects.filter(issuer=issuer)\
+        .filter(affiliation__in=affiliationset).order_by('owner')
+    stockholdingset = holdingset.filter(deriv_or_nonderiv='N')
+    stockholdingtitles = stockholdingset.values('security_title').distinct()
+
+    derivholdingset = holdingset.filter(deriv_or_nonderiv='D')
+    derivholdingtitles = stockholdingset.values('security_title').distinct()
+    return render_to_response('sdapp/holdingtable.html',
+                              {'startdate': startdate,
+                               'affiliationset': affiliationset,
+                               'stockholdingset': stockholdingset,
+                               'stockholdingtitles': stockholdingtitles,
+                               'derivholdingset': derivholdingset,
+                               'derivholdingtitles': derivholdingtitles})
+
