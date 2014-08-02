@@ -5,9 +5,8 @@ import datetime
 
 
 def options(request, ticker_sym):
-    tickersym = ticker_sym
     return render_to_response('sdapp/options.html',
-                              {'tickersym': tickersym})
+                              {'ticker_sym': ticker_sym})
 
 
 def pricedetail(request, ticker_sym):
@@ -38,7 +37,8 @@ def affiliationdetail(request, ticker_sym):
     affiliationlist = Affiliation.objects.filter(issuer=issuer).\
         order_by('-most_recent_filing')
     return render_to_response('sdapp/affiliationdetail.html',
-                              {'affiliationlist': affiliationlist})
+                              {'ticker_sym': ticker_sym,
+                               'affiliationlist': affiliationlist})
 
 
 def holdingdetail(request, ticker_sym):
@@ -97,3 +97,16 @@ def holdingtable(request, ticker_sym):
                                'affiliationset': affiliationset,
                                'stockholdinglists': stockholdinglists,
                                'derivholdinglists': derivholdinglists})
+
+
+def individualaffiliation(request, ticker_sym, reporting_owner_cik_num):
+    issuer = \
+        IssuerCIK.objects.filter(companystockhist__ticker_sym=ticker_sym)[0]
+    affiliation = Affiliation.objects.filter(
+        reporting_owner_cik_num=reporting_owner_cik_num)[0]
+    holdinglist = Holding.objects.filter(affiliation=affiliation).\
+        order_by('-most_recent_xn')
+    return render_to_response('sdapp/individualaffiliation.html',
+                              {'ticker_sym': ticker_sym,
+                               'issuer': issuer,
+                               'holdinglist': holdinglist})

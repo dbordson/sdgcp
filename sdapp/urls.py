@@ -2,7 +2,7 @@ from django.conf.urls import patterns, url
 from django.views.generic import ListView
 from sdapp.models import CompanyStockHist
 from sdapp.views import options, pricedetail, formentrydetail,\
-    affiliationdetail, holdingdetail, holdingtable
+    affiliationdetail, holdingdetail, holdingtable, individualaffiliation
 
 
 urlpatterns = \
@@ -23,4 +23,6 @@ urlpatterns = \
                  name='formentrydetail'),
              url(r'^(?P<ticker_sym>\w+)/holdingtable$', holdingtable,
                  name='holdingtable'),
+             url(r'^(?P<ticker_sym>\w+)/(?P<reporting_owner_cik_num>\w+)/affiliation$', individualaffiliation,
+                 name='individualaffiliation'),
              )
