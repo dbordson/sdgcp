@@ -1,5 +1,13 @@
 from sdapp.models import ReportingPerson, IssuerCIK, Form345Entry,\
-    Affiliation, Holding
+    Affiliation, Holding, HoldingType
+from django.db import connection
+
+
+def weighted_avg(vectorunitoutput, weightingvector):
+    dotproduct = sum(p * q for p, q in zip(vectorunitoutput, weightingvector))
+    divisor = sum(weightingvector)
+    wavg = dotproduct / divisor
+    return wavg
 
 
 def update_reportingpersons():
@@ -286,6 +294,85 @@ def revise_holdings():
     Holding.objects.bulk_create(entries)
     print 'done updating holdings'
 
-update_reportingpersons()
-revise_affiliations()
-revise_holdings()
+
+def new_holdingtype(samp_obj, all_holdings, allentries):
+    # tweak below if we need to make sure underlying is distinct)
+    holdingsforuse = all_holdings\
+        .filter(affiliation=samp_obj.affiliation)\
+        .filter(security_title=samp_obj.security_title)\
+        .filter(units_held__gte=0)
+    entriesforuse = allentries\
+        .filter(issuer_cik=samp_obj.issuer)\
+        .filter(reporting_owner_cik=samp_obj.owner)
+    newholding = HoldingType(issuer=samp_obj.issuer,
+                             owner=samp_obj.owner,
+                             affiliation=samp_obj.affiliation,
+                             security_title=samp_obj.security_title,
+                             deriv_or_nonderiv=samp_obj.deriv_or_nonderiv,
+                             underlying_title=samp_obj.underlying_title)
+
+    newholding.units_held =\
+        sum(holdingsforuse.exclude(units_held=None)
+            .values_list('units_held', flat=True))
+    expirationlist = holdingsforuse.exclude(expiration_date=None)\
+        .values_list('expiration_date', flat=True)
+    if len(expirationlist) > 0:
+        newholding.first_expiration_date = min(expirationlist)
+        newholding.last_expiration_date = max(expirationlist)
+# Need to add wavg_expiration_date here
+    conversionpricelist = holdingsforuse.exclude(conversion_price=None)\
+        .values_list('conversion_price', flat=True)
+    if len(conversionpricelist) > 0:
+        newholding.min_conversion_price = min(conversionpricelist)
+        newholding.max_conversion_price = max(conversionpricelist)
+# Need to add wavg_conversion_price here
+    underlyingsharelist = holdingsforuse.exclude(underlying_shares=None)\
+        .values_list('underlying_shares', flat=True)
+    if len(underlyingsharelist) > 0:
+        newholding.underlying_shares = sum(underlyingsharelist)
+
+# Need to add underlying_price here
+# Need to add intrinsic_value here
+    # tweak here if we need to make sure underlying is distinct
+    xn_dates = entriesforuse.exclude(transaction_date=None)\
+        .values_list('transaction_date', flat=True)
+    if len(xn_dates) > 0:
+        newholding.firstxn = min(xn_dates)
+        newholding.most_recent_xn = max(xn_dates)
+# Need to add wavg_xn_date here
+    newholding.transactions_included = len(entriesforuse)
+    newholding.tranches_included = len(holdingsforuse)
+    unitstransactedlist = entriesforuse.exclude(transaction_shares=None)\
+        .values_list('transaction_shares', flat=True)
+    if len(unitstransactedlist) > 0:
+        newholding.units_transacted = sum(unitstransactedlist)
+
+    return newholding
+
+
+def refresh_holdingtypes():
+    allentries = Form345Entry.objects.all()
+    all_holdings = Holding.objects.all()
+    newholdingtypes = []
+    print 'building HoldingType list'
+    distinctholdtypes = all_holdings.distinct('affiliation', 'security_title')
+    looplength = float(len(distinctholdtypes))
+    count = 0.0
+    for item in distinctholdtypes:
+        if float(int(10*count/looplength)) !=\
+                float(int(10*(count-1)/looplength)):
+            print int(count/looplength*100), 'percent'
+        count += 1.0
+        newholdingtypes.append(new_holdingtype(item, all_holdings, allentries))
+
+    cursor = connection.cursor()
+    cursor.execute("TRUNCATE TABLE sdapp_closeprice")
+    print "prior pricing data deleted"
+    HoldingType.objects.bulk_create(newholdingtypes)
+    print "done"
+
+
+# update_reportingpersons()
+# revise_affiliations()
+# revise_holdings()
+refresh_holdingtypes()
