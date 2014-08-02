@@ -48,7 +48,8 @@ def holdingdetail(request, ticker_sym):
     holdinglist = Holding.objects.filter(issuer=issuer).\
         order_by('owner')
     return render_to_response('sdapp/holdingdetail.html',
-                              {'holdinglist': holdinglist})
+                              {'ticker_sym': ticker_sym,
+                               'holdinglist': holdinglist})
 
 
 def holdingtable(request, ticker_sym):
