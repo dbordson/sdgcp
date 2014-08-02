@@ -108,5 +108,6 @@ def individualaffiliation(request, ticker_sym, reporting_owner_cik_num):
         order_by('-most_recent_xn')
     return render_to_response('sdapp/individualaffiliation.html',
                               {'ticker_sym': ticker_sym,
+                               'affiliation': affiliation,
                                'issuer': issuer,
                                'holdinglist': holdinglist})
