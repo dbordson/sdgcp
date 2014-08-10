@@ -86,7 +86,10 @@ class HoldingType(models.Model):
     first_xn = models.DateField(null=True)
     most_recent_xn = models.DateField(null=True)
     wavg_xn_date = models.DateField(null=True)
+    transactions_included = models.IntegerField(null=True)
     tranches_included = models.IntegerField(null=True)
+    units_transacted = models.DecimalField(max_digits=15, decimal_places=4,
+                                           null=True)
 
     def __unicode__(self):
         return unicode(self.security_title) or u''
