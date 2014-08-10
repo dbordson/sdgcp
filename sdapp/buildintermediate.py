@@ -372,7 +372,7 @@ def refresh_holdingtypes():
     print "done"
 
 
-# update_reportingpersons()
-# revise_affiliations()
-# revise_holdings()
+update_reportingpersons()
+revise_affiliations()
+revise_holdings()
 refresh_holdingtypes()
