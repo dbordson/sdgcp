@@ -331,6 +331,7 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
     expirationobj = holdingsforuse.exclude(expiration_date=None)
     expirationlist = expirationobj\
         .values_list('expiration_date', flat=True)
+    # Here is where we put in expiration date related fields
     if len(expirationlist) > 0:
         newholding.first_expiration_date = min(expirationlist)
         newholding.last_expiration_date = max(expirationlist)
@@ -339,6 +340,7 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
              for entry in expirationobj]
         expdates, unitshelds = zip(*sidewaysexpirationandweightlist)
         newholding.wavg_expiration_date = wavgdate(expdates, unitshelds)
+        print wavgdate(expdates, unitshelds)
     conversionpricelist = holdingsforuse.exclude(conversion_price=None)\
         .values_list('conversion_price', flat=True)
     if len(conversionpricelist) > 0:
