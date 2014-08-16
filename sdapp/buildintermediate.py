@@ -13,14 +13,14 @@ def weighted_avg(vectorunitoutput, weightingvector):
 
 def wavgdate(datevector, weightvector):
     try:
-    today = datetime.date.today()
-    tdvector = [float((entry - today).days) for entry in datevector]
-    dotproduct = sum(float(p) * float(q)
-                     for p, q in zip(tdvector, weightvector))
-    denominator = sum(weightvector)
-    wavgdelta = dotproduct / float(denominator)
-    wavg = today + datetime.timedelta(wavgdelta)
-    return wavg
+        today = datetime.date.today()
+        tdvector = [float((entry - today).days) for entry in datevector]
+        dotproduct = sum(float(p) * float(q)
+                         for p, q in zip(tdvector, weightvector))
+        denominator = sum(weightvector)
+        wavgdelta = dotproduct / float(denominator)
+        wavg = today + datetime.timedelta(wavgdelta)
+        return wavg
     except:
         return None
 
