@@ -13,13 +13,14 @@ def weighted_avg(vectorunitoutput, weightingvector):
 
 def wavgdate(datevector, weightvector):
     try:
-        today = datetime.date.today()
-        tdvector = [float((entry - today).days) for entry in datevector]
-        dotproduct = sum(p * q for p, q in zip(tdvector, weightvector))
-        denominator = sum(weightvector)
-        wavgdelta = dotproduct / denominator
-        wavg = today + datetime.timedelta(wavgdelta)
-        return wavg
+    today = datetime.date.today()
+    tdvector = [float((entry - today).days) for entry in datevector]
+    dotproduct = sum(float(p) * float(q)
+                     for p, q in zip(tdvector, weightvector))
+    denominator = sum(weightvector)
+    wavgdelta = dotproduct / float(denominator)
+    wavg = today + datetime.timedelta(wavgdelta)
+    return wavg
     except:
         return None
 
@@ -338,9 +339,12 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
         sidewaysexpirationandweightlist =\
             [[entry.expiration_date, entry.units_held]
              for entry in expirationobj]
+        # print sidewaysexpirationandweightlist
         expdates, unitshelds = zip(*sidewaysexpirationandweightlist)
+        # print expdates
+        # print unitshelds
         newholding.wavg_expiration_date = wavgdate(expdates, unitshelds)
-        print wavgdate(expdates, unitshelds)
+        # print wavgdate(expdates, unitshelds)
     conversionpricelist = holdingsforuse.exclude(conversion_price=None)\
         .values_list('conversion_price', flat=True)
     if len(conversionpricelist) > 0:
@@ -387,8 +391,8 @@ def refresh_holdingtypes():
         newholdingtypes.append(new_holdingtype(item, all_holdings, allentries))
 
     cursor = connection.cursor()
-    cursor.execute("TRUNCATE TABLE sdapp_closeprice")
-    print "prior pricing data deleted"
+    cursor.execute("TRUNCATE TABLE sdapp_holdingtype")
+    print "prior holdingtype data deleted"
     HoldingType.objects.bulk_create(newholdingtypes)
     print "done"
 
