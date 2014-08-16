@@ -1,6 +1,7 @@
 from sdapp.models import ReportingPerson, IssuerCIK, Form345Entry,\
     Affiliation, Holding, HoldingType
 from django.db import connection
+import datetime
 
 
 def weighted_avg(vectorunitoutput, weightingvector):
@@ -8,6 +9,19 @@ def weighted_avg(vectorunitoutput, weightingvector):
     divisor = sum(weightingvector)
     wavg = dotproduct / divisor
     return wavg
+
+
+def wavgdate(datevector, weightvector):
+    try:
+        today = datetime.date.today()
+        tdvector = [float((entry - today).days) for entry in datevector]
+        dotproduct = sum(p * q for p, q in zip(tdvector, weightvector))
+        denominator = sum(weightvector)
+        wavgdelta = dotproduct / denominator
+        wavg = today + datetime.timedelta(wavgdelta)
+        return wavg
+    except:
+        return None
 
 
 def update_reportingpersons():
@@ -314,12 +328,17 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
     newholding.units_held =\
         sum(holdingsforuse.exclude(units_held=None)
             .values_list('units_held', flat=True))
-    expirationlist = holdingsforuse.exclude(expiration_date=None)\
+    expirationobj = holdingsforuse.exclude(expiration_date=None)
+    expirationlist = expirationobj\
         .values_list('expiration_date', flat=True)
     if len(expirationlist) > 0:
         newholding.first_expiration_date = min(expirationlist)
         newholding.last_expiration_date = max(expirationlist)
-# Need to add wavg_expiration_date here
+        sidewaysexpirationandweightlist =\
+            [[entry.expiration_date, entry.units_held]
+             for entry in expirationobj]
+        expdates, unitshelds = zip(*sidewaysexpirationandweightlist)
+        newholding.wavg_expiration_date = wavgdate(expdates, unitshelds)
     conversionpricelist = holdingsforuse.exclude(conversion_price=None)\
         .values_list('conversion_price', flat=True)
     if len(conversionpricelist) > 0:
@@ -372,7 +391,7 @@ def refresh_holdingtypes():
     print "done"
 
 
-update_reportingpersons()
-revise_affiliations()
-revise_holdings()
+# update_reportingpersons()
+# revise_affiliations()
+# revise_holdings()
 refresh_holdingtypes()
