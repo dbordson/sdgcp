@@ -29,18 +29,18 @@ def wavgdate(datevector, weightvector):
 
 
 def intrinsicvalcalc(conv_vector, unitsvector, underlyingprice):
-    try:
-        up = underlyingprice
-        inthemoneyvector = [float(max((up - entry), 0))
-                            for entry in conv_vector]
-        # the below line doesn't work with single entry lists
-        if len(inthemoneyvector) == 1:
-            return float(inthemoneyvector[0]) * float(unitsvector)
-        dotproduct = sum(float(p) * float(q)
-                         for p, q in zip(inthemoneyvector, unitsvector))
-        return dotproduct
-    except:
-        return None
+    # try:
+    up = underlyingprice
+    inthemoneyvector = [float(max((up - float(entry)), 0))
+                        for entry in conv_vector]
+    # the below line doesn't work with single entry lists
+    if len(inthemoneyvector) == 1:
+        return float(inthemoneyvector[0]) * float(unitsvector[0])
+    dotproduct = sum(float(p) * float(q)
+                     for p, q in zip(inthemoneyvector, unitsvector))
+    return dotproduct
+    # except:
+        # return None
 
 
 def update_reportingpersons():
