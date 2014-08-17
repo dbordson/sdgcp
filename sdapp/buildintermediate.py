@@ -313,6 +313,25 @@ def revise_holdings():
     print 'done updating holdings'
 
 
+def update_entries_for_new_person_foreign_keys():
+    all_entries = Form345Entry.objects.all()
+    # all_issuer_ciks = IssuerCIK.objects.all()
+    existing_reportingperson = ReportingPerson\
+        .objects.all()
+    print 'adding reporting persons to entries'
+    saveentries = []
+    for entry in all_entries:
+        if entry.reporting_owner_cik is None:
+            entrytosave = entry
+            reporting_owner = existing_reportingperson\
+                .get(reporting_owner_cik_num=entry.reporting_owner_cik_num)
+            entrytosave.reporting_owner_cik = reporting_owner
+            saveentries.append(entrytosave)
+    print 'saving'
+    ReportingPerson.objects.bulk_create(saveentries)
+    print 'done updating form345entry reporting person foreign keys'
+
+
 def new_holdingtype(samp_obj, all_holdings, allentries):
     # tweak below if we need to make sure underlying is distinct)
     holdingsforuse = all_holdings\
@@ -320,8 +339,8 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
         .filter(security_title=samp_obj.security_title)\
         .filter(units_held__gte=0)
     entriesforuse = allentries\
-        .filter(issuer_cik_num=samp_obj.issuer.cik_num)\
-        .filter(reporting_owner_cik_num=samp_obj.owner.reporting_owner_cik_num)
+        .filter(issuer_cik=samp_obj.issuer)\
+        .filter(reporting_owner_cik=samp_obj.owner)
     newholding = HoldingType(issuer=samp_obj.issuer,
                              owner=samp_obj.owner,
                              affiliation=samp_obj.affiliation,
@@ -409,7 +428,8 @@ def refresh_holdingtypes():
     print "done"
 
 
-# update_reportingpersons()
-# revise_affiliations()
-# revise_holdings()
+update_reportingpersons()
+revise_affiliations()
+revise_holdings()
+update_entries_for_new_person_foreign_keys()
 refresh_holdingtypes()
