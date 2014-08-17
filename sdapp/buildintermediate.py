@@ -355,7 +355,7 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
             [[entry.conversion_price, entry.units_held]
              for entry in conversionobj]
         convprices, unitshelds = zip(*sidewaysconversionandunits)
-        newholding.wavg_conversion_price = wavgdate(convprices, unitshelds)
+        newholding.wavg_conversion = wavgdate(convprices, unitshelds)
     underlyingsharelist = holdingsforuse.exclude(underlying_shares=None)\
         .values_list('underlying_shares', flat=True)
     if len(underlyingsharelist) > 0:
@@ -368,8 +368,8 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
     xn_dates = xn_dateobj\
         .values_list('transaction_date', flat=True)
     if len(xn_dates) > 0:
-        newholding.firstxn = min(xn_dateobj)
-        newholding.most_recent_xn = max(xn_dateobj)
+        newholding.first_xn = min(xn_dates)
+        newholding.most_recent_xn = max(xn_dates)
         sidewaysxndatenandweightlist =\
             [[entry.transaction_date, entry.transaction_shares]
              for entry in xn_dateobj]
