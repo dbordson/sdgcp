@@ -413,6 +413,7 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
         newholding.underlying_price = underlyingprice
         conversionobj = holdingsforuse.exclude(conversion_price=None)\
             .exclude(underlying_shares=None).exclude(underlying_shares=0)
+
         conv_prices = conversionobj.values_list('conversion_price',
                                                 flat=True)
         if len(conv_prices) > 0:
@@ -424,6 +425,21 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
                 intrinsicvalcalc(conversionprices,
                                  underlyingshares,
                                  underlyingprice)
+        # If no conversion prices, but it is derivative, treat as excercise
+        # price of zero
+        elif len(conv_prices) == 0 and samp_obj.deriv_or_nonderiv == 'D'\
+                and newholding.underlying_shares is not None:
+            newholding.intrinsic_value =\
+                float(newholding.underlying_shares) * underlyingprice
+        # If no conversion prices and non-derivative, calculate intrinsic
+        # value as units times price
+        # THIS DOES NOT WORK RIGHT FOR PREFERRED STOCK, TWO CLASSES OF
+        # COMMON STOCK; We'll need to fix it.
+        elif len(conv_prices) == 0 and samp_obj.deriv_or_nonderiv == 'N'\
+                and newholding.units_held is not None:
+            newholding.intrinsic_value =\
+                float(newholding.units_held) * underlyingprice
+
 # Need to add underlying_price here
 # Need to add intrinsic_value here
     # tweak here if we need to make sure underlying is distinct
