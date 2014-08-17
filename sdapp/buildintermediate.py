@@ -332,7 +332,8 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
     newholding.units_held =\
         sum(holdingsforuse.exclude(units_held=None)
             .values_list('units_held', flat=True))
-    expirationobj = holdingsforuse.exclude(expiration_date=None)
+    expirationobj = holdingsforuse.exclude(expiration_date=None)\
+        .exclude(units_held=None).exclude(units_held=0)
     expirationlist = expirationobj\
         .values_list('expiration_date', flat=True)
     # Here is where we put in expiration date related fields
@@ -345,7 +346,7 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
         expdates, unitshelds = zip(*sidewaysexpirationandweightlist)
         newholding.wavg_expiration_date = wavgdate(expdates, unitshelds)
     conversionobj = holdingsforuse.exclude(conversion_price=None)\
-        .exclude(units_held=None)
+        .exclude(units_held=None).exclude(units_held=0)
     conversionpricelist = conversionobj\
         .values_list('conversion_price', flat=True)
     if len(conversionpricelist) > 0:
@@ -363,8 +364,8 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
 # Need to add underlying_price here
 # Need to add intrinsic_value here
     # tweak here if we need to make sure underlying is distinct
-    xn_dateobj = entriesforuse.exclude(transaction_shares=None)\
-        .exclude(transaction_date=None)
+    xn_dateobj = entriesforuse.exclude(transaction_date=None)\
+        .exclude(transaction_shares=None).exclude(transaction_shares=0)
     xn_dates = xn_dateobj\
         .values_list('transaction_date', flat=True)
     if len(xn_dates) > 0:
