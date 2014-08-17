@@ -319,15 +319,14 @@ def update_entries_for_new_person_foreign_keys():
     existing_reportingperson = ReportingPerson\
         .objects.all()
     print 'adding reporting persons to entries'
-    saveentries = []
+    # saveentries = []
     for entry in all_entries:
         if entry.reporting_owner_cik is None:
             reportingowner = existing_reportingperson\
                 .get(reporting_owner_cik_num=entry.reporting_owner_cik_num)
             entry.reporting_owner_cik = reportingowner
-            saveentries.append(entry)
-    print 'saving'
-    ReportingPerson.objects.bulk_create(saveentries)
+            entry.save()
+    # ReportingPerson.objects.bulk_create(saveentries)
     print 'done updating form345entry reporting person foreign keys'
 
 
