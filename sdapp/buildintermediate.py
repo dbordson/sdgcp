@@ -15,6 +15,9 @@ def wavgdate(datevector, weightvector):
     try:
         today = datetime.date.today()
         tdvector = [float((entry - today).days) for entry in datevector]
+        # the below line doesn't work with single entry lists
+        if len(tdvector) == 1:
+            return tdvector[0]
         dotproduct = sum(float(p) * float(q)
                          for p, q in zip(tdvector, weightvector))
         denominator = sum(weightvector)
