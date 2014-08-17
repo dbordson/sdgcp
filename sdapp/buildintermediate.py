@@ -320,8 +320,8 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
         .filter(security_title=samp_obj.security_title)\
         .filter(units_held__gte=0)
     entriesforuse = allentries\
-        .filter(issuer_cik=samp_obj.issuer)\
-        .filter(reporting_owner_cik=samp_obj.owner)
+        .filter(issuer_cik_num=samp_obj.issuer.cik_num)\
+        .filter(reporting_owner_cik_num=samp_obj.owner.reporting_owner_cik_num)
     newholding = HoldingType(issuer=samp_obj.issuer,
                              owner=samp_obj.owner,
                              affiliation=samp_obj.affiliation,
@@ -355,7 +355,7 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
             [[entry.conversion_price, entry.units_held]
              for entry in conversionobj]
         convprices, unitshelds = zip(*sidewaysconversionandunits)
-        newholding.wavg_conversion = wavgdate(convprices, unitshelds)
+        newholding.wavg_conversion = weighted_avg(convprices, unitshelds)
     underlyingsharelist = holdingsforuse.exclude(underlying_shares=None)\
         .values_list('underlying_shares', flat=True)
     if len(underlyingsharelist) > 0:
