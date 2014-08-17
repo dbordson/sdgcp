@@ -17,7 +17,7 @@ def wavgdate(datevector, weightvector):
         tdvector = [float((entry - today).days) for entry in datevector]
         # the below line doesn't work with single entry lists
         if len(tdvector) == 1:
-            return tdvector[0]
+            return (today + datetime.timedelta(tdvector[0]))
         dotproduct = sum(float(p) * float(q)
                          for p, q in zip(tdvector, weightvector))
         denominator = sum(weightvector)
@@ -400,7 +400,7 @@ def refresh_holdingtypes():
     print "done"
 
 
-# update_reportingpersons()
-# revise_affiliations()
-# revise_holdings()
+update_reportingpersons()
+revise_affiliations()
+revise_holdings()
 refresh_holdingtypes()
