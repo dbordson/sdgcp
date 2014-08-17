@@ -1,5 +1,5 @@
 from sdapp.models import ReportingPerson, IssuerCIK, Form345Entry,\
-    Affiliation, Holding, HoldingType
+    Affiliation, Holding, HoldingType, ClosePrice, CompanyStockHist
 from django.db import connection
 import datetime
 
@@ -24,6 +24,21 @@ def wavgdate(datevector, weightvector):
         wavgdelta = dotproduct / float(denominator)
         wavg = today + datetime.timedelta(wavgdelta)
         return wavg
+    except:
+        return None
+
+
+def intrinsicvalcalc(conv_vector, unitsvector, underlyingprice):
+    try:
+        up = underlyingprice
+        inthemoneyvector = [float(max((up - entry), 0))
+                            for entry in conv_vector]
+        # the below line doesn't work with single entry lists
+        if len(inthemoneyvector) == 1:
+            return float(inthemoneyvector[0]) * float(unitsvector)
+        dotproduct = sum(float(p) * float(q)
+                         for p, q in zip(inthemoneyvector, unitsvector))
+        return dotproduct
     except:
         return None
 
@@ -349,6 +364,19 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
     newholding.units_held =\
         sum(holdingsforuse.exclude(units_held=None)
             .values_list('units_held', flat=True))
+    # Below finds the underyling value - one possibility for optimization
+    # is to do this once for each company, not each holdingtype.
+    # one easy way to do this would be to add a latest price field to each
+    # issuer CIK, but this means the IssuerCIK model must be updated daily.
+    # I don't think this would create a headache, but I'm not sure.
+    companycik = samp_obj.issuer
+    companystockhist = CompanyStockHist.objects.filter(issuer=companycik)
+    closeprices = ClosePrice.objects.filter(companystockhist=companystockhist)\
+        .order_by('-close_date')
+    underlyingprice = None
+    if len(closeprices) > 0:
+        underlyingprice = closeprices[0].close_price
+
     expirationobj = holdingsforuse.exclude(expiration_date=None)\
         .exclude(units_held=None).exclude(units_held=0)
     expirationlist = expirationobj\
@@ -374,10 +402,28 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
              for entry in conversionobj]
         convprices, unitshelds = zip(*sidewaysconversionandunits)
         newholding.wavg_conversion = weighted_avg(convprices, unitshelds)
+
+    # Here we add underlying price and underlying value
     underlyingsharelist = holdingsforuse.exclude(underlying_shares=None)\
         .values_list('underlying_shares', flat=True)
     if len(underlyingsharelist) > 0:
         newholding.underlying_shares = sum(underlyingsharelist)
+    if underlyingprice is not None:
+
+        newholding.underlying_price = underlyingprice
+        conversionobj = holdingsforuse.exclude(conversion_price=None)\
+            .exclude(underlying_shares=None).exclude(underlying_shares=0)
+        conv_prices = conversionobj.values_list('conversion_price',
+                                                flat=True)
+        if len(conv_prices) > 0:
+            sidewaysconvandunitlist =\
+                [[entry.conversion_price, entry.underlying_shares]
+                 for entry in conversionobj]
+            conversionprices, underlyingshares = zip(*sidewaysconvandunitlist)
+            newholding.intrinsic_value =\
+                intrinsicvalcalc(conversionprices,
+                                 underlyingshares,
+                                 underlyingprice)
 # Need to add underlying_price here
 # Need to add intrinsic_value here
     # tweak here if we need to make sure underlying is distinct
@@ -393,7 +439,6 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
              for entry in xn_dateobj]
         xndates, unitshelds = zip(*sidewaysxndatenandweightlist)
         newholding.wavg_xn_date = wavgdate(xndates, unitshelds)
-# Need to add wavg_xn_date here
     newholding.transactions_included = len(entriesforuse)
     newholding.tranches_included = len(holdingsforuse)
     unitstransactedlist = entriesforuse.exclude(transaction_shares=None)\
@@ -426,8 +471,8 @@ def refresh_holdingtypes():
     print "done"
 
 
-update_reportingpersons()
-revise_affiliations()
-revise_holdings()
-update_entries_for_new_person_foreign_keys()
+# update_reportingpersons()
+# revise_affiliations()
+# revise_holdings()
+# update_entries_for_new_person_foreign_keys()
 refresh_holdingtypes()
