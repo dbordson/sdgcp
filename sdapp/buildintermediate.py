@@ -375,7 +375,7 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
         .order_by('-close_date')
     underlyingprice = None
     if len(closeprices) > 0:
-        underlyingprice = closeprices[0].close_price
+        underlyingprice = float(closeprices[0].close_price)
 
     expirationobj = holdingsforuse.exclude(expiration_date=None)\
         .exclude(units_held=None).exclude(units_held=0)
