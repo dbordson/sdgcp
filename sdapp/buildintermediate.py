@@ -322,11 +322,12 @@ def update_entries_for_new_person_foreign_keys():
     saveentries = []
     for entry in all_entries:
         if entry.reporting_owner_cik is None:
-            entrytosave = entry
-            reporting_owner = existing_reportingperson\
+            reportingowner = existing_reportingperson\
                 .get(reporting_owner_cik_num=entry.reporting_owner_cik_num)
-            entrytosave.reporting_owner_cik = reporting_owner
-            saveentries.append(entrytosave)
+            print reportingowner
+            entry.reporting_owner_cik = reportingowner
+            print entry.reporting_owner_cik
+            saveentries.append(entry)
     print 'saving'
     ReportingPerson.objects.bulk_create(saveentries)
     print 'done updating form345entry reporting person foreign keys'
@@ -428,8 +429,8 @@ def refresh_holdingtypes():
     print "done"
 
 
-update_reportingpersons()
-revise_affiliations()
-revise_holdings()
+# update_reportingpersons()
+# revise_affiliations()
+# revise_holdings()
 update_entries_for_new_person_foreign_keys()
 refresh_holdingtypes()
