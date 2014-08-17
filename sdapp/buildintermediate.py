@@ -342,31 +342,39 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
         sidewaysexpirationandweightlist =\
             [[entry.expiration_date, entry.units_held]
              for entry in expirationobj]
-        # print sidewaysexpirationandweightlist
         expdates, unitshelds = zip(*sidewaysexpirationandweightlist)
-        # print expdates
-        # print unitshelds
         newholding.wavg_expiration_date = wavgdate(expdates, unitshelds)
-        # print wavgdate(expdates, unitshelds)
-    conversionpricelist = holdingsforuse.exclude(conversion_price=None)\
+    conversionobj = holdingsforuse.exclude(conversion_price=None)\
+        .exclude(units_held=None)
+    conversionpricelist = conversionobj\
         .values_list('conversion_price', flat=True)
     if len(conversionpricelist) > 0:
         newholding.min_conversion_price = min(conversionpricelist)
         newholding.max_conversion_price = max(conversionpricelist)
-# Need to add wavg_conversion_price here
+        sidewaysconversionandunits =\
+            [[entry.conversion_price, entry.units_held]
+             for entry in conversionobj]
+        convprices, unitshelds = zip(*sidewaysconversionandunits)
+        newholding.wavg_conversion_price = wavgdate(convprices, unitshelds)
     underlyingsharelist = holdingsforuse.exclude(underlying_shares=None)\
         .values_list('underlying_shares', flat=True)
     if len(underlyingsharelist) > 0:
         newholding.underlying_shares = sum(underlyingsharelist)
-
 # Need to add underlying_price here
 # Need to add intrinsic_value here
     # tweak here if we need to make sure underlying is distinct
-    xn_dates = entriesforuse.exclude(transaction_date=None)\
+    xn_dateobj = entriesforuse.exclude(transaction_shares=None)\
+        .exclude(transaction_date=None)
+    xn_dates = xn_dateobj\
         .values_list('transaction_date', flat=True)
     if len(xn_dates) > 0:
-        newholding.firstxn = min(xn_dates)
-        newholding.most_recent_xn = max(xn_dates)
+        newholding.firstxn = min(xn_dateobj)
+        newholding.most_recent_xn = max(xn_dateobj)
+        sidewaysxndatenandweightlist =\
+            [[entry.transaction_date, entry.transaction_shares]
+             for entry in xn_dateobj]
+        xndates, unitshelds = zip(*sidewaysxndatenandweightlist)
+        newholding.wavg_xn_date = wavgdate(xndates, unitshelds)
 # Need to add wavg_xn_date here
     newholding.transactions_included = len(entriesforuse)
     newholding.tranches_included = len(holdingsforuse)
@@ -400,7 +408,7 @@ def refresh_holdingtypes():
     print "done"
 
 
-update_reportingpersons()
-revise_affiliations()
-revise_holdings()
+# update_reportingpersons()
+# revise_affiliations()
+# revise_holdings()
 refresh_holdingtypes()
