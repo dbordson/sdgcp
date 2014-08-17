@@ -324,9 +324,7 @@ def update_entries_for_new_person_foreign_keys():
         if entry.reporting_owner_cik is None:
             reportingowner = existing_reportingperson\
                 .get(reporting_owner_cik_num=entry.reporting_owner_cik_num)
-            print reportingowner
             entry.reporting_owner_cik = reportingowner
-            print entry.reporting_owner_cik
             saveentries.append(entry)
     print 'saving'
     ReportingPerson.objects.bulk_create(saveentries)
