@@ -426,8 +426,8 @@ def refresh_holdingtypes():
     print "done"
 
 
-# update_reportingpersons()
-# revise_affiliations()
-# revise_holdings()
+update_reportingpersons()
+revise_affiliations()
+revise_holdings()
 update_entries_for_new_person_foreign_keys()
 refresh_holdingtypes()

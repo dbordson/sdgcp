@@ -1,26 +1,28 @@
 <h1>{{ ticker_sym }} Holding Table </h1>
 <table border="1" cellspacing="0" cellpadding="1" style="width:200px">
 <thead>
-    <th style="text-align:left;"  colspan="5">Non-Derivative Holdings</th>
+    <th style="text-align:left;"  colspan="6">Non-Derivative Holdings</th>
 </thead>
 {% for sectitle, holdings in stockholdinglists %}
     <thead>
-        <th colspan="5">{{ sectitle }} Holdings</th>
+        <th colspan="6">{{ sectitle }} Holdings</th>
     </thead>
     <thead>
         <th>Holder</th>
         <th>Title</th>
         <th>Units Held</th>
-        <th>Expiration Date</th>
+        <th>W. Avg. Expiration</th>
         <th>Most Recent Transaction</th>
+        <th>Intrinsic Value</th>
     </thead>
     {% for holding in holdings %}
     <tr>
-        <td style="text-align:center;"><a href="/sdapp/{{ ticker_sym }}/{{ holding.affiliation.reporting_owner_cik_num }}/affiliation">{{ holding.owner }}</a></td>
+        <td style="text-align:center;"><a href="/sdapp/{{ ticker_sym }}/{{ holding.affiliation.reporting_owner_cik_num }}/holdingtypes">{{ holding.owner }}</a></td>
         <td style="text-align:center;">{{ holding.affiliation }}</td>
         <td style="text-align:right;">{{ holding.units_held }}</td>
-        <td style="text-align:center;">{{ holding.expiration_date }}</td>
+        <td style="text-align:center;">{{ holding.wavg_xn_date }}</td>
         <td style="text-align:center;">{{ holding.most_recent_xn }}</td>
+        <td style="text-align:center;">{{ holding.intrinsic_value }}</td>
     </tr>
     {% endfor %}
 
@@ -29,32 +31,34 @@
 
 <table border="1" cellspacing="0" cellpadding="1" style="width:200px">
 <thead>
-    <th style="text-align:left;" colspan="8">Derivative Holdings</th>
+    <th style="text-align:left;" colspan="9">Derivative Holdings</th>
 </thead>
 {% for sectitle, holdings in derivholdinglists %}
     <thead>
-        <th colspan="8">{{ sectitle }} Holdings</th>
+        <th colspan="9">{{ sectitle }} Holdings</th>
     </thead>
     <thead>
         <th>Holder</th>
         <th>Title</th>
         <th>Units Held</th>
-        <th>Expiration Date</th>
-        <th>Conversion Price</th>
+        <th>W. Avg. Expiration</th>
+        <th>W. Avg. Conversion Price</th>
         <th>Underlying Title</th>
         <th>Underlying Shares</th>
         <th>Most Recent Transaction</th>
+        <th>Intrinsic Value</th>
     </thead>
     {% for holding in holdings %}
     <tr>
-        <td style="text-align:center;"><a href="/sdapp/{{ ticker_sym }}/{{ holding.affiliation.reporting_owner_cik_num }}/affiliation">{{ holding.owner }}</a></td>
+        <td style="text-align:center;"><a href="/sdapp/{{ ticker_sym }}/{{ holding.affiliation.reporting_owner_cik_num }}/holdingtypes">{{ holding.owner }}</a></td>
         <td style="text-align:center;">{{ holding.affiliation }}</td>
         <td style="text-align:right;">{{ holding.units_held }}</td>
-        <td style="text-align:center;">{{ holding.expiration_date }}</td>
-        <th style="text-align:center;">{{ holding.conversion_price }}</td>
+        <td style="text-align:center;">{{ holding.wavg_expiration_date }}</td>
+        <th style="text-align:center;">{{ holding.wavg_conversion }}</td>
         <td style="text-align:center;">{{ holding.underlying_title }}</td>
         <td style="text-align:center;">{{ holding.underlying_shares }}</td>
         <td style="text-align:center;">{{ holding.most_recent_xn }}</td>
+        <td style="text-align:center;">{{ holding.intrinsic_value }}</td>
     </tr>
     {% endfor %}
 

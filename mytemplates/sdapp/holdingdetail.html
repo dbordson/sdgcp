@@ -17,7 +17,7 @@
     {% for entry in holdinglist %}
     <tr>
         <td style="text-align:center;">{{ entry.issuer }}</td>
-        <td style="text-align:center;"><a href="/sdapp/{{ ticker_sym }}/{{ entry.affiliation.reporting_owner_cik_num }}/affiliation">{{ entry.owner }}</a></td>
+        <td style="text-align:center;"><a href="/sdapp/{{ ticker_sym }}/{{ entry.affiliation.reporting_owner_cik_num }}/affiliations">{{ entry.owner }}</a></td>
         <td style="text-align:center;">{{ entry.affiliation }}</td>
         <td style="text-align:center;">{{ entry.security_title }}</td>
         <td style="text-align:center;">{{ entry.units_held }}</td>

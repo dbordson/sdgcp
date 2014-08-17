@@ -1,6 +1,6 @@
 from django.shortcuts import render_to_response
 from sdapp.models import CompanyStockHist, ClosePrice, IssuerCIK,\
-    Form345Entry, Affiliation, Holding
+    Form345Entry, Affiliation, Holding, HoldingType
 import datetime
 
 
@@ -59,9 +59,9 @@ def holdingtable(request, ticker_sym):
     startdate = datetime.date.today() - datetime.timedelta(lookbackdays)
     affiliationset = Affiliation.objects.filter(issuer=issuer)\
         .filter(most_recent_filing__gte=startdate)
-    holdingset = Holding.objects.filter(issuer=issuer)\
+    holdingset = HoldingType.objects.filter(issuer=issuer)\
         .filter(affiliation__in=affiliationset).order_by('owner')\
-        .exclude(units_held=0.0)
+        .exclude(units_held=0.0).exclude(units_held=None)
     stockholdingset = holdingset.filter(deriv_or_nonderiv='N')
     stockholdingtitles = list(set(stockholdingset
                               .values_list('security_title', flat=True)
@@ -72,11 +72,11 @@ def holdingtable(request, ticker_sym):
         stockholdinglist.append(title)
         titleholdings = stockholdingset.filter(security_title=title)\
             .order_by('-units_held')[:5]
-        print titleholdings.values_list('owner', flat=True)
+        # print titleholdings.values_list('owner', flat=True)
         stockholdinglist.append(titleholdings)
         stockholdinglists.append(stockholdinglist)
-        print title
-        print stockholdinglist
+        # print title
+        # print stockholdinglist
 
     derivholdingset = holdingset.filter(deriv_or_nonderiv='D')
     derivholdingtitles = list(set(derivholdingset
@@ -90,7 +90,7 @@ def holdingtable(request, ticker_sym):
             .order_by('-units_held')[:5]
         derivholdinglist.append(titleholdings)
         derivholdinglists.append(derivholdinglist)
-    print stockholdinglists
+    # print stockholdinglists
     return render_to_response('sdapp/holdingtable.html',
                               {'ticker_sym': ticker_sym,
                                'startdate': startdate,
@@ -112,3 +112,22 @@ def individualaffiliation(request, ticker_sym, reporting_owner_cik_num):
                                'affiliation': affiliation,
                                'issuer': issuer,
                                'holdinglist': holdinglist})
+
+
+def holdingtypes(request, ticker_sym, reporting_owner_cik_num):
+    issuer = \
+        IssuerCIK.objects.filter(companystockhist__ticker_sym=ticker_sym)[0]
+    affiliation = Affiliation.objects.filter(
+        reporting_owner_cik_num=reporting_owner_cik_num)[0]
+    holdingtypelist = HoldingType.objects.filter(affiliation=affiliation)
+    # These should be reordered by intrinsic economic value, once available
+    derivativehtypes = holdingtypelist.filter(deriv_or_nonderiv='D')\
+        .order_by('-units_held')
+    nonderivativehtypes = holdingtypelist.filter(deriv_or_nonderiv='N')\
+        .order_by('-units_held')
+    return render_to_response('sdapp/holdingtypes.html',
+                              {'ticker_sym': ticker_sym,
+                               'affiliation': affiliation,
+                               'issuer': issuer,
+                               'derivativehtypes': derivativehtypes,
+                               'nonderivativehtypes': nonderivativehtypes})
