@@ -466,7 +466,8 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
 
 def refresh_holdingtypes():
     allentries = Form345Entry.objects.exclude(transaction_date=None)
-    all_holdings = Holding.objects.exclude(most_recent_xn=None)
+    all_holdings = Holding.objects.exclude(most_recent_xn=None)\
+        .exclude(units_held=0)
     all_holdingtypes = HoldingType.objects.exclude(most_recent_xn=None)
     newholdingtypes = []
     print 'building HoldingType list'
@@ -509,12 +510,14 @@ def refresh_holdingtypes():
     print "done"
 
 
-def new_aggholdingtype(samp_obj, all_holdings, allentries):
+def new_aggholdingtype(samp_obj, all_holdings, all_holdingtypes, allentries):
     # tweak below if we need to make sure underlying is distinct)
     holdingsforuse = all_holdings\
         .filter(issuer=samp_obj.issuer)\
         .filter(security_title=samp_obj.security_title)\
         .filter(units_held__gte=0)
+    holdingtypesforuse = all_holdingtypes\
+        .filter(issuer=samp_obj.issuer)
     entriesforuse = allentries\
         .filter(issuer_cik=samp_obj.issuer)
     newholding = AggHoldingType(issuer=samp_obj.issuer,
@@ -523,7 +526,7 @@ def new_aggholdingtype(samp_obj, all_holdings, allentries):
                                 underlying_title=samp_obj.underlying_title)
 
     newholding.units_held =\
-        sum(holdingsforuse.exclude(units_held=None)
+        sum(holdingtypesforuse.exclude(units_held=None)
             .values_list('units_held', flat=True))
     # Below finds the underyling value - one possibility for optimization
     # is to do this once for each company, not each holdingtype.
@@ -626,7 +629,9 @@ def new_aggholdingtype(samp_obj, all_holdings, allentries):
 
 def refresh_aggholdingtypes():
     allentries = Form345Entry.objects.exclude(transaction_date=None)
-    all_holdings = Holding.objects.exclude(most_recent_xn=None)
+    all_holdings = Holding.objects.exclude(most_recent_xn=None)\
+        .exclude(units_held=0)
+    all_holdingtypes = HoldingType.objects.exclude(most_recent_xn=None)
     all_aggholdingtypes = AggHoldingType.objects.exclude(most_recent_xn=None)
     newaggholdingtypes = []
     print 'building AggHoldingType list'
@@ -664,6 +669,7 @@ def refresh_aggholdingtypes():
         else:
             newaggholdingtypes.append(new_aggholdingtype(item,
                                                          all_holdings,
+                                                         all_holdingtypes,
                                                          allentries))
     AggHoldingType.objects.bulk_create(newaggholdingtypes)
     print "done"
