@@ -1,6 +1,6 @@
 from sdapp.models import ReportingPerson, IssuerCIK, Form345Entry,\
     Affiliation, Holding, HoldingType, ClosePrice, CompanyStockHist
-from django.db import connection
+# from django.db import connection
 import datetime
 
 
@@ -466,8 +466,9 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
 
 
 def refresh_holdingtypes():
-    allentries = Form345Entry.objects.all()
-    all_holdings = Holding.objects.all()
+    allentries = Form345Entry.objects.exclude(transaction_date=None)
+    all_holdings = Holding.objects.exclude(most_recent_xn=None)
+    all_holdingtypes = HoldingType.objects.exclude(most_recent_xn=None)
     newholdingtypes = []
     print 'building HoldingType list'
     distinctholdtypes = all_holdings.distinct('affiliation', 'security_title')
@@ -478,11 +479,31 @@ def refresh_holdingtypes():
                 float(int(10*(count-1)/looplength)):
             print int(count/looplength*100), 'percent'
         count += 1.0
-        newholdingtypes.append(new_holdingtype(item, all_holdings, allentries))
+        itemholdingtypes = all_holdingtypes\
+            .filter(affiliation=item.affiliation)\
+            .filter(security_title=item.security_title)
+        if len(itemholdingtypes) != 0:
+            itemholdings = all_holdings\
+                .filter(affiliation=item.affiliation)\
+                .filter(security_title=item.security_title)
+            latestholding = itemholdings.latest('most_recent_xn')
+            itemholdingtype = itemholdingtypes[0]
+            if itemholdingtype.most_recent_xn != \
+                    latestholding.most_recent_xn:
+                newholdingtype = new_holdingtype(item,
+                                                 all_holdings,
+                                                 allentries)
+                newholdingtype.id = itemholdingtype.id
+                newholdingtype.save()
 
-    cursor = connection.cursor()
-    cursor.execute("TRUNCATE TABLE sdapp_holdingtype")
-    print "prior holdingtype data deleted"
+        else:
+            newholdingtypes.append(new_holdingtype(item,
+                                                   all_holdings,
+                                                   allentries))
+
+    # cursor = connection.cursor()
+    # cursor.execute("TRUNCATE TABLE sdapp_holdingtype")
+    # print "prior holdingtype data deleted"
     HoldingType.objects.bulk_create(newholdingtypes)
     print "done"
 
@@ -492,3 +513,4 @@ def refresh_holdingtypes():
 # revise_holdings()
 # update_entries_for_new_person_foreign_keys()
 refresh_holdingtypes()
+# refresh_aggholdingtypes()
