@@ -1,5 +1,6 @@
 from sdapp.models import ReportingPerson, IssuerCIK, Form345Entry,\
-    Affiliation, Holding, HoldingType, ClosePrice, CompanyStockHist
+    Affiliation, Holding, HoldingType, ClosePrice, CompanyStockHist,\
+    AggHoldingType
 # from django.db import connection
 import datetime
 
@@ -440,8 +441,6 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
             newholding.intrinsic_value =\
                 float(newholding.units_held) * underlyingprice
 
-# Need to add underlying_price here
-# Need to add intrinsic_value here
     # tweak here if we need to make sure underlying is distinct
     xn_dateobj = entriesforuse.exclude(transaction_date=None)\
         .exclude(transaction_shares=None).exclude(transaction_shares=0)
@@ -510,9 +509,169 @@ def refresh_holdingtypes():
     print "done"
 
 
-update_reportingpersons()
-revise_affiliations()
-revise_holdings()
-update_entries_for_new_person_foreign_keys()
+def new_aggholdingtype(samp_obj, all_holdings, allentries):
+    # tweak below if we need to make sure underlying is distinct)
+    holdingsforuse = all_holdings\
+        .filter(issuer=samp_obj.issuer)\
+        .filter(security_title=samp_obj.security_title)\
+        .filter(units_held__gte=0)
+    entriesforuse = allentries\
+        .filter(issuer_cik=samp_obj.issuer)
+    newholding = AggHoldingType(issuer=samp_obj.issuer,
+                                security_title=samp_obj.security_title,
+                                deriv_or_nonderiv=samp_obj.deriv_or_nonderiv,
+                                underlying_title=samp_obj.underlying_title)
+
+    newholding.units_held =\
+        sum(holdingsforuse.exclude(units_held=None)
+            .values_list('units_held', flat=True))
+    # Below finds the underyling value - one possibility for optimization
+    # is to do this once for each company, not each holdingtype.
+    # one easy way to do this would be to add a latest price field to each
+    # issuer CIK, but this means the IssuerCIK model must be updated daily.
+    # I don't think this would create a headache, but I'm not sure.
+    companycik = samp_obj.issuer
+    companystockhist = CompanyStockHist.objects.filter(issuer=companycik)
+    closeprices = ClosePrice.objects.filter(companystockhist=companystockhist)\
+        .order_by('-close_date')
+    underlyingprice = None
+    if len(closeprices) > 0:
+        underlyingprice = float(closeprices[0].close_price)
+
+    expirationobj = holdingsforuse.exclude(expiration_date=None)\
+        .exclude(units_held=None).exclude(units_held=0)
+    expirationlist = expirationobj\
+        .values_list('expiration_date', flat=True)
+    # Here is where we put in expiration date related fields
+    if len(expirationlist) > 0:
+        newholding.first_expiration_date = min(expirationlist)
+        newholding.last_expiration_date = max(expirationlist)
+        sidewaysexpirationandweightlist =\
+            [[entry.expiration_date, entry.units_held]
+             for entry in expirationobj]
+        expdates, unitshelds = zip(*sidewaysexpirationandweightlist)
+        newholding.wavg_expiration_date = wavgdate(expdates, unitshelds)
+    conversionobj = holdingsforuse.exclude(conversion_price=None)\
+        .exclude(units_held=None).exclude(units_held=0)
+    conversionpricelist = conversionobj\
+        .values_list('conversion_price', flat=True)
+    if len(conversionpricelist) > 0:
+        newholding.min_conversion_price = min(conversionpricelist)
+        newholding.max_conversion_price = max(conversionpricelist)
+        sidewaysconversionandunits =\
+            [[entry.conversion_price, entry.units_held]
+             for entry in conversionobj]
+        convprices, unitshelds = zip(*sidewaysconversionandunits)
+        newholding.wavg_conversion = weighted_avg(convprices, unitshelds)
+
+    # Here we add underlying price and underlying value
+    underlyingsharelist = holdingsforuse.exclude(underlying_shares=None)\
+        .values_list('underlying_shares', flat=True)
+    if len(underlyingsharelist) > 0:
+        newholding.underlying_shares = sum(underlyingsharelist)
+    if underlyingprice is not None:
+
+        newholding.underlying_price = underlyingprice
+        conversionobj = holdingsforuse.exclude(conversion_price=None)\
+            .exclude(underlying_shares=None).exclude(underlying_shares=0)
+
+        conv_prices = conversionobj.values_list('conversion_price',
+                                                flat=True)
+        if len(conv_prices) > 0:
+            sidewaysconvandunitlist =\
+                [[entry.conversion_price, entry.underlying_shares]
+                 for entry in conversionobj]
+            conversionprices, underlyingshares = zip(*sidewaysconvandunitlist)
+            newholding.intrinsic_value =\
+                intrinsicvalcalc(conversionprices,
+                                 underlyingshares,
+                                 underlyingprice)
+        # If no conversion prices, but it is derivative, treat as excercise
+        # price of zero
+        elif len(conv_prices) == 0 and samp_obj.deriv_or_nonderiv == 'D'\
+                and newholding.underlying_shares is not None:
+            newholding.intrinsic_value =\
+                float(newholding.underlying_shares) * underlyingprice
+        # If no conversion prices and non-derivative, calculate intrinsic
+        # value as units times price
+        # THIS DOES NOT WORK RIGHT FOR PREFERRED STOCK, TWO CLASSES OF
+        # COMMON STOCK; We'll need to fix it.
+        elif len(conv_prices) == 0 and samp_obj.deriv_or_nonderiv == 'N'\
+                and newholding.units_held is not None:
+            newholding.intrinsic_value =\
+                float(newholding.units_held) * underlyingprice
+
+    # tweak here if we need to make sure underlying is distinct
+    xn_dateobj = entriesforuse.exclude(transaction_date=None)\
+        .exclude(transaction_shares=None).exclude(transaction_shares=0)
+    xn_dates = xn_dateobj\
+        .values_list('transaction_date', flat=True)
+    if len(xn_dates) > 0:
+        newholding.first_xn = min(xn_dates)
+        newholding.most_recent_xn = max(xn_dates)
+        sidewaysxndatenandweightlist =\
+            [[entry.transaction_date, entry.transaction_shares]
+             for entry in xn_dateobj]
+        xndates, unitshelds = zip(*sidewaysxndatenandweightlist)
+        newholding.wavg_xn_date = wavgdate(xndates, unitshelds)
+    newholding.transactions_included = len(entriesforuse)
+    newholding.tranches_included = len(holdingsforuse)
+    unitstransactedlist = entriesforuse.exclude(transaction_shares=None)\
+        .values_list('transaction_shares', flat=True)
+    if len(unitstransactedlist) > 0:
+        newholding.units_transacted = sum(unitstransactedlist)
+
+    return newholding
+
+
+def refresh_aggholdingtypes():
+    allentries = Form345Entry.objects.exclude(transaction_date=None)
+    all_holdings = Holding.objects.exclude(most_recent_xn=None)
+    all_aggholdingtypes = AggHoldingType.objects.exclude(most_recent_xn=None)
+    newaggholdingtypes = []
+    print 'building AggHoldingType list'
+    distinctaggholdtypes = all_holdings.distinct('issuer',
+                                                 'security_title')
+    looplength = float(len(distinctaggholdtypes))
+    count = 0.0
+    for item in distinctaggholdtypes:
+        if float(int(10*count/looplength)) !=\
+                float(int(10*(count-1)/looplength)):
+            print int(count/looplength*100), 'percent'
+        count += 1.0
+        itemaggholdingtypes = all_aggholdingtypes\
+            .filter(issuer=item.issuer)\
+            .filter(security_title=item.security_title)\
+            .filter(units_held__gte=0)
+        if len(itemaggholdingtypes) != 0:
+            entriesforuse = allentries\
+                .filter(issuer_cik=item.issuer)\
+                .exclude(transaction_date=None)\
+                .exclude(transaction_shares=None)\
+                .exclude(transaction_shares=0)\
+                .order_by('-transaction_date')
+
+            latestentry = entriesforuse[0]
+            itemaggholdingtype = itemaggholdingtypes[0]
+            if itemaggholdingtype.most_recent_xn != \
+                    latestentry.transaction_date:
+                newholdingtype = new_aggholdingtype(item,
+                                                    all_holdings,
+                                                    allentries)
+                newholdingtype.id = itemaggholdingtype.id
+                newholdingtype.save()
+
+        else:
+            newaggholdingtypes.append(new_aggholdingtype(item,
+                                                         all_holdings,
+                                                         allentries))
+    AggHoldingType.objects.bulk_create(newaggholdingtypes)
+    print "done"
+
+
+# update_reportingpersons()
+# revise_affiliations()
+# revise_holdings()
+# update_entries_for_new_person_foreign_keys()
 refresh_holdingtypes()
-# refresh_aggholdingtypes()
+refresh_aggholdingtypes()
