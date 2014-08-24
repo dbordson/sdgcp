@@ -484,12 +484,6 @@ def refresh_holdingtypes():
             .filter(security_title=item.security_title)\
             .filter(units_held__gte=0)
         if len(itemholdingtypes) != 0:
-            # itemholdings = all_holdings\
-            #     .filter(affiliation=item.affiliation)\
-            #     .filter(security_title=item.security_title)\
-            #     .filter(units_held__gte=0)\
-            #     .order_by('-most_recent_xn')
-
             entriesforuse = allentries\
                 .filter(issuer_cik=item.issuer)\
                 .filter(reporting_owner_cik=item.owner)\
@@ -502,7 +496,6 @@ def refresh_holdingtypes():
             itemholdingtype = itemholdingtypes[0]
             if itemholdingtype.most_recent_xn != \
                     latestentry.transaction_date:
-                print "update date", itemholdingtype.most_recent_xn, latestentry.transaction_date
                 newholdingtype = new_holdingtype(item,
                                                  all_holdings,
                                                  allentries)
@@ -510,21 +503,16 @@ def refresh_holdingtypes():
                 newholdingtype.save()
 
         else:
-            print "else triggered"
             newholdingtypes.append(new_holdingtype(item,
                                                    all_holdings,
                                                    allentries))
-
-    # cursor = connection.cursor()
-    # cursor.execute("TRUNCATE TABLE sdapp_holdingtype")
-    # print "prior holdingtype data deleted"
     HoldingType.objects.bulk_create(newholdingtypes)
     print "done"
 
 
-# update_reportingpersons()
-# revise_affiliations()
-# revise_holdings()
-# update_entries_for_new_person_foreign_keys()
+update_reportingpersons()
+revise_affiliations()
+revise_holdings()
+update_entries_for_new_person_foreign_keys()
 refresh_holdingtypes()
 # refresh_aggholdingtypes()
