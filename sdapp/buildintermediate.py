@@ -499,12 +499,10 @@ def refresh_holdingtypes():
                 .order_by('-transaction_date')
 
             latestentry = entriesforuse[0]
-            print "len itemholdingtypes", len(itemholdingtypes)
             itemholdingtype = itemholdingtypes[0]
-            print "set not empty"
             if itemholdingtype.most_recent_xn != \
                     latestentry.transaction_date:
-                print "update date", itemholdingtype.most_recent_xn, latestentry.most_recent_xn
+                print "update date", itemholdingtype.most_recent_xn, latestentry.transaction_date
                 newholdingtype = new_holdingtype(item,
                                                  all_holdings,
                                                  allentries)
