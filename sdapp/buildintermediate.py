@@ -481,15 +481,30 @@ def refresh_holdingtypes():
         count += 1.0
         itemholdingtypes = all_holdingtypes\
             .filter(affiliation=item.affiliation)\
-            .filter(security_title=item.security_title)
+            .filter(security_title=item.security_title)\
+            .filter(units_held__gte=0)
         if len(itemholdingtypes) != 0:
-            itemholdings = all_holdings\
-                .filter(affiliation=item.affiliation)\
-                .filter(security_title=item.security_title)
-            latestholding = itemholdings.latest('most_recent_xn')
+            # itemholdings = all_holdings\
+            #     .filter(affiliation=item.affiliation)\
+            #     .filter(security_title=item.security_title)\
+            #     .filter(units_held__gte=0)\
+            #     .order_by('-most_recent_xn')
+
+            entriesforuse = allentries\
+                .filter(issuer_cik=item.issuer)\
+                .filter(reporting_owner_cik=item.owner)\
+                .exclude(transaction_date=None)\
+                .exclude(transaction_shares=None)\
+                .exclude(transaction_shares=0)\
+                .order_by('-transaction_date')
+
+            latestentry = entriesforuse[0]
+            print "len itemholdingtypes", len(itemholdingtypes)
             itemholdingtype = itemholdingtypes[0]
+            print "set not empty"
             if itemholdingtype.most_recent_xn != \
-                    latestholding.most_recent_xn:
+                    latestentry.transaction_date:
+                print "update date", itemholdingtype.most_recent_xn, latestentry.most_recent_xn
                 newholdingtype = new_holdingtype(item,
                                                  all_holdings,
                                                  allentries)
@@ -497,6 +512,7 @@ def refresh_holdingtypes():
                 newholdingtype.save()
 
         else:
+            print "else triggered"
             newholdingtypes.append(new_holdingtype(item,
                                                    all_holdings,
                                                    allentries))
