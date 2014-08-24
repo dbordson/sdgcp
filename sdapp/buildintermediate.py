@@ -517,7 +517,8 @@ def new_aggholdingtype(samp_obj, all_holdings, all_holdingtypes, allentries):
         .filter(security_title=samp_obj.security_title)\
         .filter(units_held__gte=0)
     holdingtypesforuse = all_holdingtypes\
-        .filter(issuer=samp_obj.issuer)
+        .filter(issuer=samp_obj.issuer)\
+        .filter(security_title=samp_obj.security_title)
     entriesforuse = allentries\
         .filter(issuer_cik=samp_obj.issuer)
     newholding = AggHoldingType(issuer=samp_obj.issuer,
