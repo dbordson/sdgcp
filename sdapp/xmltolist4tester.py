@@ -1,6 +1,5 @@
-
 # import json
-import os
+# import os
 import xmlmanager
 import xmltolist4
 from sdapp.models import IssuerCIK, Form345Entry
@@ -127,7 +126,7 @@ def formentryinsert(form):
         int_id = str(entry[0]) + str(entry[1]) + str(entry[2]) +\
             'N' + str(entry[22]) + '-' + str(entry[27])
         if int_id not in id_list and str(int(entry[1])) in existingciks:
-            
+
             is_director = binary_to_boolean(str(entry[4]))
             is_officer = binary_to_boolean(str(entry[5]))
             is_ten_percent = binary_to_boolean(str(entry[6]))
@@ -221,35 +220,6 @@ def formentryinsert(form):
     print 'saving'
     Form345Entry.objects.bulk_create(entries)
     print 'done'
-    # Derivative Transaction List Key:
-    # [0] = Period Of Report
-    # [1] = Issuer CIK
-    # [2] = Reporting Owner CIK
-    # [3] = Reporting Owner Name
-    # [4] = Is the Reporting Owner a Director?
-    # [5] = Is the Reporting Owner an Officer?
-    # [6] = Is the Reporting Owner a Ten Percent Owner?
-    # [7] = Is the Reporting Owner Something Else?
-    # [8] = Reporting Owner Officer Title
-    # [9] = Security Title
-    # [10] = Conversion Price
-    # [11] = Transaction Date
-    # [12] = Transaction Code
-    # [13] = Shares in Transaction
-    # [14] = Transaction Price Per Share
-    # [15] = Transaction Acquired/Disposed Code
-    # [16] = Expiration Date
-    # [17] = Underlying Security Title
-    # [18] = Underlying Security Shares
-    # [19] = Shares Owned Following Transaction
-    # [20] = Direct Or Indirect Ownership
-    # [21] = 1 if a "10b5-1" footnote is present
-    # [22] = Derivative Transaction Number (on that Form 4)
-    # [23] = Source File Name/Partial Path
-    # [24] = (form 5 only) Not Subject To Section 16
-    # [25] = (form 5 only) Form 3 Holdings Reported
-    # [26] = (form 5 only) Form 4 Transactions Reported
-    # [27] = Form Type
 
 
 def formiteration():
@@ -264,15 +234,4 @@ formiteration()
 # In case you have a hard time starting up the program, here is what
 # the output looks like:
 
-#[['2014-01-02', '0000882095', '0001190578', 'MARTIN JOHN C',
-# 'Common Stock', '2014-01-02', 'M', 140625, 8.005, 'A', 4197746],
-# ['2014-01-02', '0000882095', '0001190578', 'MARTIN JOHN C',
-# 'Common Stock', '2014-01-02', 'S', 140625, 75.0235, 'D',
-# 4057121]]
-
-#This drops the code into lists of lists (it looks like
-#sometimes people call these 2d lists)
-#5 minutes of research indicates that this may be fairly
-#Straightforward to put into mysql, but I have not learned
-#much about it yet, so I don't know if that will be done
-#as easily as I just said it.
+#This drops the code into lists of lists

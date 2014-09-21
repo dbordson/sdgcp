@@ -67,7 +67,7 @@ def xn4parse(xmlfilename):
                           None,  'err', 'err', 'err', 'err',
                           'err', None,  None,  None,  'err',
                           'err',    0,  'err', 'err', None,
-                          None,  None,    '4']
+                          None,  None,    '4', 'err']
             NonDerivXn[0] = textattribute(root.find('periodOfReport'))
             NonDerivXn[1] = textattribute(root.find('issuer/issuerCik'))
             NonDerivXn[2] = textattribute(root.find(
@@ -108,13 +108,13 @@ def xn4parse(xmlfilename):
             # For the type of filer (officer, director, etc.) sometimes a
             # negative response is 0 and sometimes it is an omission. The below
             # code conforms these conventions.
-            if NonDerivXn[4] == None:
+            if NonDerivXn[4] is None:
                 NonDerivXn[4] = '0'
-            if NonDerivXn[5] == None:
+            if NonDerivXn[5] is None:
                 NonDerivXn[5] = '0'
-            if NonDerivXn[6] == None:
+            if NonDerivXn[6] is None:
                 NonDerivXn[6] = '0'
-            if NonDerivXn[7] == None:
+            if NonDerivXn[7] is None:
                 NonDerivXn[7] = '0'
 
             # Handles errors due to blank officer title entry for non-officer
@@ -131,6 +131,7 @@ def xn4parse(xmlfilename):
             NonDerivXn[22] = NonDerivXnNumber
             NonDerivXn[23] = xmlfilename[lencwd:]
             NonDerivXn[27] = textattribute(root.find('documentType'))
+            NonDerivXn[28] = textattribute(root.find('dateandtime'))
             NonDerivXnNumber += 1
             #print NonDerivXn
             NonDerivXns.append(NonDerivXn)
@@ -149,7 +150,7 @@ def xn4parse(xmlfilename):
                        'err', 'err', 'err', 'err', 'err',
                        'err', 'err', 'err', 'err', 'err',
                        'err',    0,  'err', 'err', None,
-                       None,  None,    '4']
+                       None,  None,    '4', 'err']
             DerivXn[0] = textattribute(root.find('periodOfReport'))
             DerivXn[1] = textattribute(root.find('issuer/issuerCik'))
             DerivXn[2] = textattribute(root.find(
@@ -193,13 +194,13 @@ def xn4parse(xmlfilename):
             # For the type of filer (officer, director, etc.) sometimes a
             # negative response is 0 and sometimes it is an omission. The below
             # code conforms these conventions.
-            if DerivXn[4] == None:
+            if DerivXn[4] is None:
                 DerivXn[4] = '0'
-            if DerivXn[5] == None:
+            if DerivXn[5] is None:
                 DerivXn[5] = '0'
-            if DerivXn[6] == None:
+            if DerivXn[6] is None:
                 DerivXn[6] = '0'
-            if DerivXn[7] == None:
+            if DerivXn[7] is None:
                 DerivXn[7] = '0'
 
             # Handles errors due to blank officer title entry for non-officer
@@ -231,6 +232,7 @@ def xn4parse(xmlfilename):
             DerivXn[22] = DerivXnNumber
             DerivXn[23] = xmlfilename[lencwd:]
             DerivXn[27] = textattribute(root.find('documentType'))
+            DerivXn[28] = textattribute(root.find('dateandtime'))
             DerivXnNumber += 1
             #print DerivXn
             DerivXns.append(DerivXn)
@@ -271,7 +273,7 @@ def xn5parse(xmlfilename):
                           None,  'err', 'err', 'err', 'err',
                           'err', None,  None,  None,  'err',
                           'err',    0,  'err', 'err', 'err',
-                          'err', 'err',   '5']
+                          'err', 'err',   '5', 'err']
             NonDerivXn[0] = textattribute(root.find('periodOfReport'))
             NonDerivXn[1] = textattribute(root.find('issuer/issuerCik'))
             NonDerivXn[2] = textattribute(root.find(
@@ -312,13 +314,13 @@ def xn5parse(xmlfilename):
             # For the type of filer (officer, director, etc.) sometimes a
             # negative response is 0 and sometimes it is an omission. The below
             # code conforms these conventions.
-            if NonDerivXn[4] == None:
+            if NonDerivXn[4] is None:
                 NonDerivXn[4] = '0'
-            if NonDerivXn[5] == None:
+            if NonDerivXn[5] is None:
                 NonDerivXn[5] = '0'
-            if NonDerivXn[6] == None:
+            if NonDerivXn[6] is None:
                 NonDerivXn[6] = '0'
-            if NonDerivXn[7] == None:
+            if NonDerivXn[7] is None:
                 NonDerivXn[7] = '0'
 
             # Handles errors due to blank officer title entry for non-officer
@@ -339,6 +341,7 @@ def xn5parse(xmlfilename):
             NonDerivXn[25] = textattribute(root.find('form3HoldingsReported'))
             NonDerivXn[26] = textattribute(root.find(
                 'form4TransactionsReported'))
+            NonDerivXn[28] = textattribute(root.find('dateandtime'))
             NonDerivXnNumber += 1
             #print NonDerivXn
             NonDerivXns.append(NonDerivXn)
@@ -357,7 +360,7 @@ def xn5parse(xmlfilename):
                        'err', 'err', 'err', 'err', 'err',
                        'err', 'err', 'err', 'err', 'err',
                        'err',    0,  'err', 'err', 'err'
-                       'err', 'err',   '5']
+                       'err', 'err',   '5', 'err']
             DerivXn[0] = textattribute(root.find('periodOfReport'))
             DerivXn[1] = textattribute(root.find('issuer/issuerCik'))
             DerivXn[2] = textattribute(root.find(
@@ -400,13 +403,13 @@ def xn5parse(xmlfilename):
             # For the type of filer (officer, director, etc.) sometimes a
             # negative response is 0 and sometimes it is an omission. The below
             # code conforms these conventions.
-            if DerivXn[4] == None:
+            if DerivXn[4] is None:
                 DerivXn[4] = '0'
-            if DerivXn[5] == None:
+            if DerivXn[5] is None:
                 DerivXn[5] = '0'
-            if DerivXn[6] == None:
+            if DerivXn[6] is None:
                 DerivXn[6] = '0'
-            if DerivXn[7] == None:
+            if DerivXn[7] is None:
                 DerivXn[7] = '0'
 
             # Handles errors due to blank officer title entry for non-officer
@@ -438,10 +441,11 @@ def xn5parse(xmlfilename):
             DerivXn[22] = DerivXnNumber
             DerivXn[23] = xmlfilename[lencwd:]
             #These are solely related to Form 5
-            NonDerivXn[24] = textattribute(root.find('notSubjectToSection16'))
-            NonDerivXn[25] = textattribute(root.find('form3HoldingsReported'))
-            NonDerivXn[26] = textattribute(root.find(
+            DerivXn[24] = textattribute(root.find('notSubjectToSection16'))
+            DerivXn[25] = textattribute(root.find('form3HoldingsReported'))
+            DerivXn[26] = textattribute(root.find(
                 'form4TransactionsReported'))
+            DerivXn[28] = textattribute(root.find('dateandtime'))
             DerivXnNumber += 1
             #print DerivXn
             DerivXns.append(DerivXn)
@@ -489,10 +493,10 @@ def xn3parse(xmlfilename):
             #print "Found a grandchild"
             NonDerivH = ['err', 'err', 'err', 'err', 'err',
                          'err', 'err', 'err', 'err', 'err',
-                         None,  None,  None,  None,  None, 
+                         None,  None,  None,  None,  None,
                          None,  None,  None,  None,  'err',
-                         'err',    0,  'err', 'err', None, 
-                         None,  None,    '3']
+                         'err',    0,  'err', 'err', None,
+                         None,  None,    '3', 'err']
             NonDerivH[0] = textattribute(root.find('periodOfReport'))
             NonDerivH[1] = textattribute(root.find('issuer/issuerCik'))
             NonDerivH[2] = textattribute(root.find(
@@ -528,13 +532,13 @@ def xn3parse(xmlfilename):
             # For the type of filer (officer, director, etc.) sometimes a
             # negative response is 0 and sometimes it is an omission. The below
             # code conforms these conventions.
-            if NonDerivH[4] == None:
+            if NonDerivH[4] is None:
                 NonDerivH[4] = '0'
-            if NonDerivH[5] == None:
+            if NonDerivH[5] is None:
                 NonDerivH[5] = '0'
-            if NonDerivH[6] == None:
+            if NonDerivH[6] is None:
                 NonDerivH[6] = '0'
-            if NonDerivH[7] == None:
+            if NonDerivH[7] is None:
                 NonDerivH[7] = '0'
             # Handles errors due to blank officer title entry for non-officer
             # filers (e.g. directors).
@@ -552,6 +556,7 @@ def xn3parse(xmlfilename):
 
             NonDerivH[22] = NonDerivHNumber
             NonDerivH[23] = xmlfilename[lencwd:]
+            NonDerivH[28] = textattribute(root.find('dateandtime'))
             NonDerivHNumber += 1
             #print NonDerivH
             NonDerivHs.append(NonDerivH)
@@ -567,10 +572,10 @@ def xn3parse(xmlfilename):
     #       print "Found a grandchild"
             DerivH = ['err', 'err', 'err', 'err', 'err',
                       'err', 'err', 'err', 'err', 'err',
-                      'err', None,  None,  None,  None, 
-                      None,  'err', 'err', 'err', None, 
-                      'err',    0,  'err', 'err', None, 
-                      None,  None,    '3']
+                      'err', None,  None,  None,  None,
+                      None,  'err', 'err', 'err', None,
+                      'err',    0,  'err', 'err', None,
+                      None,  None,    '3', 'err']
             DerivH[0] = textattribute(root.find('periodOfReport'))
             DerivH[1] = textattribute(root.find('issuer/issuerCik'))
             DerivH[2] = textattribute(root.find(
@@ -608,13 +613,13 @@ def xn3parse(xmlfilename):
             # For the type of filer (officer, director, etc.) sometimes a
             # negative response is 0 and sometimes it is an omission. The below
             # code conforms these conventions.
-            if DerivH[4] == None:
+            if DerivH[4] is None:
                 DerivH[4] = '0'
-            if DerivH[5] == None:
+            if DerivH[5] is None:
                 DerivH[5] = '0'
-            if DerivH[6] == None:
+            if DerivH[6] is None:
                 DerivH[6] = '0'
-            if DerivH[7] == None:
+            if DerivH[7] is None:
                 DerivH[7] = '0'
             # Handles errors due to blank officer title entry for non-officer
             # filers (e.g. directors).
@@ -635,6 +640,7 @@ def xn3parse(xmlfilename):
                     DerivH[21] = 1
             DerivH[22] = DerivHNumber
             DerivH[23] = xmlfilename[lencwd:]
+            DerivH[28] = textattribute(root.find('dateandtime'))
             DerivHNumber += 1
             #print DerivH
             DerivHs.append(DerivH)
