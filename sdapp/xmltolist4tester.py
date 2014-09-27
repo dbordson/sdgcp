@@ -4,9 +4,6 @@ import xmlmanager
 import xmltolist4
 from sdapp.models import IssuerCIK, Form345Entry
 
-# This code will work best if the stored files are in a subdirectory of
-# the current working directory.
-
 
 def binary_to_boolean(inputbinary):
     if inputbinary == '1':
@@ -34,7 +31,7 @@ def formentryinsert(form):
     # form = raw_input()
     # if form == "":
     #     form = '4'
-    print "We'll work with form", form
+    print "Form", form
 
     ndxnlist = []
     dxnlist = []
@@ -77,14 +74,14 @@ def formentryinsert(form):
                 i += 1
             except:
                 parseerrorlist.append(xmlfile)
-    meanlist = []
-    for item in ndxnlist:
-        meanlist.append(item[13])
-    if meanlist[0] is None:
-        meanlist = [0]
-    print float(sum(meanlist))
-    print len(meanlist)
-    print "average", float(sum(meanlist)) / len(meanlist)
+    # meanlist = []
+    # for item in ndxnlist:
+    #     meanlist.append(item[13])
+    # if meanlist[0] is None:
+    #     meanlist = [0]
+    # print float(sum(meanlist))
+    # print len(meanlist)
+    # print "average", float(sum(meanlist)) / len(meanlist)
 
     print "The total number of files reviewed was:", totaldirectorylength
     print "how many times did the for loop run?"
@@ -132,7 +129,7 @@ def formentryinsert(form):
             is_ten_percent = binary_to_boolean(str(entry[6]))
             is_something_else = binary_to_boolean(str(entry[7]))
             issuercik = all_ciks.filter(cik_num=str(int(entry[1])))[0]
-
+            c = entry[28]
             entrytosave =\
                 Form345Entry(entry_internal_id=int_id,
                              period_of_report=entry[0],
@@ -164,6 +161,9 @@ def formentryinsert(form):
                              five_form_three_holdings=entry[25],
                              five_form_four_transactions=entry[26],
                              form_type=entry[27],
+                             filedatetime=c[:4] + "-" + c[4:6] + "-" + c[6:8] +
+                             " " + c[8:10] + " " + c[10:12] + " " +
+                             c[12:14],
                              deriv_or_nonderiv='N'
                              )
             entries.append(entrytosave)
@@ -182,7 +182,7 @@ def formentryinsert(form):
             is_ten_percent = binary_to_boolean(str(entry[6]))
             is_something_else = binary_to_boolean(str(entry[7]))
             issuercik = all_ciks.filter(cik_num=str(int(entry[1])))[0]
-
+            c = entry[28]
             entrytosave =\
                 Form345Entry(entry_internal_id=int_id,
                              period_of_report=entry[0],
@@ -214,6 +214,9 @@ def formentryinsert(form):
                              five_form_three_holdings=entry[25],
                              five_form_four_transactions=entry[26],
                              form_type=entry[27],
+                             filedatetime=c[:4] + "-" + c[4:6] + "-" + c[6:8] +
+                             " " + c[8:10] + " " + c[10:12] + " " +
+                             c[12:14],
                              deriv_or_nonderiv='D'
                              )
             entries.append(entrytosave)
@@ -228,10 +231,3 @@ def formiteration():
         formentryinsert(form)
 
 formiteration()
-
-
-
-# In case you have a hard time starting up the program, here is what
-# the output looks like:
-
-#This drops the code into lists of lists
