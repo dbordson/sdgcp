@@ -162,7 +162,7 @@ def formentryinsert(form):
                              five_form_four_transactions=entry[26],
                              form_type=entry[27],
                              filedatetime=c[:4] + "-" + c[4:6] + "-" + c[6:8] +
-                             " " + c[8:10] + " " + c[10:12] + " " +
+                             " " + c[8:10] + ":" + c[10:12] + ":" +
                              c[12:14],
                              deriv_or_nonderiv='N'
                              )
@@ -215,7 +215,7 @@ def formentryinsert(form):
                              five_form_four_transactions=entry[26],
                              form_type=entry[27],
                              filedatetime=c[:4] + "-" + c[4:6] + "-" + c[6:8] +
-                             " " + c[8:10] + " " + c[10:12] + " " +
+                             " " + c[8:10] + ":" + c[10:12] + ":" +
                              c[12:14],
                              deriv_or_nonderiv='D'
                              )
