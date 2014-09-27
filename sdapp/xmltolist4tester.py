@@ -3,8 +3,9 @@
 import xmlmanager
 import xmltolist4
 from sdapp.models import IssuerCIK, Form345Entry
-from django.utils import timezone
-import pytz
+# from datetime import datetime
+# from pytz import timezone
+# import pytz
 
 
 def binary_to_boolean(inputbinary):
@@ -165,7 +166,7 @@ def formentryinsert(form):
                              form_type=entry[27],
                              filedatetime=c[:4] + "-" + c[4:6] + "-" + c[6:8] +
                              " " + c[8:10] + ":" + c[10:12] + ":" +
-                             c[12:14],
+                             c[12:14] + "Z",
                              deriv_or_nonderiv='N'
                              )
             entries.append(entrytosave)
@@ -218,7 +219,7 @@ def formentryinsert(form):
                              form_type=entry[27],
                              filedatetime=c[:4] + "-" + c[4:6] + "-" + c[6:8] +
                              " " + c[8:10] + ":" + c[10:12] + ":" +
-                             c[12:14],
+                             c[12:14] + "Z",
                              deriv_or_nonderiv='D'
                              )
             entries.append(entrytosave)
@@ -232,5 +233,4 @@ def formiteration():
     for form in formstoiterate:
         formentryinsert(form)
 
-timezone.activate(pytz.timezone("America/New_York"))
 formiteration()
