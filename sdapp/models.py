@@ -189,6 +189,7 @@ class Form345Entry(models.Model):
     form_type = models.CharField(max_length=5, null=True)
     deriv_or_nonderiv = models.CharField(max_length=1, null=True)
     filedatetime = models.DateTimeField(null=True)
+    supersededdt = models.DateTimeField(null=True)
 
     def __unicode__(self):
         return self.entry_internal_id
