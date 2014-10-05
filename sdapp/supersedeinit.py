@@ -9,13 +9,13 @@ def superseded_initialize():
     all_entries = Form345Entry.objects\
         .exclude(transaction_date=None)
     untagged_entries = all_entries.filter(supersededdt=None)
-    looplength = len(untagged_entries)
-    counter = 0
+    looplength = float(len(untagged_entries))
+    counter = 0.0
     for untagged_entry in untagged_entries:
-        counter = counter + 1
         if float(int(10*counter/looplength)) !=\
                 float(int(10*(counter-1)/looplength)):
             print int(counter/looplength*100), 'percent'
+        counter += 1.0
         # print "%s of %s" % (counter, looplength)
         filtered_entries = all_entries\
             .filter(issuer_cik_num=untagged_entry.issuer_cik_num)\
