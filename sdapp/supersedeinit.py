@@ -22,6 +22,7 @@ def superseded_initialize():
             .filter(reporting_owner_cik_num=untagged_entry
                     .reporting_owner_cik_num)\
             .filter(security_title=untagged_entry.security_title)\
+            .filter(expiration_date=untagged_entry.expiration_date)\
             .filter(filedatetime__gt=untagged_entry.filedatetime)\
             .order_by('filedatetime')
         if filtered_entries.exists():
