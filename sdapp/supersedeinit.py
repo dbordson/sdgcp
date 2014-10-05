@@ -13,7 +13,10 @@ def superseded_initialize():
     counter = 0
     for untagged_entry in untagged_entries:
         counter = counter + 1
-        print "%s of %s" % (counter, looplength)
+        if float(int(10*counter/looplength)) !=\
+                float(int(10*(counter-1)/looplength)):
+            print int(counter/looplength*100), 'percent'
+        # print "%s of %s" % (counter, looplength)
         filtered_entries = all_entries\
             .filter(issuer_cik_num=untagged_entry.issuer_cik_num)\
             .filter(reporting_owner_cik_num=untagged_entry
