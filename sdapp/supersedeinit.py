@@ -21,6 +21,13 @@ def superseded_initialize():
         counter += 1.0
         # Logic below
         supersededdt_already_assigned = False
+
+        # This adjusts Form 3, 3/A entries to work, since they lack
+        # transaction dates.  
+        transaction_date_of_untagged_entry = untagged_entry.transaction_date
+        if transaction_date_of_untagged_entry = None
+            transaction_date_of_untagged_entry = filedatetime
+        
         # The below may happen when a form 5 reflecting an old transaction
         # is filed.
         was_the_filing_superseded_before_filed = \
@@ -35,6 +42,7 @@ def superseded_initialize():
             .exists()
         if was_the_filing_superseded_before_filed is True:
             untagged_entry.supersededdt = untagged_entry.filedatetime
+            untagged_entry.save()
             supersededdt_already_assigned = True
 
         # The below will happen when a single form provides multiple
@@ -49,11 +57,12 @@ def superseded_initialize():
             .filter(security_title=untagged_entry.security_title)\
             .filter(expiration_date=untagged_entry.expiration_date)\
             .filter(filedatetime=untagged_entry.filedatetime)\
-            .filter(transaction_number__gt=untagged_entry.transaction_date)\
+            .filter(transaction_number__gt=untagged_entry.transaction_number)\
             .exists()
         if supersededdt_already_assigned is False and\
                 was_the_filing_superseded_by_the_same_form is True:
             untagged_entry.supersededdt = untagged_entry.filedatetime
+            untagged_entry.save()
             supersededdt_already_assigned = True
 
         # The below handles the general case where subsequent filings with
