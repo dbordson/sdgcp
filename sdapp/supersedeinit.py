@@ -23,11 +23,12 @@ def superseded_initialize():
         supersededdt_already_assigned = False
 
         # This adjusts Form 3, 3/A entries to work, since they lack
-        # transaction dates.  
-        transaction_date_of_untagged_entry = untagged_entry.transaction_date
-        if transaction_date_of_untagged_entry = None
-            transaction_date_of_untagged_entry = filedatetime
-        
+        # transaction dates and instead tie to the period of the report.
+        date_of_untagged_entry = untagged_entry.transaction_date
+        if date_of_untagged_entry is None:
+            date_of_untagged_entry = \
+                untagged_entry.period_of_report
+
         # The below may happen when a form 5 reflecting an old transaction
         # is filed.
         was_the_filing_superseded_before_filed = \
@@ -38,7 +39,7 @@ def superseded_initialize():
             .filter(security_title=untagged_entry.security_title)\
             .filter(expiration_date=untagged_entry.expiration_date)\
             .filter(filedatetime__lt=untagged_entry.filedatetime)\
-            .filter(transaction_date__gt=untagged_entry.transaction_date)\
+            .filter(transaction_date__gt=date_of_untagged_entry)\
             .exists()
         if was_the_filing_superseded_before_filed is True:
             untagged_entry.supersededdt = untagged_entry.filedatetime
@@ -86,7 +87,7 @@ def superseded_initialize():
                 .filter(security_title=untagged_entry.security_title)\
                 .filter(expiration_date=untagged_entry.expiration_date)\
                 .filter(filedatetime__gt=untagged_entry.filedatetime)\
-                .filter(transaction_date__gte=untagged_entry.transaction_date)\
+                .filter(transaction_date__gte=date_of_untagged_entry)\
                 .order_by('filedatetime')
         if filtered_entries.exists():
             untagged_entry.supersededdt = filtered_entries[0].filedatetime
