@@ -16,50 +16,53 @@ def binary_to_boolean(inputbinary):
         return False
 
 
-class e:
-    entry_internal_id = None
-    period_of_report = None
-    issuer_cik = None
-    issuer_cik_num = None
-    reporting_owner_cik = None
-    reporting_owner_cik_num = None
-    reporting_owner_name = None
-    is_director = None
-    is_officer = None
-    is_ten_percent = None
-    is_something_else = None
-    reporting_owner_title = None
-    security_title = None
-    conversion_price = None
-    transaction_date = None
-    transaction_code = None
-    transaction_shares = None
-    xn_price_per_share = None
-    xn_acq_disp_code = None
-    expiration_date = None
-    underlying_title = None
-    underlying_shares = None
-    shares_following_xn = None
-    direct_or_indirect = None
-    tenbfive_note = None
-    transaction_number = None
-    source_name_partial_path = None
-    five_not_subject_to_section_sixteen = None
-    five_form_three_holdings = None
-    five_form_four_transactions = None
-    form_type = None
-    deriv_or_nonderiv = None
-    filedatetime = None
-    supersededdt = None
+# class e:
+#     entry_internal_id = None
+#     period_of_report = None
+#     issuer_cik = None
+#     issuer_cik_num = None
+#     reporting_owner_cik = None
+#     reporting_owner_cik_num = None
+#     reporting_owner_name = None
+#     is_director = None
+#     is_officer = None
+#     is_ten_percent = None
+#     is_something_else = None
+#     reporting_owner_title = None
+#     security_title = None
+#     conversion_price = None
+#     transaction_date = None
+#     transaction_code = None
+#     transaction_shares = None
+#     xn_price_per_share = None
+#     xn_acq_disp_code = None
+#     expiration_date = None
+#     underlying_title = None
+#     underlying_shares = None
+#     shares_following_xn = None
+#     direct_or_indirect = None
+#     tenbfive_note = None
+#     transaction_number = None
+#     source_name_partial_path = None
+#     five_not_subject_to_section_sixteen = None
+#     five_form_three_holdings = None
+#     five_form_four_transactions = None
+#     form_type = None
+#     deriv_or_nonderiv = None
+#     filedatetime = None
+#     supersededdt = None
 
 
 def filemapper(CIK):
     xmldirectory = []
     filedir = os.path.expanduser('~/AutomatedFTP/storage' + str(CIK) + '/')
-
+    alreadyparsedfilenames =\
+        set(Form345Entry.objects.values_list('source_name_partial_path',
+                                             flat=True))
     for root, dirs, files in os.walk(filedir):
-        for file in files:
-            if file.endswith('.xml'):
+        for fileentry in files:
+            if fileentry.endswith('.xml') and\
+                    fileentry not in alreadyparsedfilenames:
                 xmldirectory.append(os.path.join(root, file))
     return xmldirectory
 
@@ -106,9 +109,10 @@ def path_to_filename(xmlfilename):
     return xmlfilename[len(xmlfilename) - last_slash_position:]
 
 
-def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilename):
-    a = e()
-    a.entry_internal_id = None  # FIX
+def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilename,
+          tenbfivenotenames):
+    a = Form345Entry()
+
     a.period_of_report = t_att(20, root, 'periodOfReport')
     # a.issuer_cik = SPACER
     a.issuer_cik_num = t_att(10, root, 'issuer/issuerCik')
@@ -152,7 +156,13 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilename):
               'postTransactionAmounts/sharesOwnedFollowingTransaction/value')
     a.direct_or_indirect =\
         t_att(2, child2, 'ownershipNature/directOrIndirectOwnership/value')
-    a.tenbfive_note = None  # FIX
+    # MAKE SURE THIS WORKS
+    # Sees if any 10b5-1 footnotes are on the list
+    for fnotereturn in child2.iter('footnoteId'):
+        fnotenumber = fnotereturn.get('id')
+        if fnotenumber in tenbfivenotenames:
+            a.tenbfive_note = 1
+
     a.transaction_number = entrynumber
     a.source_name_partial_path = path_to_filename(xmlfilename)
     a.five_not_subject_to_section_sixteen =\
@@ -167,28 +177,52 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilename):
     a.filedatetime = t_att(15, root, 'dateandtime')
     a.supersededdt = None
 
-    pass
+    a.entry_internal_id =\
+        str(a.filedatetime)\
+        + str(a.issuer_cik_num)\
+        + str(a.reporting_owner_cik_num)\
+        + deriv_or_nonderiv\
+        + str(entrynumber)\
+        + '-'\
+        + str(a.form_type)
+
+    return a
 
 
 def formcrawl(xmlfilename):
     tree = ET.parse(xmlfilename)
     root = tree.getroot()
 
-    # Finds the 10b5-1 footnotes 
-    footnotenames = []
+    # Finds the 10b5-1 footnotes
+    tenbfivenotenames = []
     for fnotes in root.findall('footnotes'):
         for fnote in fnotes.findall('footnote'):
             if '10b5-1' in fnote.text:
-                footnotenames.append(fnote.get('id'))
+                tenbfivenotenames.append(fnote.get('id'))
 
+    formentries = []
     NonDerivEntryNumber = 1
+
     for child in root.findall('nonDerivativeTable'):
         deriv_or_nonderiv = 'N'
-        for child2 in child.findall('nonDerivativeTransaction'):
-            entry = parser(root, child, child2, NonDerivEntryNumber,
-                           deriv_or_nonderiv, xmlfilename)
+        for child2 in child.findall("./"):
+            entry = parse(root, child, child2, NonDerivEntryNumber,
+                          deriv_or_nonderiv, xmlfilename,
+                          tenbfivenotenames)
+            formentries.append(entry)
             NonDerivEntryNumber += 1
 
+    DerivEntryNumber = 1
+    for child in root.findall('derivativeTable'):
+        deriv_or_nonderiv = 'D'
+        for child2 in child.findall('./'):
+            entry = parse(root, child, child2, DerivEntryNumber,
+                          deriv_or_nonderiv, xmlfilename,
+                          tenbfivenotenames)
+            formentries.append(entry)
+            DerivEntryNumber += 1
+
+    return formentries
 
 
 def formentryinsert():
@@ -196,16 +230,21 @@ def formentryinsert():
     parseerrorlist = []
     totaldirectorylength = 0
     i = 0
-    for CIKentry in IssuerCIK.objects.all():
+    for CIKentry in IssuerCIK.objects.values_list('cik_num', flat=True):
+        print 'Scanning CIK: ', CIKentry, '...'
+        entries = []
         xmlfiledirectory = filemapper(CIKentry)
         totaldirectorylength += len(xmlfiledirectory)
 
         for xmlfile in xmlfiledirectory:
             try:
-                newxnlist = xmltolist4.formtestandparse(xmlfile)
+                entries += formcrawl(xmlfile)
                 i += 1
             except:
                 parseerrorlist.append(xmlfile)
+        print 'Saving...',
+        Form345Entry.objects.bulk_create(entries)
+        print 'Done with CIK.'
     # meanlist = []
     # for item in ndxnlist:
     #     meanlist.append(item[13])
@@ -216,19 +255,8 @@ def formentryinsert():
     # print "average", float(sum(meanlist)) / len(meanlist)
 
     print "The total number of files reviewed was:", totaldirectorylength
-    print "how many times did the for loop run?"
-    print i
-    print "bothcounter", bothcounter
-    print "eithercounter", eithercounter
-    print "no reported positions", notcounter
-    #print "nullxnlist", nullxnlist
-    print "how many times did we add to the deriv and nonderiv item lists"
-    print ndxncounter, dxncounter
-    print "So what did the parser give us, let's print an indication"
-    print "Here is the length of the non-derivative item list: ",
-    print len(ndxnlist)
-    print "Here is the length of the derivative item list: ",
-    print len(dxnlist)
+    print "how many times did the for loop run?", i
+
     # print ndxnlist[1][2]
     print "Length of error list indicating omitted files:", len(parseerrorlist)
     print "Here are any files from above that were filed in 2005 or later:"
@@ -239,119 +267,4 @@ def formentryinsert():
                    for oldyear in oldyears):
             print line
 
-    print "Let's save these entries"
-    #NonDeriv xn file for John C. Martin
-    all_entries = Form345Entry.objects.all()
-    id_list = []
-    for entry in all_entries:
-        id_list.append(entry.entry_internal_id)
-    existingciks = []
-    all_ciks = IssuerCIK.objects.all()
-    for entry in all_ciks:
-        existingciks.append(entry.cik_num)
-    entries = []
-    print "build nonderiv entry list"
-    for entry in ndxnlist:
-        int_id = str(entry[0]) + str(entry[1]) + str(entry[2]) +\
-            'N' + str(entry[22]) + '-' + str(entry[27])
-        if int_id not in id_list and str(int(entry[1])) in existingciks:
-
-            is_director = binary_to_boolean(str(entry[4]))
-            is_officer = binary_to_boolean(str(entry[5]))
-            is_ten_percent = binary_to_boolean(str(entry[6]))
-            is_something_else = binary_to_boolean(str(entry[7]))
-            issuercik = all_ciks.filter(cik_num=str(int(entry[1])))[0]
-            c = entry[28]
-            entrytosave =\
-                Form345Entry(entry_internal_id=int_id,
-                             period_of_report=entry[0],
-                             issuer_cik=issuercik,
-                             issuer_cik_num=entry[1],
-                             reporting_owner_cik_num=entry[2],
-                             reporting_owner_name=entry[3],
-                             is_director=is_director,
-                             is_officer=is_officer,
-                             is_ten_percent=is_ten_percent,
-                             is_something_else=is_something_else,
-                             reporting_owner_title=entry[8],
-                             security_title=entry[9],
-                             conversion_price=entry[10],
-                             transaction_date=entry[11],
-                             transaction_code=entry[12],
-                             transaction_shares=entry[13],
-                             xn_price_per_share=entry[14],
-                             xn_acq_disp_code=entry[15],
-                             expiration_date=entry[16],
-                             underlying_title=entry[17],
-                             underlying_shares=entry[18],
-                             shares_following_xn=entry[19],
-                             direct_or_indirect=entry[20],
-                             tenbfive_note=entry[21],
-                             transaction_number=entry[22],
-                             source_name_partial_path=entry[23],
-                             five_not_subject_to_section_sixteen=entry[24],
-                             five_form_three_holdings=entry[25],
-                             five_form_four_transactions=entry[26],
-                             form_type=entry[27],
-                             filedatetime=c[:4] + "-" + c[4:6] + "-" + c[6:8] +
-                             " " + c[8:10] + ":" + c[10:12] + ":" +
-                             c[12:14] + "Z",
-                             deriv_or_nonderiv='N'
-                             )
-            entries.append(entrytosave)
-    print 'saving'
-    Form345Entry.objects.bulk_create(entries)
-    print 'done'
-    entries = []
-    print "build deriv entry list"
-    for entry in dxnlist:
-        int_id = str(entry[0]) + str(entry[1]) + str(entry[2]) +\
-            'D' + str(entry[22]) + '-' + str(entry[27])
-        if int_id not in id_list and str(int(entry[1])) in existingciks:
-
-            is_director = binary_to_boolean(str(entry[4]))
-            is_officer = binary_to_boolean(str(entry[5]))
-            is_ten_percent = binary_to_boolean(str(entry[6]))
-            is_something_else = binary_to_boolean(str(entry[7]))
-            issuercik = all_ciks.filter(cik_num=str(int(entry[1])))[0]
-            c = entry[28]
-            entrytosave =\
-                Form345Entry(entry_internal_id=int_id,
-                             period_of_report=entry[0],
-                             issuer_cik=issuercik,
-                             issuer_cik_num=entry[1],
-                             reporting_owner_cik_num=entry[2],
-                             reporting_owner_name=entry[3],
-                             is_director=is_director,
-                             is_officer=is_officer,
-                             is_ten_percent=is_ten_percent,
-                             is_something_else=is_something_else,
-                             reporting_owner_title=entry[8],
-                             security_title=entry[9],
-                             conversion_price=entry[10],
-                             transaction_date=entry[11],
-                             transaction_code=entry[12],
-                             transaction_shares=entry[13],
-                             xn_price_per_share=entry[14],
-                             xn_acq_disp_code=entry[15],
-                             expiration_date=entry[16],
-                             underlying_title=entry[17],
-                             underlying_shares=entry[18],
-                             shares_following_xn=entry[19],
-                             direct_or_indirect=entry[20],
-                             tenbfive_note=entry[21],
-                             transaction_number=entry[22],
-                             source_name_partial_path=entry[23],
-                             five_not_subject_to_section_sixteen=entry[24],
-                             five_form_three_holdings=entry[25],
-                             five_form_four_transactions=entry[26],
-                             form_type=entry[27],
-                             filedatetime=c[:4] + "-" + c[4:6] + "-" + c[6:8] +
-                             " " + c[8:10] + ":" + c[10:12] + ":" +
-                             c[12:14] + "Z",
-                             deriv_or_nonderiv='D'
-                             )
-            entries.append(entrytosave)
-    print 'saving'
-    Form345Entry.objects.bulk_create(entries)
-    print 'done'
+    print 'Done adding new entries'
