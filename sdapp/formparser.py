@@ -1,5 +1,6 @@
-from sdapp.models import IssuerCIK, Form345Entry
+from sdapp.models import IssuerCIK, Form345Entry, FullForm
 import os
+import sys
 
 try:
     import xml.etree.cElementTree as ET
@@ -57,25 +58,25 @@ def convert_string_to_datetimestring(c):
 #     supersededdt = None
 
 
-def filemapper(CIK):
-    xmldirectory = []
-    filedir = os.path.expanduser('~/AutomatedFTP/storage/' + str(CIK) + '/')
-    alreadyparsedfilenames =\
-        set(Form345Entry.objects.values_list('source_name_partial_path',
-                                             flat=True))
-    for root, dirs, files in os.walk(filedir):
-        for fileentry in files:
-            if fileentry.endswith('.xml') and\
-                    fileentry not in alreadyparsedfilenames:
-                xmldirectory.append(os.path.join(root, fileentry))
-    return xmldirectory
+# def filemapper(CIK):
+#     xmldirectory = []
+#     filedir = os.path.expanduser('~/AutomatedFTP/storage/' + str(CIK) + '/')
+#     alreadyparsedfilenames =\
+#         set(Form345Entry.objects.values_list('source_name_partial_path',
+#                                              flat=True))
+#     for root, dirs, files in os.walk(filedir):
+#         for fileentry in files:
+#             if fileentry.endswith('.xml') and\
+#                     fileentry not in alreadyparsedfilenames:
+#                 xmldirectory.append(os.path.join(root, fileentry))
+#     return xmldirectory
 
 
 # Extracts text attribute
 def t_att(numchar, treeobject, path):
     try:
         a = treeobject.find(path).text[0:numchar]
-    except AttributeError:
+    except:
         a = None
 
     return a
@@ -85,7 +86,7 @@ def t_att(numchar, treeobject, path):
 def f_att(numdec, treeobject, path):
     try:
         a = round(float(treeobject.find(path).text), numdec)
-    except AttributeError:
+    except:
         a = None
 
     return a
@@ -104,17 +105,17 @@ def b_att(treeobject, path):
     return a
 
 
-def path_to_filename(xmlfilename):
-    # This function finds the last '/' in the string to extract the filename.
-    # The first line is kind of voodoo, but it uses slice notation to take the
-    # whole string, but backwards -- this is used because python has no find
-    # from the right function.
-    last_slash_position = xmlfilename[::-1].find('/')
-    return xmlfilename[len(xmlfilename) - last_slash_position:]
+# def path_to_filename(xmlfilename):
+# This function finds the last '/' in the string to extract the filename.
+# The first line is kind of voodoo, but it uses slice notation to take
+# whole string, but backwards -- this is used because python has no find
+# from the right function.
+#     last_slash_position = xmlfilename[::-1].find('/')
+#     return xmlfilename[len(xmlfilename) - last_slash_position:]
 
 
-def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilename,
-          tenbfivenotenames):
+def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilepath,
+          tenbfivenotenames, filingdatetimestring):
     a = Form345Entry()
 
     a.period_of_report = t_att(20, root, 'periodOfReport')
@@ -168,7 +169,7 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilename,
             a.tenbfive_note = 1
 
     a.transaction_number = entrynumber
-    a.source_name_partial_path = path_to_filename(xmlfilename)
+    a.sec_path = xmlfilepath
     a.five_not_subject_to_section_sixteen =\
         t_att(15, root, 'notSubjectToSection16')
     a.five_form_three_holdings = t_att(15, root, 'form3HoldingsReported')
@@ -179,7 +180,7 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilename,
               'documentType')
     a.deriv_or_nonderiv = deriv_or_nonderiv
     a.filedatetime =\
-        convert_string_to_datetimestring(t_att(15, root, 'dateandtime'))
+        convert_string_to_datetimestring(filingdatetimestring)
     a.supersededdt = None
 
     a.entry_internal_id =\
@@ -194,9 +195,29 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilename,
     return a
 
 
-def formcrawl(xmlfilename):
-    tree = ET.parse(xmlfilename)
-    root = tree.getroot()
+def filingdatetimepull(textstring):
+    try:
+        tag = '<ACCEPTANCE-DATETIME>'
+        snippetstart = textstring.find(tag)
+        snippet = textstring[snippetstart + len(tag):
+                             snippetstart + len(tag) + 14]
+        return snippet
+    except:
+        return "error!"
+
+
+def formcrawl(fullformobject):
+    textstring = fullformobject.text
+    xmlfilepath = fullformobject.sec_path
+
+    # Pulls xml out of the full form text
+    filingdatetimestring = filingdatetimepull(textstring)
+    startxml = textstring.find('<XML>') + 5
+    endxml = textstring.find('</XML>')
+    xmlstring = textstring[startxml:endxml].strip('\n')
+
+    # Parses XML
+    root = ET.fromstring(xmlstring)
 
     # Finds the 10b5-1 footnotes
     tenbfivenotenames = []
@@ -212,8 +233,8 @@ def formcrawl(xmlfilename):
         deriv_or_nonderiv = 'N'
         for child2 in child.findall("./"):
             entry = parse(root, child, child2, NonDerivEntryNumber,
-                          deriv_or_nonderiv, xmlfilename,
-                          tenbfivenotenames)
+                          deriv_or_nonderiv, xmlfilepath,
+                          tenbfivenotenames, filingdatetimestring)
             formentries.append(entry)
             NonDerivEntryNumber += 1
 
@@ -222,8 +243,8 @@ def formcrawl(xmlfilename):
         deriv_or_nonderiv = 'D'
         for child2 in child.findall('./'):
             entry = parse(root, child, child2, DerivEntryNumber,
-                          deriv_or_nonderiv, xmlfilename,
-                          tenbfivenotenames)
+                          deriv_or_nonderiv, xmlfilepath,
+                          tenbfivenotenames, filingdatetimestring)
             formentries.append(entry)
             DerivEntryNumber += 1
 
@@ -231,48 +252,60 @@ def formcrawl(xmlfilename):
 
 
 def formentryinsert():
+
+    storedformpathset =\
+        set(FullForm.objects.values_list('sec_path', flat=True))
+    parsedformpathset =\
+        set(Form345Entry.objects.values_list('sec_path', flat=True))
+
+    # The below compares the above sets to find what forms are stored but
+    # not parsed.
+    paths_to_parse =\
+        storedformpathset - (storedformpathset & parsedformpathset)
+
+    forms_to_parse =\
+        FullForm.objects.filter(pk__in=list(paths_to_parse))
+
     entries = []
     parseerrorlist = []
-    totaldirectorylength = 0
     i = 0
-    cik_num_list = IssuerCIK.objects.values_list('cik_num', flat=True)
-    for CIKentry in cik_num_list:
-        print cik_num_list.index(CIKentry), '/',
-        print 'Scanning CIK: ', CIKentry, '...'
-        entries = []
-        xmlfiledirectory = filemapper(CIKentry)
-        totaldirectorylength += len(xmlfiledirectory)
+    totalformslength = len(paths_to_parse)
+    count = 0.0
+    print 'Beginning parse loop'
+    for form in forms_to_parse:
+        try:
+            entries += formcrawl(form)
+            i += 1
+        except:
+            parseerrorlist.append(form)
 
-        for xmlfile in xmlfiledirectory:
-            try:
-                entries += formcrawl(xmlfile)
-                i += 1
-            except:
-                parseerrorlist.append(xmlfile)
-        print 'Saving...',
-        Form345Entry.objects.bulk_create(entries)
-        print 'Done with CIK.'
-    # meanlist = []
-    # for item in ndxnlist:
-    #     meanlist.append(item[13])
-    # if meanlist[0] is None:
-    #     meanlist = [0]
-    # print float(sum(meanlist))
-    # print len(meanlist)
-    # print "average", float(sum(meanlist)) / len(meanlist)
+        # The below reports if 10% progress has been made.
+        if float(int(10*count/totalformslength)) !=\
+                float(int(10*(count-1)/totalformslength)):
+            print int(count/totalformslength*100), 'percent'
+        count += 1.0
 
-    print "The total number of files reviewed was:", totaldirectorylength
+        # This saves is 1 mb of entires have been parsed
+        if sys.getsizeof(entries) > 1000000:  # 1 mb
+            print 'Saving'
+            Form345Entry.objects.bulk_create(entries)
+            entries = []
+            print 'Done with this batch, starting next batch'
+
+    # This saves the remaining entries not saved above
+    print 'Saving'
+    Form345Entry.objects.bulk_create(entries)
+
+    print "The total number of files reviewed was:", totalformslength
     print "how many times did the for loop run?", i
-
-    # print ndxnlist[1][2]
     print "Length of error list indicating omitted files:", len(parseerrorlist)
     print "Here are any files from above that were filed in 2005 or later:"
     oldyears = ['94', '95', '96', '97', '98', '99',
                 '00', '01', '02', '03', '04']
     for line in parseerrorlist:
-        if not any(line.find('-' + oldyear + '-') != -1
+        if not any(line.sec_path.find('-' + oldyear + '-') != -1
                    for oldyear in oldyears):
-            print line
+            print line.sec_path
 
     print 'Done adding new entries'
 

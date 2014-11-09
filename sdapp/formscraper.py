@@ -104,19 +104,24 @@ formdownloadlist = list(formdownloadset)
 
 ftp = ftplogin()
 formsforsave = []
+count = 0.0
+looplength = float(len(formdownloadlist))
 for formpath in formdownloadlist:
     fullpath = '/edgar/data/' + formpath
     text = ftpdownload(fullpath, ftp)
-    a = FullForm(sec_path=fullpath,
+    a = FullForm(sec_path=formpath,
                  save_date=today,
-                 issuer_cik_num=extractcik(fullpath),
+                 issuer_cik_num=extractcik(formpath),
                  text=text)
-
+    if float(int(10*count/looplength)) !=\
+            float(int(10*(count-1)/looplength)):
+        print int(count/looplength*100), 'percent'
+    count += 1.0
     formsforsave.append(a)
     if sys.getsizeof(formsforsave) > 10000000:  # 10 mb
         print 'Saving'
         formsforsave = saveandclear(formsforsave)
-        print 'Done with this batch'
+        print 'Done with this batch, starting next batch'
 
 print 'Saving'
 formsforsave = saveandclear(formsforsave)
