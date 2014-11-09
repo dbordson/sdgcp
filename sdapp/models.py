@@ -150,6 +150,23 @@ class Holding(models.Model):
         return unicode(self.security_title) or u''
 
 
+class FTPFileList(models.Model):
+    files = models.TextField()
+
+    def __unicode__(self):
+        return unicode(len(self.files)) or u''
+
+
+class FullForm(models.Model):
+    sec_path = models.CharField(max_length=150, primary_key=True)
+    save_date = models.DateField(null=True)
+    issuer_cik_num = models.CharField(max_length=10)
+    text = models.TextField()
+
+    def __unicode__(self):
+        return unicode(self.sec_path, self.save_date) or u''
+
+
 class Form345Entry(models.Model):
     entry_internal_id = models.CharField(max_length=80)
     period_of_report = models.DateField(null=True)
@@ -182,7 +199,7 @@ class Form345Entry(models.Model):
     direct_or_indirect = models.CharField(max_length=2, null=True)
     tenbfive_note = models.IntegerField(null=True)
     transaction_number = models.IntegerField(null=True)
-    source_name_partial_path = models.CharField(max_length=80, null=True)
+    sec_path = models.CharField(max_length=150, null=True)
     five_not_subject_to_section_sixteen = models.IntegerField(null=True)
     five_form_three_holdings = models.IntegerField(null=True)
     five_form_four_transactions = models.IntegerField(null=True)

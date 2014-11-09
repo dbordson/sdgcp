@@ -16,6 +16,10 @@ def binary_to_boolean(inputbinary):
         return False
 
 
+def convert_string_to_datetimestring(c):
+    return c[:4] + "-" + c[4:6] + "-" + c[6:8] + " " + c[8:10] + ":" +\
+        c[10:12] + ":" + c[12:14] + "Z"
+
 # class e:
 #     entry_internal_id = None
 #     period_of_report = None
@@ -55,7 +59,7 @@ def binary_to_boolean(inputbinary):
 
 def filemapper(CIK):
     xmldirectory = []
-    filedir = os.path.expanduser('~/AutomatedFTP/storage' + str(CIK) + '/')
+    filedir = os.path.expanduser('~/AutomatedFTP/storage/' + str(CIK) + '/')
     alreadyparsedfilenames =\
         set(Form345Entry.objects.values_list('source_name_partial_path',
                                              flat=True))
@@ -63,7 +67,7 @@ def filemapper(CIK):
         for fileentry in files:
             if fileentry.endswith('.xml') and\
                     fileentry not in alreadyparsedfilenames:
-                xmldirectory.append(os.path.join(root, file))
+                xmldirectory.append(os.path.join(root, fileentry))
     return xmldirectory
 
 
@@ -174,7 +178,8 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilename,
         t_att(5, root,
               'documentType')
     a.deriv_or_nonderiv = deriv_or_nonderiv
-    a.filedatetime = t_att(15, root, 'dateandtime')
+    a.filedatetime =\
+        convert_string_to_datetimestring(t_att(15, root, 'dateandtime'))
     a.supersededdt = None
 
     a.entry_internal_id =\
@@ -230,7 +235,9 @@ def formentryinsert():
     parseerrorlist = []
     totaldirectorylength = 0
     i = 0
-    for CIKentry in IssuerCIK.objects.values_list('cik_num', flat=True):
+    cik_num_list = IssuerCIK.objects.values_list('cik_num', flat=True)
+    for CIKentry in cik_num_list:
+        print cik_num_list.index(CIKentry), '/',
         print 'Scanning CIK: ', CIKentry, '...'
         entries = []
         xmlfiledirectory = filemapper(CIKentry)
@@ -268,3 +275,5 @@ def formentryinsert():
             print line
 
     print 'Done adding new entries'
+
+formentryinsert()
