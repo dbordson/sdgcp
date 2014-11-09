@@ -75,7 +75,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'local sdapp',
         'USER': 'postgres',
-        'PASSWORD': 'es23-58Ab',
+        'PASSWORD': '',
         'HOST': ''
     }
 }
