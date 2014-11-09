@@ -106,13 +106,18 @@ ftp = ftplogin()
 formsforsave = []
 for formpath in formdownloadlist:
     fullpath = '/edgar/data/' + formpath
+    text = ftpdownload(fullpath, ftp)
     a = FullForm(sec_path=fullpath,
                  save_date=today,
                  issuer_cik_num=extractcik(fullpath),
-                 text=ftpdownload(fullpath))
+                 text=text)
 
     formsforsave.append(a)
     if sys.getsizeof(formsforsave) > 10000000:  # 10 mb
+        print 'Saving'
         formsforsave = saveandclear(formsforsave)
+        print 'Done with this batch'
 
+print 'Saving'
 formsforsave = saveandclear(formsforsave)
+print 'Done with all listed files'
