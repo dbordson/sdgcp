@@ -46,7 +46,7 @@ class SecurityPriceHist(models.Model):
     # stockhistories = models.ForeignKey(StockHistories)
     # last_update = models.DateField(auto_now=True)
     issuer = models.ForeignKey(IssuerCIK, null=True)
-    security = models.ForeignKey(IssuerCIK, null=True)
+    security = models.ForeignKey(Security, null=True)
 
     def __unicode__(self):
         return self.ticker_sym
@@ -63,7 +63,7 @@ class ClosePrice(models.Model):
 
 
 class SplitOrAdjustmentEvent(models.Model):
-    security = models.ForeignKey(IssuerCIK)
+    security = models.ForeignKey(Security)
     adjustment_factor = models.DecimalField(max_digits=15, decimal_places=4)
     event_date = models.DateField(null=True)
 
