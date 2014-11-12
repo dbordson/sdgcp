@@ -98,24 +98,9 @@ def add_affiliations():
             .filter(reporting_owner_cik_num=reporting_owner_cik_num)\
             .order_by('-filedatetime')[0]
 
-        first_entry =\
-            Form345Entry.objects\
-            .filter(issuer_cik_num=issuer_cik_num)\
-            .filter(reporting_owner_cik_num=reporting_owner_cik_num)\
-            .order_by('filedatetime')[0]
-
         new_affiliation =\
             Affiliation(issuer_id=issuer_cik_num,
                         reporting_owner_id=reporting_owner_cik_num,
-                        issuer_cik_num=issuer_cik_num,
-                        reporting_owner_cik_num=reporting_owner_cik_num,
-                        person_name=latest_entry.reporting_owner_name,
-                        title=latest_entry.reporting_owner_title,
-                        is_director=latest_entry.is_director,
-                        is_officer=latest_entry.is_officer,
-                        is_ten_percent=latest_entry.is_ten_percent,
-                        is_something_else=latest_entry.is_something_else,
-                        first_filing=first_entry.filedatetime,
-                        most_recent_filing=latest_entry.filedatetime)
+                        person_name=latest_entry.reporting_owner_name)
         new_affiliations.append(new_affiliation)
     Affiliation.objects.bulk_create(new_affiliations)

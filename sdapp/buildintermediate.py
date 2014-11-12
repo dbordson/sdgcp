@@ -465,7 +465,7 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
 
 
 def refresh_holdingtypes():
-    allentries = Form345Entry.objects.exclude(transaction_date=None)
+    allentries = Form345Entry.objects.filter(supersededdt=None)
     all_holdings = Holding.objects.exclude(most_recent_xn=None)\
         .exclude(units_held=0)
     all_holdingtypes = HoldingType.objects.exclude(most_recent_xn=None)

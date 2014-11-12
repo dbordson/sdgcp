@@ -5,7 +5,7 @@ from django.db import models
 
 
 class IssuerCIK(models.Model):
-    cik_num = models.CharField(max_length=10)
+    cik_num = models.CharField(max_length=10, primary_key=True)
     # Adapt this for companies with more than one public stock (GOOG)
     # to do this, we will need to update the ticker finder script
 
@@ -35,7 +35,7 @@ class ClosePrice(models.Model):
 
 class ReportingPerson(models.Model):
     person_name = models.CharField(max_length=80)
-    reporting_owner_cik_num = models.CharField(max_length=10)
+    reporting_owner_cik_num = models.CharField(max_length=10, primary_key=True)
 
     def __unicode__(self):
         return self.person_name
@@ -44,19 +44,21 @@ class ReportingPerson(models.Model):
 class Affiliation(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
     reporting_owner = models.ForeignKey(ReportingPerson)
-    issuer_cik_num = models.CharField(max_length=10)
-    reporting_owner_cik_num = models.CharField(max_length=10)
     person_name = models.CharField(max_length=80, null=True)
-    title = models.CharField(max_length=30, null=True)
-    is_director = models.BooleanField()
-    is_officer = models.BooleanField()
-    is_ten_percent = models.BooleanField()
-    is_something_else = models.BooleanField()
-    first_filing = models.DateField(null=True)
-    most_recent_filing = models.DateField(null=True)
 
     def __unicode__(self):
         return unicode(self.title) or u''
+
+
+class Security(models.Model):
+    issuer = models.ForeignKey(IssuerCIK)
+    security_title = models.CharField(max_length=80, null=True)
+    public_price_available = models.BooleanField()
+    deriv_or_nonderiv = models.CharField(max_length=1, null=True)
+    underlying_title = models.CharField(max_length=80, null=True)
+
+    def __unicode__(self):
+        return unicode(self.security_title) or u''
 
 
 class AggHoldingType(models.Model):
@@ -68,9 +70,11 @@ class AggHoldingType(models.Model):
     first_expiration_date = models.DateField(null=True)
     last_expiration_date = models.DateField(null=True)
     wavg_expiration_date = models.DateField(null=True)
-    min_conversion_price = models.DecimalField(max_digits=15, decimal_places=4,
+    min_conversion_price = models.DecimalField(max_digits=15,
+                                               decimal_places=4,
                                                null=True)
-    max_conversion_price = models.DecimalField(max_digits=15, decimal_places=4,
+    max_conversion_price = models.DecimalField(max_digits=15,
+                                               decimal_places=4,
                                                null=True)
     wavg_conversion = models.DecimalField(max_digits=15, decimal_places=4,
                                           null=True)
