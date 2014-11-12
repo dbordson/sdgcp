@@ -1,5 +1,5 @@
 from django.shortcuts import render_to_response
-from sdapp.models import CompanyStockHist, ClosePrice, IssuerCIK,\
+from sdapp.models import SecurityPriceHist, ClosePrice, IssuerCIK,\
     Form345Entry, Affiliation, Holding, HoldingType, AggHoldingType
 import datetime
 
@@ -10,20 +10,20 @@ def options(request, ticker_sym):
 
 
 def pricedetail(request, ticker_sym):
-    stockid = CompanyStockHist.objects.filter(ticker_sym=ticker_sym)[0]
+    stockid = SecurityPriceHist.objects.filter(ticker_sym=ticker_sym)[0]
 
-    pricelist = ClosePrice.objects.filter(companystockhist=stockid)
+    pricelist = ClosePrice.objects.filter(SecurityPriceHist=stockid)
     return render_to_response('sdapp/pricedetail.html',
                               {'pricelist': pricelist})
 
 
 def formentrydetail(request, ticker_sym):
-    # stockid = CompanyStockHist.objects.get(ticker_sym=ticker_sym)
+    # stockid = SecurityPriceHist.objects.get(ticker_sym=ticker_sym)
     cikforticker = \
-        IssuerCIK.objects.filter(companystockhist__ticker_sym=ticker_sym)[0]
+        IssuerCIK.objects.filter(SecurityPriceHist__ticker_sym=ticker_sym)[0]
     cikidforticker = cikforticker.cik_num
     entrylist = Form345Entry.objects.filter(issuer_cik_id=cikidforticker)
-    # pricelist = ClosePrice.objects.filter(companystockhist=stockid)
+    # pricelist = ClosePrice.objects.filter(SecurityPriceHist=stockid)
     return render_to_response('sdapp/entrydetail.html',
                               {'entrylist': entrylist,
                                'cikforticker': cikforticker,
@@ -31,9 +31,9 @@ def formentrydetail(request, ticker_sym):
 
 
 def affiliationdetail(request, ticker_sym):
-    # stockid = CompanyStockHist.objects.get(ticker_sym=ticker_sym)
+    # stockid = SecurityPriceHist.objects.get(ticker_sym=ticker_sym)
     issuer = \
-        IssuerCIK.objects.filter(companystockhist__ticker_sym=ticker_sym)[0]
+        IssuerCIK.objects.filter(SecurityPriceHist__ticker_sym=ticker_sym)[0]
     affiliationlist = Affiliation.objects.filter(issuer=issuer).\
         order_by('-most_recent_filing')
     return render_to_response('sdapp/affiliationdetail.html',
@@ -42,9 +42,9 @@ def affiliationdetail(request, ticker_sym):
 
 
 def holdingdetail(request, ticker_sym):
-    # stockid = CompanyStockHist.objects.get(ticker_sym=ticker_sym)
+    # stockid = SecurityPriceHist.objects.get(ticker_sym=ticker_sym)
     issuer = \
-        IssuerCIK.objects.filter(companystockhist__ticker_sym=ticker_sym)[0]
+        IssuerCIK.objects.filter(SecurityPriceHist__ticker_sym=ticker_sym)[0]
     holdinglist = Holding.objects.filter(issuer=issuer).\
         order_by('owner')
     return render_to_response('sdapp/holdingdetail.html',
@@ -54,7 +54,7 @@ def holdingdetail(request, ticker_sym):
 
 def holdingtable(request, ticker_sym):
     issuer = \
-        IssuerCIK.objects.filter(companystockhist__ticker_sym=ticker_sym)[0]
+        IssuerCIK.objects.filter(SecurityPriceHist__ticker_sym=ticker_sym)[0]
     lookbackdays = 365 * 100
     startdate = datetime.date.today() - datetime.timedelta(lookbackdays)
     affiliationset = Affiliation.objects.filter(issuer=issuer)\
@@ -111,7 +111,7 @@ def holdingtable(request, ticker_sym):
 
 def individualaffiliation(request, ticker_sym, reporting_owner_cik_num):
     issuer = \
-        IssuerCIK.objects.filter(companystockhist__ticker_sym=ticker_sym)[0]
+        IssuerCIK.objects.filter(SecurityPriceHist__ticker_sym=ticker_sym)[0]
     affiliation = Affiliation.objects.filter(
         reporting_owner_cik_num=reporting_owner_cik_num)[0]
     holdinglist = Holding.objects.filter(affiliation=affiliation).\
@@ -125,7 +125,7 @@ def individualaffiliation(request, ticker_sym, reporting_owner_cik_num):
 
 def holdingtypes(request, ticker_sym, reporting_owner_cik_num):
     issuer = \
-        IssuerCIK.objects.filter(companystockhist__ticker_sym=ticker_sym)[0]
+        IssuerCIK.objects.filter(SecurityPriceHist__ticker_sym=ticker_sym)[0]
     affiliation = Affiliation.objects.filter(
         reporting_owner_cik_num=reporting_owner_cik_num)[0]
     holdingtypelist = HoldingType.objects.filter(affiliation=affiliation)

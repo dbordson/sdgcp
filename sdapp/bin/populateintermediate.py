@@ -1,5 +1,5 @@
 from sdapp.models import ReportingPerson, IssuerCIK, Form345Entry,\
-    Affiliation, HoldingType, ClosePrice, CompanyStockHist,\
+    Affiliation, HoldingType, ClosePrice, SecurityPriceHist,\
     AggHoldingType
 # from django.db import connection
 import datetime

@@ -1,4 +1,4 @@
-from sdapp.models import CompanyStockHist, IssuerCIK
+from sdapp.models import SecurityPriceHist, IssuerCIK
 import requests
 # This requires requests, which can be installed via pip using "pip install
 # requests" (http://docs.python-requests.org/en/latest/user/install/#install
@@ -26,7 +26,7 @@ def CIKFind(ticker):
 
 
 def newciks():
-    for entry in CompanyStockHist.objects.all():
+    for entry in SecurityPriceHist.objects.all():
         print entry
         if entry.issuer == None:
             CIKnum = str(int(CIKFind(str(entry.ticker_sym))))

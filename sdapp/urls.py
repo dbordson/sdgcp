@@ -1,6 +1,6 @@
 from django.conf.urls import patterns, url
 from django.views.generic import ListView
-from sdapp.models import CompanyStockHist
+from sdapp.models import SecurityPriceHist
 from sdapp.views import options, pricedetail, formentrydetail,\
     affiliationdetail, holdingdetail, holdingtable, individualaffiliation,\
     holdingtypes
@@ -10,7 +10,7 @@ urlpatterns = \
     patterns('',
              url(r'^$',
                  ListView.as_view(
-                     queryset=CompanyStockHist.objects.order_by('-ticker_sym'),
+                     queryset=SecurityPriceHist.objects.order_by('-ticker_sym'),
                      context_object_name='ticker_sym_avail',
                      template_name='sdapp/index.html')),
              url(r'^(?P<ticker_sym>\w+)/$', options, name='options'),

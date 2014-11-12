@@ -13,26 +13,6 @@ class IssuerCIK(models.Model):
         return self.cik_num
 
 
-class CompanyStockHist(models.Model):
-    ticker_sym = models.CharField(max_length=5)
-    # stockhistories = models.ForeignKey(StockHistories)
-    # last_update = models.DateField(auto_now=True)
-    issuer = models.ForeignKey(IssuerCIK, null=True)
-
-    def __unicode__(self):
-        return self.ticker_sym
-
-
-class ClosePrice(models.Model):
-    close_price = models.DecimalField(max_digits=12, decimal_places=4)
-    close_date = models.DateField()
-    companystockhist = models.ForeignKey(CompanyStockHist, null=True)
-
-    def __unicode__(self):
-        return u"%s, %s, %s" % (self.companystockhist, self.close_price,
-                                self.close_date)
-
-
 class ReportingPerson(models.Model):
     person_name = models.CharField(max_length=80)
     reporting_owner_cik_num = models.CharField(max_length=10, primary_key=True)
@@ -61,76 +41,106 @@ class Security(models.Model):
         return unicode(self.security_title) or u''
 
 
-class AggHoldingType(models.Model):
-    issuer = models.ForeignKey(IssuerCIK)
-    security_title = models.CharField(max_length=80, null=True)
-    units_held = models.DecimalField(max_digits=15, decimal_places=4,
-                                     null=True)
-    deriv_or_nonderiv = models.CharField(max_length=1, null=True)
-    first_expiration_date = models.DateField(null=True)
-    last_expiration_date = models.DateField(null=True)
-    wavg_expiration_date = models.DateField(null=True)
-    min_conversion_price = models.DecimalField(max_digits=15,
-                                               decimal_places=4,
-                                               null=True)
-    max_conversion_price = models.DecimalField(max_digits=15,
-                                               decimal_places=4,
-                                               null=True)
-    wavg_conversion = models.DecimalField(max_digits=15, decimal_places=4,
-                                          null=True)
-    underlying_title = models.CharField(max_length=80, null=True)
-    underlying_shares = models.DecimalField(max_digits=15, decimal_places=4,
-                                            null=True)
-    underlying_price = models.DecimalField(max_digits=15, decimal_places=4,
-                                           null=True)
-    intrinsic_value = models.DecimalField(max_digits=15, decimal_places=4,
-                                          null=True)
-    first_xn = models.DateField(null=True)
-    most_recent_xn = models.DateField(null=True)
-    wavg_xn_date = models.DateField(null=True)
-    transactions_included = models.IntegerField(null=True)
-    tranches_included = models.IntegerField(null=True)
-    units_transacted = models.DecimalField(max_digits=15, decimal_places=4,
-                                           null=True)
+class SecurityPriceHist(models.Model):
+    ticker_sym = models.CharField(max_length=5)
+    # stockhistories = models.ForeignKey(StockHistories)
+    # last_update = models.DateField(auto_now=True)
+    issuer = models.ForeignKey(IssuerCIK, null=True)
+    security = models.ForeignKey(IssuerCIK, null=True)
+
+    def __unicode__(self):
+        return self.ticker_sym
+
+
+class ClosePrice(models.Model):
+    close_price = models.DecimalField(max_digits=12, decimal_places=4)
+    close_date = models.DateField()
+    SecurityPriceHist = models.ForeignKey(SecurityPriceHist, null=True)
+
+    def __unicode__(self):
+        return u"%s, %s, %s" % (self.SecurityPriceHist, self.close_price,
+                                self.close_date)
+
+
+class SplitOrAdjustmentEvent(models.Model):
+    security = models.ForeignKey(IssuerCIK)
+    adjustment_factor = models.DecimalField(max_digits=15, decimal_places=4)
+    event_date = models.DateField(null=True)
 
     def __unicode__(self):
         return unicode(self.security_title) or u''
 
 
-class HoldingType(models.Model):
-    issuer = models.ForeignKey(IssuerCIK)
-    owner = models.ForeignKey(ReportingPerson)
-    affiliation = models.ForeignKey(Affiliation)
-    security_title = models.CharField(max_length=80, null=True)
-    units_held = models.DecimalField(max_digits=15, decimal_places=4,
-                                     null=True)
-    deriv_or_nonderiv = models.CharField(max_length=1, null=True)
-    first_expiration_date = models.DateField(null=True)
-    last_expiration_date = models.DateField(null=True)
-    wavg_expiration_date = models.DateField(null=True)
-    min_conversion_price = models.DecimalField(max_digits=15, decimal_places=4,
-                                               null=True)
-    max_conversion_price = models.DecimalField(max_digits=15, decimal_places=4,
-                                               null=True)
-    wavg_conversion = models.DecimalField(max_digits=15, decimal_places=4,
-                                          null=True)
-    underlying_title = models.CharField(max_length=80, null=True)
-    underlying_shares = models.DecimalField(max_digits=15, decimal_places=4,
-                                            null=True)
-    underlying_price = models.DecimalField(max_digits=15, decimal_places=4,
-                                           null=True)
-    intrinsic_value = models.DecimalField(max_digits=15, decimal_places=4,
-                                          null=True)
-    first_xn = models.DateField(null=True)
-    most_recent_xn = models.DateField(null=True)
-    wavg_xn_date = models.DateField(null=True)
-    transactions_included = models.IntegerField(null=True)
-    tranches_included = models.IntegerField(null=True)
-    units_transacted = models.DecimalField(max_digits=15, decimal_places=4,
-                                           null=True)
+# class AggHoldingType(models.Model):
+#     issuer = models.ForeignKey(IssuerCIK)
+#     security_title = models.CharField(max_length=80, null=True)
+#     units_held = models.DecimalField(max_digits=15, decimal_places=4,
+#                                      null=True)
+#     deriv_or_nonderiv = models.CharField(max_length=1, null=True)
+#     first_expiration_date = models.DateField(null=True)
+#     last_expiration_date = models.DateField(null=True)
+#     wavg_expiration_date = models.DateField(null=True)
+#     min_conversion_price = models.DecimalField(max_digits=15,
+#                                                decimal_places=4,
+#                                                null=True)
+#     max_conversion_price = models.DecimalField(max_digits=15,
+#                                                decimal_places=4,
+#                                                null=True)
+#     wavg_conversion = models.DecimalField(max_digits=15, decimal_places=4,
+#                                           null=True)
+#     underlying_title = models.CharField(max_length=80, null=True)
+#     underlying_shares = models.DecimalField(max_digits=15, decimal_places=4,
+#                                             null=True)
+#     underlying_price = models.DecimalField(max_digits=15, decimal_places=4,
+#                                            null=True)
+#     intrinsic_value = models.DecimalField(max_digits=15, decimal_places=4,
+#                                           null=True)
+#     first_xn = models.DateField(null=True)
+#     most_recent_xn = models.DateField(null=True)
+#     wavg_xn_date = models.DateField(null=True)
+#     transactions_included = models.IntegerField(null=True)
+#     tranches_included = models.IntegerField(null=True)
+#     units_transacted = models.DecimalField(max_digits=15, decimal_places=4,
+#                                            null=True)
 
-    def __unicode__(self):
-        return unicode(self.security_title) or u''
+#     def __unicode__(self):
+#         return unicode(self.security_title) or u''
+
+
+# class HoldingType(models.Model):
+#     issuer = models.ForeignKey(IssuerCIK)
+#     owner = models.ForeignKey(ReportingPerson)
+#     affiliation = models.ForeignKey(Affiliation)
+#     security_title = models.CharField(max_length=80, null=True)
+#     units_held = models.DecimalField(max_digits=15, decimal_places=4,
+#                                      null=True)
+#     deriv_or_nonderiv = models.CharField(max_length=1, null=True)
+#     first_expiration_date = models.DateField(null=True)
+#     last_expiration_date = models.DateField(null=True)
+#     wavg_expiration_date = models.DateField(null=True)
+#     min_conversion_price = models.DecimalField(max_digits=15, decimal_places=4,
+#                                                null=True)
+#     max_conversion_price = models.DecimalField(max_digits=15, decimal_places=4,
+#                                                null=True)
+#     wavg_conversion = models.DecimalField(max_digits=15, decimal_places=4,
+#                                           null=True)
+#     underlying_title = models.CharField(max_length=80, null=True)
+#     underlying_shares = models.DecimalField(max_digits=15, decimal_places=4,
+#                                             null=True)
+#     underlying_price = models.DecimalField(max_digits=15, decimal_places=4,
+#                                            null=True)
+#     intrinsic_value = models.DecimalField(max_digits=15, decimal_places=4,
+#                                           null=True)
+#     first_xn = models.DateField(null=True)
+#     most_recent_xn = models.DateField(null=True)
+#     wavg_xn_date = models.DateField(null=True)
+#     transactions_included = models.IntegerField(null=True)
+#     tranches_included = models.IntegerField(null=True)
+#     units_transacted = models.DecimalField(max_digits=15, decimal_places=4,
+#                                            null=True)
+
+#     def __unicode__(self):
+#         return unicode(self.security_title) or u''
 
 
 # class Holding(models.Model):
@@ -176,6 +186,7 @@ class Form345Entry(models.Model):
     period_of_report = models.DateField(null=True)
     issuer_cik = models.ForeignKey(IssuerCIK, null=True)
     issuer_cik_num = models.CharField(max_length=10)
+    securty = models.ForeignKey(Security, null=True)
     reporting_owner_cik = models.ForeignKey(ReportingPerson, null=True)
     reporting_owner_cik_num = models.CharField(max_length=10)
     reporting_owner_name = models.CharField(max_length=80, null=True)
