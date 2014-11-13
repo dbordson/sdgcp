@@ -184,12 +184,11 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilepath,
     a.supersededdt = None
 
     a.entry_internal_id =\
-        str(a.filedatetime)\
-        + str(a.issuer_cik_num)\
-        + str(a.reporting_owner_cik_num)\
-        + deriv_or_nonderiv\
-        + str(entrynumber)\
-        + '-'\
+        str(a.filedatetime) + '-'\
+        + str(a.issuer_cik_num) + '-'\
+        + str(a.reporting_owner_cik_num) + '-'\
+        + deriv_or_nonderiv + '-'\
+        + str(entrynumber) + '-'\
         + str(a.form_type)
 
     return a

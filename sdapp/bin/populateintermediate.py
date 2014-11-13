@@ -58,9 +58,6 @@ def update_reportingpersons():
         form_reporting_owner_cik_set\
         - (form_reporting_owner_cik_set & existing_reporting_person_cik_set)
 
-    print list(existing_reporting_person_cik_set)
-    print list(form_reporting_owner_cik_set)
-    print form_reporting_owner_cik_set & existing_reporting_person_cik_set
     new_persons = []
     for reporting_person_cik_to_add in reporting_person_ciks_to_add:
         cik = reporting_person_cik_to_add
@@ -81,14 +78,15 @@ def update_reportingpersons():
 # check lineup of int type primary keys against storage in Form345Entry model
 # The tell should be runaway record creation each time the script is run.
 def add_affiliations():
-    storedaffiliations = \
-        set(Affiliation.objects
-            .values_list('issuer_id', 'reporting_owner_id'))
+    unicode_combinations = \
+        Affiliation.objects\
+        .values_list('issuer_id', 'reporting_owner_id')
+    storedaffiliations =\
+        set([(int(a), int(b)) for a, b in unicode_combinations])
 
     unicode_combinations =\
         Form345Entry.objects\
         .values_list('issuer_cik_num', 'reporting_owner_cik_num')
-
     reporting_person_issuer_combinations =\
         set([(int(a), int(b)) for a, b in unicode_combinations])
 
