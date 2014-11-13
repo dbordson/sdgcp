@@ -27,7 +27,7 @@ class Affiliation(models.Model):
     person_name = models.CharField(max_length=80, null=True)
 
     def __unicode__(self):
-        return unicode(self.title) or u''
+        return unicode(self.person_name) or u''
 
 
 class Security(models.Model):
@@ -118,7 +118,8 @@ class SplitOrAdjustmentEvent(models.Model):
 #     first_expiration_date = models.DateField(null=True)
 #     last_expiration_date = models.DateField(null=True)
 #     wavg_expiration_date = models.DateField(null=True)
-#     min_conversion_price = models.DecimalField(max_digits=15, decimal_places=4,
+#     min_conversion_price = models.DecimalField(max_digits=15, 
+    #   decimal_places=4,
 #                                                null=True)
 #     max_conversion_price = models.DecimalField(max_digits=15, decimal_places=4,
 #                                                null=True)

@@ -85,8 +85,8 @@ if not(os.path.isfile('emailaddress.txt')) and\
 
 cik_num_list = IssuerCIK.objects.values_list('cik_num', flat=True)
 
-allforms = set(Form345Entry.objects.values_list('sec_path',
-                                                flat=True))
+allforms = set(FullForm.objects.values_list('sec_path',
+                                            flat=True))
 
 try:
     filelistobjects = FTPFileList.objects.all()
@@ -99,6 +99,9 @@ except:
     exit(0)
 
 formdownloadset = secfileset - (secfileset & allforms)
+print len(secfileset)
+print len(allforms)
+print len(formdownloadset)
 formdownloadlist = list(formdownloadset)
 
 

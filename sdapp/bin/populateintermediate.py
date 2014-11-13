@@ -1,6 +1,5 @@
 from sdapp.models import ReportingPerson, IssuerCIK, Form345Entry,\
-    Affiliation, HoldingType, ClosePrice, SecurityPriceHist,\
-    AggHoldingType
+    Affiliation, ClosePrice, SecurityPriceHist
 # from django.db import connection
 import datetime
 
@@ -43,24 +42,31 @@ def intrinsicvalcalc(conv_vector, unitsvector, underlyingprice):
 
 
 def update_reportingpersons():
+    unicode_reporting_owner_ciks =\
+        Form345Entry.objects\
+        .values_list('reporting_owner_cik_num', flat=True).distinct()
     form_reporting_owner_cik_set =\
-        set(Form345Entry.objects
-            .values_list('reporting_owner_cik_num', flat=True).distinct())
+        set([int(a) for a in unicode_reporting_owner_ciks])
 
-    existing_reporting_person_cik_set =\
+    unicode_existing_reporting_person_cik_set =\
         set(ReportingPerson.objects
             .values_list('reporting_owner_cik_num', flat=True).distinct())
+    existing_reporting_person_cik_set =\
+        set([int(a) for a in unicode_existing_reporting_person_cik_set])
 
     reporting_person_ciks_to_add =\
         form_reporting_owner_cik_set\
         - (form_reporting_owner_cik_set & existing_reporting_person_cik_set)
 
+    print list(existing_reporting_person_cik_set)
+    print list(form_reporting_owner_cik_set)
+    print form_reporting_owner_cik_set & existing_reporting_person_cik_set
     new_persons = []
     for reporting_person_cik_to_add in reporting_person_ciks_to_add:
         cik = reporting_person_cik_to_add
         name =\
             Form345Entry.objects.filter(reporting_owner_cik_num=cik)\
-            .order_by('-filedatetime')[0]
+            .order_by('-filedatetime')[0].reporting_owner_name
         # Figure out how to update name of person if it changes?
         persontosave =\
             ReportingPerson(person_name=name,
@@ -72,19 +78,21 @@ def update_reportingpersons():
     print 'done updating reporting persons'
 
 
-# ADD UPDATE AFFILIATION FUNCTIONALITY
-# CONSIDER WHETHER TO GUT AFFILIATION OF CHANGEABLE DATA
-# AND USE FOREIGN KEY DIRECTLY TO DATA TO BUILD VIEWS
-# AND AVOID DUPLICATION OF INFORMATION
+# check lineup of int type primary keys against storage in Form345Entry model
+# The tell should be runaway record creation each time the script is run.
 def add_affiliations():
     storedaffiliations = \
         set(Affiliation.objects
-            .values_list('issuer_cik_num', 'reporting_owner_cik_num'))
-    reporting_person_issuer_combinations =\
-        set(Form345Entry.objects
-            .values_list('issuer_cik_num', 'reporting_owner_cik_num'))
+            .values_list('issuer_id', 'reporting_owner_id'))
 
-    affiliations_cik_combinations_to_add = \
+    unicode_combinations =\
+        Form345Entry.objects\
+        .values_list('issuer_cik_num', 'reporting_owner_cik_num')
+
+    reporting_person_issuer_combinations =\
+        set([(int(a), int(b)) for a, b in unicode_combinations])
+
+    affiliations_cik_combinations_to_add =\
         reporting_person_issuer_combinations\
         - (reporting_person_issuer_combinations & storedaffiliations)
 
@@ -104,3 +112,6 @@ def add_affiliations():
                         person_name=latest_entry.reporting_owner_name)
         new_affiliations.append(new_affiliation)
     Affiliation.objects.bulk_create(new_affiliations)
+
+update_reportingpersons()
+add_affiliations()
