@@ -10,14 +10,14 @@ class Migration(SchemaMigration):
     def forwards(self, orm):
         # Adding model 'IssuerCIK'
         db.create_table(u'sdapp_issuercik', (
-            ('cik_num', self.gf('django.db.models.fields.CharField')(max_length=10, primary_key=True)),
+            ('cik_num', self.gf('django.db.models.fields.IntegerField')(primary_key=True)),
         ))
         db.send_create_signal(u'sdapp', ['IssuerCIK'])
 
         # Adding model 'ReportingPerson'
         db.create_table(u'sdapp_reportingperson', (
             ('person_name', self.gf('django.db.models.fields.CharField')(max_length=80)),
-            ('reporting_owner_cik_num', self.gf('django.db.models.fields.CharField')(max_length=10, primary_key=True)),
+            ('reporting_owner_cik_num', self.gf('django.db.models.fields.IntegerField')(primary_key=True)),
         ))
         db.send_create_signal(u'sdapp', ['ReportingPerson'])
 
@@ -35,7 +35,7 @@ class Migration(SchemaMigration):
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('issuer', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['sdapp.IssuerCIK'])),
             ('security_title', self.gf('django.db.models.fields.CharField')(max_length=80, null=True)),
-            ('public_price_available', self.gf('django.db.models.fields.BooleanField')()),
+            ('ticker', self.gf('django.db.models.fields.CharField')(max_length=10, null=True)),
             ('deriv_or_nonderiv', self.gf('django.db.models.fields.CharField')(max_length=1, null=True)),
             ('underlying_title', self.gf('django.db.models.fields.CharField')(max_length=80, null=True)),
         ))
@@ -44,7 +44,7 @@ class Migration(SchemaMigration):
         # Adding model 'SecurityPriceHist'
         db.create_table(u'sdapp_securitypricehist', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('ticker_sym', self.gf('django.db.models.fields.CharField')(max_length=5)),
+            ('ticker_sym', self.gf('django.db.models.fields.CharField')(max_length=10)),
             ('issuer', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['sdapp.IssuerCIK'], null=True)),
             ('security', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['sdapp.Security'], null=True)),
         ))
@@ -90,10 +90,10 @@ class Migration(SchemaMigration):
             ('entry_internal_id', self.gf('django.db.models.fields.CharField')(max_length=80)),
             ('period_of_report', self.gf('django.db.models.fields.DateField')(null=True)),
             ('issuer_cik', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['sdapp.IssuerCIK'], null=True)),
-            ('issuer_cik_num', self.gf('django.db.models.fields.CharField')(max_length=10)),
+            ('issuer_cik_num', self.gf('django.db.models.fields.IntegerField')(max_length=10)),
             ('securty', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['sdapp.Security'], null=True)),
             ('reporting_owner_cik', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['sdapp.ReportingPerson'], null=True)),
-            ('reporting_owner_cik_num', self.gf('django.db.models.fields.CharField')(max_length=10)),
+            ('reporting_owner_cik_num', self.gf('django.db.models.fields.IntegerField')(max_length=10)),
             ('reporting_owner_name', self.gf('django.db.models.fields.CharField')(max_length=80, null=True)),
             ('is_director', self.gf('django.db.models.fields.BooleanField')()),
             ('is_officer', self.gf('django.db.models.fields.BooleanField')()),
@@ -101,6 +101,7 @@ class Migration(SchemaMigration):
             ('is_something_else', self.gf('django.db.models.fields.BooleanField')()),
             ('reporting_owner_title', self.gf('django.db.models.fields.CharField')(max_length=80, null=True)),
             ('security_title', self.gf('django.db.models.fields.CharField')(max_length=80, null=True)),
+            ('short_sec_title', self.gf('django.db.models.fields.CharField')(max_length=80, null=True)),
             ('conversion_price', self.gf('django.db.models.fields.DecimalField')(null=True, max_digits=15, decimal_places=4)),
             ('transaction_date', self.gf('django.db.models.fields.DateField')(null=True)),
             ('transaction_code', self.gf('django.db.models.fields.CharField')(max_length=2, null=True)),
@@ -109,6 +110,7 @@ class Migration(SchemaMigration):
             ('xn_acq_disp_code', self.gf('django.db.models.fields.CharField')(max_length=2, null=True)),
             ('expiration_date', self.gf('django.db.models.fields.DateField')(null=True)),
             ('underlying_title', self.gf('django.db.models.fields.CharField')(max_length=80, null=True)),
+            ('scrubbed_underlying_title', self.gf('django.db.models.fields.CharField')(max_length=80, null=True)),
             ('underlying_shares', self.gf('django.db.models.fields.DecimalField')(null=True, max_digits=15, decimal_places=4)),
             ('shares_following_xn', self.gf('django.db.models.fields.DecimalField')(null=True, max_digits=15, decimal_places=4)),
             ('direct_or_indirect', self.gf('django.db.models.fields.CharField')(max_length=2, null=True)),
@@ -191,16 +193,18 @@ class Migration(SchemaMigration):
             'is_something_else': ('django.db.models.fields.BooleanField', [], {}),
             'is_ten_percent': ('django.db.models.fields.BooleanField', [], {}),
             'issuer_cik': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.IssuerCIK']", 'null': 'True'}),
-            'issuer_cik_num': ('django.db.models.fields.CharField', [], {'max_length': '10'}),
+            'issuer_cik_num': ('django.db.models.fields.IntegerField', [], {'max_length': '10'}),
             'period_of_report': ('django.db.models.fields.DateField', [], {'null': 'True'}),
             'reporting_owner_cik': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.ReportingPerson']", 'null': 'True'}),
-            'reporting_owner_cik_num': ('django.db.models.fields.CharField', [], {'max_length': '10'}),
+            'reporting_owner_cik_num': ('django.db.models.fields.IntegerField', [], {'max_length': '10'}),
             'reporting_owner_name': ('django.db.models.fields.CharField', [], {'max_length': '80', 'null': 'True'}),
             'reporting_owner_title': ('django.db.models.fields.CharField', [], {'max_length': '80', 'null': 'True'}),
+            'scrubbed_underlying_title': ('django.db.models.fields.CharField', [], {'max_length': '80', 'null': 'True'}),
             'sec_path': ('django.db.models.fields.CharField', [], {'max_length': '150', 'null': 'True'}),
             'security_title': ('django.db.models.fields.CharField', [], {'max_length': '80', 'null': 'True'}),
             'securty': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.Security']", 'null': 'True'}),
             'shares_following_xn': ('django.db.models.fields.DecimalField', [], {'null': 'True', 'max_digits': '15', 'decimal_places': '4'}),
+            'short_sec_title': ('django.db.models.fields.CharField', [], {'max_length': '80', 'null': 'True'}),
             'supersededdt': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'tenbfive_note': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
             'transaction_code': ('django.db.models.fields.CharField', [], {'max_length': '2', 'null': 'True'}),
@@ -226,20 +230,20 @@ class Migration(SchemaMigration):
         },
         u'sdapp.issuercik': {
             'Meta': {'object_name': 'IssuerCIK'},
-            'cik_num': ('django.db.models.fields.CharField', [], {'max_length': '10', 'primary_key': 'True'})
+            'cik_num': ('django.db.models.fields.IntegerField', [], {'primary_key': 'True'})
         },
         u'sdapp.reportingperson': {
             'Meta': {'object_name': 'ReportingPerson'},
             'person_name': ('django.db.models.fields.CharField', [], {'max_length': '80'}),
-            'reporting_owner_cik_num': ('django.db.models.fields.CharField', [], {'max_length': '10', 'primary_key': 'True'})
+            'reporting_owner_cik_num': ('django.db.models.fields.IntegerField', [], {'primary_key': 'True'})
         },
         u'sdapp.security': {
             'Meta': {'object_name': 'Security'},
             'deriv_or_nonderiv': ('django.db.models.fields.CharField', [], {'max_length': '1', 'null': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'issuer': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.IssuerCIK']"}),
-            'public_price_available': ('django.db.models.fields.BooleanField', [], {}),
             'security_title': ('django.db.models.fields.CharField', [], {'max_length': '80', 'null': 'True'}),
+            'ticker': ('django.db.models.fields.CharField', [], {'max_length': '10', 'null': 'True'}),
             'underlying_title': ('django.db.models.fields.CharField', [], {'max_length': '80', 'null': 'True'})
         },
         u'sdapp.securitypricehist': {
@@ -247,7 +251,7 @@ class Migration(SchemaMigration):
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'issuer': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.IssuerCIK']", 'null': 'True'}),
             'security': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.Security']", 'null': 'True'}),
-            'ticker_sym': ('django.db.models.fields.CharField', [], {'max_length': '5'})
+            'ticker_sym': ('django.db.models.fields.CharField', [], {'max_length': '10'})
         },
         u'sdapp.splitoradjustmentevent': {
             'Meta': {'object_name': 'SplitOrAdjustmentEvent'},

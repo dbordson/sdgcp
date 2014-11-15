@@ -5,7 +5,7 @@ from django.db import models
 
 
 class IssuerCIK(models.Model):
-    cik_num = models.CharField(max_length=10, primary_key=True)
+    cik_num = models.IntegerField(primary_key=True)
     # Adapt this for companies with more than one public stock (GOOG)
     # to do this, we will need to update the ticker finder script
 
@@ -15,7 +15,7 @@ class IssuerCIK(models.Model):
 
 class ReportingPerson(models.Model):
     person_name = models.CharField(max_length=80)
-    reporting_owner_cik_num = models.CharField(max_length=10, primary_key=True)
+    reporting_owner_cik_num = models.IntegerField(primary_key=True)
 
     def __unicode__(self):
         return self.person_name
@@ -33,7 +33,7 @@ class Affiliation(models.Model):
 class Security(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
     security_title = models.CharField(max_length=80, null=True)
-    public_price_available = models.BooleanField()
+    ticker = models.CharField(max_length=10, null=True)
     deriv_or_nonderiv = models.CharField(max_length=1, null=True)
     underlying_title = models.CharField(max_length=80, null=True)
 
@@ -42,7 +42,7 @@ class Security(models.Model):
 
 
 class SecurityPriceHist(models.Model):
-    ticker_sym = models.CharField(max_length=5)
+    ticker_sym = models.CharField(max_length=10)
     # stockhistories = models.ForeignKey(StockHistories)
     # last_update = models.DateField(auto_now=True)
     issuer = models.ForeignKey(IssuerCIK, null=True)
@@ -69,6 +69,10 @@ class SplitOrAdjustmentEvent(models.Model):
 
     def __unicode__(self):
         return unicode(self.security_title) or u''
+
+
+# class PersonView(models.Model):
+
 
 
 # class AggHoldingType(models.Model):
@@ -164,7 +168,6 @@ class SplitOrAdjustmentEvent(models.Model):
 #     def __unicode__(self):
 #         return unicode(self.security_title) or u''
 
-
 class FTPFileList(models.Model):
     files = models.TextField()
 
@@ -186,10 +189,10 @@ class Form345Entry(models.Model):
     entry_internal_id = models.CharField(max_length=80)
     period_of_report = models.DateField(null=True)
     issuer_cik = models.ForeignKey(IssuerCIK, null=True)
-    issuer_cik_num = models.CharField(max_length=10)
-    securty = models.ForeignKey(Security, null=True)
+    issuer_cik_num = models.IntegerField(max_length=10)
+    # security = models.ForeignKey(Security, null=True)
     reporting_owner_cik = models.ForeignKey(ReportingPerson, null=True)
-    reporting_owner_cik_num = models.CharField(max_length=10)
+    reporting_owner_cik_num = models.IntegerField(max_length=10)
     reporting_owner_name = models.CharField(max_length=80, null=True)
     is_director = models.BooleanField()
     is_officer = models.BooleanField()
@@ -197,6 +200,7 @@ class Form345Entry(models.Model):
     is_something_else = models.BooleanField()
     reporting_owner_title = models.CharField(max_length=80, null=True)
     security_title = models.CharField(max_length=80, null=True)
+    short_sec_title = models.CharField(max_length=80, null=True)
     conversion_price = models.DecimalField(max_digits=15, decimal_places=4,
                                            null=True)
     transaction_date = models.DateField(null=True)
@@ -208,6 +212,7 @@ class Form345Entry(models.Model):
     xn_acq_disp_code = models.CharField(max_length=2, null=True)
     expiration_date = models.DateField(null=True)
     underlying_title = models.CharField(max_length=80, null=True)
+    scrubbed_underlying_title = models.CharField(max_length=80, null=True)
     underlying_shares = models.DecimalField(max_digits=15, decimal_places=4,
                                             null=True)
     shares_following_xn = models.DecimalField(max_digits=15, decimal_places=4,

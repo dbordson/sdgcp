@@ -21,6 +21,62 @@ def convert_string_to_datetimestring(c):
     return c[:4] + "-" + c[4:6] + "-" + c[6:8] + " " + c[8:10] + ":" +\
         c[10:12] + ":" + c[12:14] + "Z"
 
+
+# def scrub_title(security_title_string):
+#     if security_title_string is None:
+#         return None
+
+#     # Below looks for put options -- we wouldn't want to scrub these out
+#     # because it would be very important to identify them, if they exist.
+#     short_circuit_phrase_list = [
+#         'right to sell',
+#         'put option',
+#     ]
+#     scrubbed_str = security_title_string.lower()
+
+#     for phrase in short_circuit_phrase_list:
+#         if scrubbed_str.find(phrase) != -1:
+#             return scrubbed_str
+
+#     # Below strips surplus phrases from the front of the title.
+#     strip_beginning_phrase_dict = {
+#         '198': 4,
+#         '199': 4,
+#         '200': 4,
+#         '201': 4,
+#         '202': 4,
+#     }
+
+#     for phrase in strip_beginning_phrase_dict:
+#         if scrubbed_str.find(phrase) != -1\
+#                 and scrubbed_str.find(phrase) < 5:
+#             scrubbed_str = \
+#                 scrubbed_str[scrubbed_str.find(phrase) +
+#                              strip_beginning_phrase_dict[phrase]:]
+#     scrubbed_str = scrubbed_str.strip(' .,;:')
+
+#     # Below strips surplus phrases from the end of the title.
+#     strip_end_phrase_list = [
+#         'par value',
+#         '(',
+#         '198',
+#         '199',
+#         '200',
+#         '201',
+#         '202',
+#     ]
+
+#     for phrase in strip_end_phrase_list:
+#         if scrubbed_str.find(phrase) > 7:
+#             scrubbed_str = \
+#                 scrubbed_str[:scrubbed_str.find(phrase)]
+#     scrubbed_str = scrubbed_str.strip(' .,;:')
+
+#     # Below replaces obvious errors 
+
+
+#     return scrubbed_str
+
 # class e:
 #     entry_internal_id = None
 #     period_of_report = None
@@ -119,8 +175,8 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilepath,
     a = Form345Entry()
 
     a.period_of_report = t_att(20, root, 'periodOfReport')
-    # a.issuer_cik = SPACER
     a.issuer_cik_num = int(t_att(10, root, 'issuer/issuerCik'))
+    a.issuer_cik_id = a.issuer_cik_num
     # a.reporting_owner_cik = SPACER
     a.reporting_owner_cik_num =\
         int(t_att(10, root, 'reportingOwner/reportingOwnerId/rptOwnerCik'))
@@ -139,6 +195,7 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilepath,
         t_att(80, root,
               'reportingOwner/reportingOwnerRelationship/officerTitle')
     a.security_title = t_att(80, child2, 'securityTitle/value')
+    # a.short_sec_title = scrub_title(a.security_title)
     a.conversion_price = f_att(4, child2, 'conversionOrExercisePrice/value')
     a.transaction_date = t_att(20, child2, 'transactionDate/value')
     a.transaction_code =\
@@ -154,6 +211,7 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilepath,
     a.expiration_date = t_att(20, child2, 'expirationDate/value')
     a.underlying_title =\
         t_att(80, child2, 'underlyingSecurity/underlyingSecurityTitle/value')
+    # a.scrubbed_underlying_title = scrub_title(a.underlying_title)
     a.underlying_shares =\
         f_att(4, child2, 'underlyingSecurity/underlyingSecurityShares/value')
     a.shares_following_xn =\
