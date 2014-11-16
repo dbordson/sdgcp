@@ -1,9 +1,9 @@
-from sdapp.models import ReportingPerson, IssuerCIK, Form345Entry,\
-    Affiliation, Security, ClosePrice, SecurityPriceHist
+from sdapp.models import ReportingPerson, Form345Entry,\
+    Affiliation, Security, SecurityPriceHist
 # from django.db import connection
 import datetime
 from collections import Counter
-from django.db.models import Q
+from sdapp.bin import updatetitles
 
 
 def weighted_avg(vectorunitoutput, weightingvector):
@@ -42,177 +42,6 @@ def intrinsicvalcalc(conv_vector, unitsvector, underlyingprice):
                 for p, q in zip(inthemoneyvector, unitsvector))
         return dotproduct
 
-
-def update_short_titles():
-    print 'Adding new short_sec_title fields to Form345Entry objects...'
-    print '    Sorting...',
-
-    issuer_ciks_with_forms_missing_short_titles =\
-        set(Form345Entry.objects.filter(short_sec_title=None)
-            .values_list('issuer_cik_num', flat=True))
-    for issuer_cik in issuer_ciks_with_forms_missing_short_titles:
-        unclassified_nonderiv_long_titles =\
-            set(Form345Entry.objects.filter(issuer_cik_num=issuer_cik)
-                .filter(deriv_or_nonderiv='N')
-                .filter(short_sec_title=None)
-                .values_list('security_title', flat=True))
-        multiple_classes_of_common = False
-# Common Stock Naming
-        if Form345Entry.objects.filter(issuer_cik_num=issuer_cik)\
-                .filter(short_sec_title=None)\
-                .filter(Q(security_title__icontains='class b') |
-                        Q(security_title__icontains='class c') |
-                        Q(security_title__icontains='class d'))\
-                .exclude(security_title__icontains='preferred')\
-                .exclude(security_title__icontains='unit')\
-                .exclude(security_title__icontains='option')\
-                .exclude(security_title__icontains='rsu').exists():
-            multiple_classes_of_common = True
-        if multiple_classes_of_common:
-            forms_for_assignment = \
-                Form345Entry.objects.filter(issuer_cik_num=issuer_cik)\
-                .filter(short_sec_title=None)\
-                .filter(Q(security_title__icontains='common') |
-                        Q(security_title__icontains='stock'))\
-                .exclude(security_title__icontains='preferred')\
-                .exclude(security_title__icontains='unit')\
-                .exclude(security_title__icontains='option')\
-                .exclude(security_title__icontains='rsu')
-            for form in forms_for_assignment:
-                if 'class' not in form.security_title.lower():
-                    form.short_sec_title = 'common stock'
-                elif 'class a' in form.security_title.lower():
-                    form.short_sec_title = 'class a common stock'
-                elif 'class b' in form.security_title.lower():
-                    form.short_sec_title = 'class b common stock'
-                elif 'class c' in form.security_title.lower():
-                    form.short_sec_title = 'class c common stock'
-                elif 'class d' in form.security_title.lower():
-                    form.short_sec_title = 'class d common stock'
-                else:
-                    form.short_sec_title = form.security_title.lower()
-                form.save()
-        else:
-            Form345Entry.objects.filter(issuer_cik_num=issuer_cik)\
-                .filter(short_sec_title=None)\
-                .filter(Q(security_title__icontains='common') |
-                        Q(security_title__icontains='stock'))\
-                .exclude(security_title__icontains='preferred')\
-                .exclude(security_title__icontains='unit')\
-                .exclude(security_title__icontains='option')\
-                .exclude(security_title__icontains='rsu')\
-                .update(short_sec_title='common stock')
-# Preferred Stock Naming
-        multiple_classes_of_preferred = False
-        if Form345Entry.objects.filter(issuer_cik_num=issuer_cik)\
-                .filter(short_sec_title=None)\
-                .filter(security_title__icontains='preferred')\
-                .filter(Q(security_title__icontains='class b') |
-                        Q(security_title__icontains='class c') |
-                        Q(security_title__icontains='class d') |
-                        Q(security_title__icontains='series b') |
-                        Q(security_title__icontains='series c') |
-                        Q(security_title__icontains='series d'))\
-                .exclude(security_title__icontains='common')\
-                .exclude(security_title__icontains='option')\
-                .exists():
-            multiple_classes_of_preferred = True
-
-        if multiple_classes_of_preferred:
-            forms_for_assignment = \
-                Form345Entry.objects.filter(issuer_cik_num=issuer_cik)\
-                .filter(short_sec_title=None)\
-                .exclude(security_title__icontains='option')\
-                .filter(security_title__icontains='preferred')
-            for form in forms_for_assignment:
-                if 'class' not in form.security_title.lower()\
-                        and 'series' not in form.security_title.lower():
-                    form.short_sec_title = 'preferred stock'
-                elif 'class a' in form.security_title.lower():
-                    form.short_sec_title = 'class a preferred stock'
-                elif 'class b' in form.security_title.lower():
-                    form.short_sec_title = 'class b preferred stock'
-                elif 'class c' in form.security_title.lower():
-                    form.short_sec_title = 'class c preferred stock'
-                elif 'class d' in form.security_title.lower():
-                    form.short_sec_title = 'class d preferred stock'
-                elif 'series a' in form.security_title.lower():
-                    form.short_sec_title = 'series a preferred stock'
-                elif 'series b' in form.security_title.lower():
-                    form.short_sec_title = 'series b preferred stock'
-                elif 'series c' in form.security_title.lower():
-                    form.short_sec_title = 'series c preferred stock'
-                elif 'series d' in form.security_title.lower():
-                    form.short_sec_title = 'series d preferred stock'
-                else:
-                    form.short_sec_title = form.security_title.lower()
-                form.save()
-        else:
-            Form345Entry.objects.filter(issuer_cik_num=issuer_cik)\
-                .filter(short_sec_title=None)\
-                .filter(security_title__icontains='preferred')\
-                .update(short_sec_title='preferred stock')
-# Restricted Stock Units
-        if Form345Entry.objects.filter(issuer_cik_num=issuer_cik)\
-                .filter(short_sec_title=None)\
-                .exclude(security_title__icontains='option')\
-                .filter(Q(security_title__contains='RSU') |
-                        Q(security_title__icontains='restricted stock unit'))\
-                .exists():
-            Form345Entry.objects.filter(issuer_cik_num=issuer_cik)\
-                .filter(short_sec_title=None)\
-                .exclude(security_title__icontains='option')\
-                .filter(Q(security_title__contains='RSU') |
-                        Q(security_title__icontains='restricted stock unit'))\
-                .update(short_sec_title='restricted stock units')
-
-
-
-        # this snipped is neither used nor tested, but if we need a skeleton
-        # for figuring out if there is a single class of stock, this is a way
-        # to do it
-        # classdict = {
-        #     'class b': 0,
-        #     'class c': 0,
-        #     'class d': 0,
-        #     'class e': 0
-        # }
-        # disqualifying_terms = [
-        #     'preferred',
-        #     'unit',
-        #     'rsu'
-        # ]
-        # unclassified_nonderiv_long_titles =\
-        #     set(Form345Entry.objects.filter('issuer_cik_num'=issuer_cik)
-        #         .filter(deriv_or_nonderiv='N')
-        #         .filter(short_sec_title=None)
-        #         .values_list('security_title', flat=True))
-
-        # for long_title in unclassified_nonderiv_long_titles:
-        #     for key in classdict:
-        #         if key in long_title.lower() and not\
-        #                 any(term in long_title.lower()
-        #                     for term in disqualifying_terms):
-        #             classdict[key] += 1
-        # if sum(classdict.values()) == 0:
-        #     fill_in_single_class_of_common(issuer_cik)
-        # if sum(classdict.values()) == 0:
-        #     fill_in_multiple_classes_of_common(issuer_cik)
-
-
-
-
-
-    existing_reporting_person_cik_set =\
-        set(ReportingPerson.objects
-            .values_list('reporting_owner_cik_num', flat=True).distinct())
-
-    reporting_person_ciks_to_add =\
-        form_reporting_owner_cik_set\
-        - (form_reporting_owner_cik_set & existing_reporting_person_cik_set)
-
-# Now if the short titles for the issuer's forms don't match the short titles
-# for its securities, rebuild them
 
 def update_reportingpersons():
     print 'Adding new ReportingPerson objects...'
@@ -381,9 +210,9 @@ def update_securities():
     print 'saving...',
     Security.objects.bulk_create(new_securities)
     print 'done.'
-    # below determines if any IssuerCIKs don't have at least one associated
+    # below determines if any don't have at least one associated
     # ticker.
-    print 'Finding and linking IssuerCIK objects with associated',
+    print 'Finding and linking bjects with associated',
     print 'SecurityPriceHist objects, none of which are linked to a ',
     print 'security...'
     print '    Sorting...',
@@ -418,6 +247,7 @@ def check_securitypricehist():
         print 'none found.'
 
 
+updatetitles.update_short_titles()
 update_reportingpersons()
 update_affiliations()
 link_entries_for_reporting_person_foreign_keys()

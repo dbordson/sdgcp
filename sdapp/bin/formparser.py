@@ -1,4 +1,4 @@
-from sdapp.models import IssuerCIK, Form345Entry, FullForm
+from sdapp.models import Form345Entry, FullForm
 import os
 import sys
 
@@ -22,9 +22,9 @@ def convert_string_to_datetimestring(c):
         c[10:12] + ":" + c[12:14] + "Z"
 
 
-# def scrub_title(security_title_string):
-#     if security_title_string is None:
-#         return None
+def scrub_title(security_title_string):
+    if security_title_string is None:
+        return None
 
 #     # Below looks for put options -- we wouldn't want to scrub these out
 #     # because it would be very important to identify them, if they exist.
@@ -56,76 +56,41 @@ def convert_string_to_datetimestring(c):
 #     scrubbed_str = scrubbed_str.strip(' .,;:')
 
 #     # Below strips surplus phrases from the end of the title.
-#     strip_end_phrase_list = [
-#         'par value',
-#         '(',
-#         '198',
-#         '199',
-#         '200',
-#         '201',
-#         '202',
-#     ]
+    strip_end_phrase_list = [
+        'par value',
+        'Par Value',
+        '198',
+        '199',
+        '200',
+        '201',
+        '202',
+    ]
 
-#     for phrase in strip_end_phrase_list:
-#         if scrubbed_str.find(phrase) > 7:
-#             scrubbed_str = \
-#                 scrubbed_str[:scrubbed_str.find(phrase)]
-#     scrubbed_str = scrubbed_str.strip(' .,;:')
+    for phrase in strip_end_phrase_list:
+        if security_title_string.find(phrase) > 9:
+            security_title_string = \
+                security_title_string[:security_title_string.find(phrase)]
 
-#     # Below replaces obvious errors 
+    replace_phrase_dict = {
+        'optiion': 'option',
+        'Optiion': 'option',
+        'corporation': 'corp',
+        'Corporation': 'Corp',
+        'compensation': 'comp',
+        'Compensation': 'Comp',
+        'incorporated': 'inc',
+        'Incorporated': 'Inc',
+        'plan dividend': 'plan',
+        'Plan Dividend': 'Plan'
+    }
 
-
-#     return scrubbed_str
-
-# class e:
-#     entry_internal_id = None
-#     period_of_report = None
-#     issuer_cik = None
-#     issuer_cik_num = None
-#     reporting_owner_cik = None
-#     reporting_owner_cik_num = None
-#     reporting_owner_name = None
-#     is_director = None
-#     is_officer = None
-#     is_ten_percent = None
-#     is_something_else = None
-#     reporting_owner_title = None
-#     security_title = None
-#     conversion_price = None
-#     transaction_date = None
-#     transaction_code = None
-#     transaction_shares = None
-#     xn_price_per_share = None
-#     xn_acq_disp_code = None
-#     expiration_date = None
-#     underlying_title = None
-#     underlying_shares = None
-#     shares_following_xn = None
-#     direct_or_indirect = None
-#     tenbfive_note = None
-#     transaction_number = None
-#     source_name_partial_path = None
-#     five_not_subject_to_section_sixteen = None
-#     five_form_three_holdings = None
-#     five_form_four_transactions = None
-#     form_type = None
-#     deriv_or_nonderiv = None
-#     filedatetime = None
-#     supersededdt = None
-
-
-# def filemapper(CIK):
-#     xmldirectory = []
-#     filedir = os.path.expanduser('~/AutomatedFTP/storage/' + str(CIK) + '/')
-#     alreadyparsedfilenames =\
-#         set(Form345Entry.objects.values_list('source_name_partial_path',
-#                                              flat=True))
-#     for root, dirs, files in os.walk(filedir):
-#         for fileentry in files:
-#             if fileentry.endswith('.xml') and\
-#                     fileentry not in alreadyparsedfilenames:
-#                 xmldirectory.append(os.path.join(root, fileentry))
-#     return xmldirectory
+    for error in replace_phrase_dict:
+        if error in security_title_string:
+            security_title_string =\
+                security_title_string\
+                .replace(error, replace_phrase_dict[error])
+    security_title_string = security_title_string.strip(' .,;:')
+    return security_title_string
 
 
 # Extracts text attribute
@@ -194,7 +159,7 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilepath,
     a.reporting_owner_title =\
         t_att(80, root,
               'reportingOwner/reportingOwnerRelationship/officerTitle')
-    a.security_title = t_att(80, child2, 'securityTitle/value')
+    a.security_title = scrub_title(t_att(80, child2, 'securityTitle/value'))
     # a.short_sec_title = scrub_title(a.security_title)
     a.conversion_price = f_att(4, child2, 'conversionOrExercisePrice/value')
     a.transaction_date = t_att(20, child2, 'transactionDate/value')
@@ -210,7 +175,9 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilepath,
               'transactionAmounts/transactionAcquiredDisposedCode/value')
     a.expiration_date = t_att(20, child2, 'expirationDate/value')
     a.underlying_title =\
-        t_att(80, child2, 'underlyingSecurity/underlyingSecurityTitle/value')
+        scrub_title(t_att(80,
+                          child2,
+                          'underlyingSecurity/underlyingSecurityTitle/value'))
     # a.scrubbed_underlying_title = scrub_title(a.underlying_title)
     a.underlying_shares =\
         f_att(4, child2, 'underlyingSecurity/underlyingSecurityShares/value')
