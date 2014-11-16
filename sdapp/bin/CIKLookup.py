@@ -6,8 +6,11 @@ import requests
 
 
 def CIKFind(ticker):
-
-    url = 'http://www.sec.gov/cgi-bin/browse-edgar?company=&match=&CIK=%s&owner=exclude&Find=Find+Companies&action=getcompany' % ticker
+    # This grabs the CIK for a ticker from the SEC website search bar for
+    # finding filings by typing in the ticker.  Returns None if it doesn't
+    # work.
+    url = ('http://www.sec.gov/cgi-bin/browse-edgar?company=&match=&CIK=%s&o' +
+           'wner=exclude&Find=Find+Companies&action=getcompany') % ticker
     starttag = 'CIK='
     endtag = '&amp'
 
@@ -17,24 +20,30 @@ def CIKFind(ticker):
         CIKend = response.text.find(endtag, CIKstart)
         ciknum = response.text[CIKstart + len(starttag):CIKend]
     except:
-        ciknum = 'ACCESS ERROR'
+        ciknum = None
 
     if len(ciknum) > 11:
-        ciknum = 'NO CIK FOUND'
-    print ciknum
+        print 'Search did not work for:', ticker
+        print '    Returned', ciknum, 'instead.'
+        ciknum = None
     return ciknum
 
 
 def newciks():
-    for entry in SecurityPriceHist.objects.all():
-        print entry
-        if entry.issuer == None:
-            CIKnum = str(int(CIKFind(str(entry.ticker_sym))))
-            a = IssuerCIK(CIKnum)
-            a.cik_num = CIKnum
-            a.save()
-            entry.issuer = a
-            entry.save()
+    print 'Linking unlinked tickers to IssuerCIK objects and creating any',
+    print 'new IssuerCIK objects...'
+    print '    Sorting, linking and saving...',
+    unlinked_tickers = SecurityPriceHist.objects.filter(issuer=None)
+    # finds un
+    for entry in unlinked_tickers:
+        print entry.ticker_sym,
+        cik_num = int(CIKFind(str(entry.ticker_sym)))
+        if not IssuerCIK.filter(cik_num=cik_num).exists():
+            new_issuer_cik = IssuerCIK(cik_num=cik_num)
+            new_issuer_cik.save()
+        entry.issuer_id = cik_num
+        entry.save()
+    print 'done.'
 
 
 newciks()
