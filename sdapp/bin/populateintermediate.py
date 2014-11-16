@@ -148,18 +148,20 @@ def link_security_and_security_price_hist(cik, title):
 
 def create_primary_security(cik):
     nonderiv_form_title_set =\
-        set(Form345Entry.objects.filter(deriv_or_nonderiv='N')
+        set(Form345Entry.objects.filter(issuer_cik_num=cik)
+            .filter(deriv_or_nonderiv='N')
             .values_list('short_sec_title', flat=True))
 
-    deriv_form_underlying_title_set =\
-        set(Form345Entry.objects.filter(deriv_or_nonderiv='D')
-            .exclude(underlying_title=None)
-            .values_list('underlying_title', flat=True))
+    deriv_form_underlying_title_list =\
+        Form345Entry.objects.filter(issuer_cik_num=cik)\
+        .filter(deriv_or_nonderiv='D')\
+        .exclude(scrubbed_underlying_title=None)\
+        .values_list('scrubbed_underlying_title', flat=True)
 
     # Below says that the publicly traded stock is probably the one that most
     # compensatory derivative are convertible into.
-    if len(deriv_form_underlying_title_set) != 0:
-        underlying_short_title = Counter(deriv_form_underlying_title_set)
+    if len(deriv_form_underlying_title_list) != 0:
+        underlying_short_title = Counter(deriv_form_underlying_title_list)
         primary_nonderiv_title = underlying_short_title.most_common(1)[0][0]
         if primary_nonderiv_title in nonderiv_form_title_set:
             link_security_and_security_price_hist(cik, primary_nonderiv_title)
@@ -212,7 +214,7 @@ def update_securities():
     print 'done.'
     # below determines if any don't have at least one associated
     # ticker.
-    print 'Finding and linking bjects with associated',
+    print 'Finding and linking objects with associated',
     print 'SecurityPriceHist objects, none of which are linked to a ',
     print 'security...'
     print '    Sorting...',

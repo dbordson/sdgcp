@@ -10,7 +10,7 @@ class IssuerCIK(models.Model):
     # to do this, we will need to update the ticker finder script
 
     def __unicode__(self):
-        return self.cik_num
+        return str(self.cik_num)
 
 
 class ReportingPerson(models.Model):
@@ -58,8 +58,9 @@ class ClosePrice(models.Model):
     SecurityPriceHist = models.ForeignKey(SecurityPriceHist, null=True)
 
     def __unicode__(self):
-        return u"%s, %s, %s" % (self.SecurityPriceHist, self.close_price,
-                                self.close_date)
+        return u"%s, %s, %s" % (str(self.SecurityPriceHist),
+                                str(self.close_price),
+                                str(self.close_date))
 
 
 class SplitOrAdjustmentEvent(models.Model):
@@ -70,11 +71,7 @@ class SplitOrAdjustmentEvent(models.Model):
     def __unicode__(self):
         return unicode(self.security_title) or u''
 
-
 # class PersonView(models.Model):
-
-
-
 # class AggHoldingType(models.Model):
 #     issuer = models.ForeignKey(IssuerCIK)
 #     security_title = models.CharField(max_length=80, null=True)
@@ -106,11 +103,8 @@ class SplitOrAdjustmentEvent(models.Model):
 #     tranches_included = models.IntegerField(null=True)
 #     units_transacted = models.DecimalField(max_digits=15, decimal_places=4,
 #                                            null=True)
-
 #     def __unicode__(self):
 #         return unicode(self.security_title) or u''
-
-
 # class HoldingType(models.Model):
 #     issuer = models.ForeignKey(IssuerCIK)
 #     owner = models.ForeignKey(ReportingPerson)
@@ -122,11 +116,12 @@ class SplitOrAdjustmentEvent(models.Model):
 #     first_expiration_date = models.DateField(null=True)
 #     last_expiration_date = models.DateField(null=True)
 #     wavg_expiration_date = models.DateField(null=True)
-#     min_conversion_price = models.DecimalField(max_digits=15, 
+#     min_conversion_price = models.DecimalField(max_digits=15,
     #   decimal_places=4,
 #                                                null=True)
-#     max_conversion_price = models.DecimalField(max_digits=15, decimal_places=4,
-#                                                null=True)
+    # max_conversion_price = models.DecimalField(max_digits=15,
+    #                                            decimal_places=4,
+    #                                            null=True)
 #     wavg_conversion = models.DecimalField(max_digits=15, decimal_places=4,
 #                                           null=True)
 #     underlying_title = models.CharField(max_length=80, null=True)
@@ -143,11 +138,8 @@ class SplitOrAdjustmentEvent(models.Model):
 #     tranches_included = models.IntegerField(null=True)
 #     units_transacted = models.DecimalField(max_digits=15, decimal_places=4,
 #                                            null=True)
-
 #     def __unicode__(self):
 #         return unicode(self.security_title) or u''
-
-
 # class Holding(models.Model):
 #     issuer = models.ForeignKey(IssuerCIK)
 #     owner = models.ForeignKey(ReportingPerson)
@@ -164,9 +156,9 @@ class SplitOrAdjustmentEvent(models.Model):
 #                                             null=True)
 #     first_xn = models.DateField(null=True)
 #     most_recent_xn = models.DateField(null=True)
-
 #     def __unicode__(self):
 #         return unicode(self.security_title) or u''
+
 
 class FTPFileList(models.Model):
     files = models.TextField()
@@ -182,7 +174,7 @@ class FullForm(models.Model):
     text = models.TextField()
 
     def __unicode__(self):
-        return unicode(self.sec_path, self.save_date) or u''
+        return unicode(self.sec_path, str(self.save_date)) or u''
 
 
 class Form345Entry(models.Model):
@@ -230,4 +222,4 @@ class Form345Entry(models.Model):
     supersededdt = models.DateTimeField(null=True)
 
     def __unicode__(self):
-        return self.entry_internal_id
+        return str(self.entry_internal_id)
