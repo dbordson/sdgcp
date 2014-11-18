@@ -54,6 +54,7 @@ class SecurityPriceHist(models.Model):
 
 class ClosePrice(models.Model):
     close_price = models.DecimalField(max_digits=12, decimal_places=4)
+    adj_close_price = models.DecimalField(max_digits=12, decimal_places=4)
     close_date = models.DateField()
     SecurityPriceHist = models.ForeignKey(SecurityPriceHist, null=True)
 
