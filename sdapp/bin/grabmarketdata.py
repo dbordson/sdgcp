@@ -1,6 +1,4 @@
 from sdapp.models import SecurityPriceHist, ClosePrice, SplitOrAdjustmentEvent
-
-
 # import pandas
 from datetime import datetime, date
 from pandas.io.data import DataReader
@@ -11,7 +9,6 @@ def savetickerinfo(SPH_id, ticker, security_id):
     tickerdata = DataReader(ticker, "yahoo", datetime(enddate.year-10,
                                                       enddate.month,
                                                       enddate.day))
-
     tickerdata['Adj Factor'] =\
         tickerdata['Close'].divide(tickerdata['Adj Close'])
 
@@ -39,12 +36,13 @@ def savetickerinfo(SPH_id, ticker, security_id):
         if not SplitOrAdjustmentEvent.objects.filter(security_id=security_id)\
                 .filter(event_date=str(datetime.date(key)))\
                 .exists():
-                SplitOrAdjustmentEvent(security_id=security_id,
-                                       adjustment_factor=dictforsave[key],
-                                       event_date=str(datetime.date(key)))\
+                SplitOrAdjustmentEvent(
+                    security_id=security_id,
+                    adjustment_factor=round(dictforsave[key], 2),
+                    event_date=str(datetime.date(key)))\
                     .save()
 
-
+print "Updating stock price histories and split data...",
 tickertuples = SecurityPriceHist.objects.values_list('id',
                                                      'ticker_sym',
                                                      'security')
@@ -53,3 +51,4 @@ for SPH_id, ticker, security_id in tickertuples:
         savetickerinfo(SPH_id, ticker, security_id)
     except:
         print 'Error for:', SPH_id, ticker, security_id
+print "done."
