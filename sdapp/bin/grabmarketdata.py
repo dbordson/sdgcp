@@ -17,14 +17,14 @@ def savetickerinfo(SPH_id, ticker, security_id):
 
     tickerdata['Adj Factor Old/New'] =\
         tickerdata['Adj Factor Shifted'].divide(tickerdata['Adj Factor'])
-    ClosePrice.objects.filter(SecurityPriceHist_id=SPH_id)\
+    ClosePrice.objects.filter(securitypricehist_id=SPH_id)\
         .delete()
     closepricesforsave = []
     for a in tickerdata.itertuples():
         newcloseprice = ClosePrice(close_price=a[4],
                                    adj_close_price=a[6],
                                    close_date=str(datetime.date(a[0])),
-                                   SecurityPriceHist_id=SPH_id)
+                                   securitypricehist_id=SPH_id)
         closepricesforsave.append(newcloseprice)
     ClosePrice.objects.bulk_create(closepricesforsave)
 

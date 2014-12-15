@@ -1,4 +1,5 @@
-from sdapp.bin import addissuers, formscraper, formparser, populateintermediate
+from sdapp.bin import addissuers, formscraper, formparser,\
+    populateintermediate, supersedeinit
 
 # This script calls the other executables in proper order to start with a
 # list of tickers and build out all the needed filings from an up to date

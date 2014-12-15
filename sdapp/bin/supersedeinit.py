@@ -1,18 +1,21 @@
 from sdapp.models import Form345Entry
 # from django.db import connection
-# import datetime
+import datetime
 
 
 # entries34, untagged_entries
 
 def superseded_initialize():
+    print "Calculating superseded dates of unsuperseded forms..."
     entries34 = Form345Entry.objects\
         .exclude(filedatetime=None)\
         .exclude(form_type="5")\
-        .exclude(form_type="5/A")
+        .exclude(form_type="5/A")\
+        .exclude(short_sec_title=None)
     untagged_entries = entries34.filter(supersededdt=None)
     looplength = float(len(untagged_entries))
     counter = 0.0
+    today = datetime.date.today()
     for untagged_entry in untagged_entries:
         # Counter below
         if float(int(10*counter/looplength)) !=\
@@ -36,7 +39,7 @@ def superseded_initialize():
             .filter(issuer_cik_num=untagged_entry.issuer_cik_num)\
             .filter(reporting_owner_cik_num=untagged_entry
                     .reporting_owner_cik_num)\
-            .filter(security_title=untagged_entry.security_title)\
+            .filter(short_sec_title=untagged_entry.short_sec_title)\
             .filter(expiration_date=untagged_entry.expiration_date)\
             .filter(filedatetime__lt=untagged_entry.filedatetime)\
             .filter(transaction_date__gt=date_of_untagged_entry)\
@@ -55,7 +58,7 @@ def superseded_initialize():
             .filter(issuer_cik_num=untagged_entry.issuer_cik_num)\
             .filter(reporting_owner_cik_num=untagged_entry
                     .reporting_owner_cik_num)\
-            .filter(security_title=untagged_entry.security_title)\
+            .filter(short_sec_title=untagged_entry.short_sec_title)\
             .filter(expiration_date=untagged_entry.expiration_date)\
             .filter(filedatetime=untagged_entry.filedatetime)\
             .filter(transaction_number__gt=untagged_entry.transaction_number)\
@@ -63,6 +66,15 @@ def superseded_initialize():
         if supersededdt_already_assigned is False and\
                 was_the_filing_superseded_by_the_same_form is True:
             untagged_entry.supersededdt = untagged_entry.filedatetime
+            untagged_entry.save()
+            supersededdt_already_assigned = True
+
+        # The below handles derivatives that have expired
+
+        if supersededdt_already_assigned is False and\
+                untagged_entry.expiration_date is not None and\
+                today >= untagged_entry.expiration_date:
+            untagged_entry.supersededdt = untagged_entry.expiration_date
             untagged_entry.save()
             supersededdt_already_assigned = True
 
@@ -84,14 +96,15 @@ def superseded_initialize():
                 .filter(issuer_cik_num=untagged_entry.issuer_cik_num)\
                 .filter(reporting_owner_cik_num=untagged_entry
                         .reporting_owner_cik_num)\
-                .filter(security_title=untagged_entry.security_title)\
+                .filter(short_sec_title=untagged_entry.short_sec_title)\
                 .filter(expiration_date=untagged_entry.expiration_date)\
                 .filter(filedatetime__gt=untagged_entry.filedatetime)\
-                .filter(transaction_date__gte=date_of_untagged_entry)\
+                .exclude(transaction_date__lte=date_of_untagged_entry)\
                 .order_by('filedatetime')
-        if filtered_entries.exists():
-            untagged_entry.supersededdt = filtered_entries[0].filedatetime
-            untagged_entry.save()
+            if filtered_entries.exists():
+                untagged_entry.supersededdt = filtered_entries[0].filedatetime
+                untagged_entry.save()
+    print 'Done.'
     return
 
 # not just transactions

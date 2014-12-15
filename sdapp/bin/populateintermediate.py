@@ -1,5 +1,5 @@
-from sdapp.models import ReportingPerson, Form345Entry,\
-    Affiliation, Security, SecurityPriceHist
+from sdapp.models import (ReportingPerson, Form345Entry,\
+    Affiliation, Security, SecurityPriceHist)
 # from django.db import connection
 import datetime
 from collections import Counter
@@ -139,7 +139,7 @@ def link_security_and_security_price_hist(cik, title):
     ticker = security_price_hist.ticker_sym
     security = \
         Security.objects.get(issuer_id=cik,
-                             security_title=title)
+                             short_sec_title=title)
     security.ticker = ticker
     security_price_hist.security = security
     security.save()
@@ -181,33 +181,40 @@ def create_primary_security(cik):
 
 
 # Must create all issuer foreign key linkages in Form345Entry before running
-
+# MUST FIX TO DISTINGUISH BETWEEN SECURITIES WITH SAME NAME BUT DIFFERENT
+# UNDERLYING SECURITIES (already put in basic mechanics, check flow through to
+# rest of script and other scripts)
 def update_securities():
-    print 'Adding new Security objects'
+    print 'Adding new Security objects...'
     print '    Sorting...',
     formtitleset =\
         set(Form345Entry.objects
-            .values_list('issuer_cik_num', 'short_sec_title'))
+            .values_list('issuer_cik_num',
+                         'short_sec_title',
+                         'scrubbed_underlying_title'))
     storedtitleset =\
         set(Security.objects
-            .values_list('issuer_id', 'security_title'))
+            .values_list('issuer_id',
+                         'short_sec_title',
+                         'scrubbed_underlying_title'))
 
     security_titles_to_add =\
         formtitleset\
         - (formtitleset & storedtitleset)
     new_securities = []
     print 'building...',
-    for issuer_id, title_to_add in security_titles_to_add:
+    for issuer_id, title_to_add, underlying_title in security_titles_to_add:
         rep_form =\
             Form345Entry.objects.filter(short_sec_title=title_to_add)\
+            .filter(scrubbed_underlying_title=underlying_title)\
             .filter(issuer_cik_num=issuer_id)\
             .order_by('-filedatetime')[0]
         new_security =\
             Security(issuer_id=issuer_id,
-                     security_title=title_to_add,
+                     short_sec_title=title_to_add,
                      ticker=None,
                      deriv_or_nonderiv=rep_form.deriv_or_nonderiv,
-                     underlying_title=rep_form.scrubbed_underlying_title)
+                     scrubbed_underlying_title=underlying_title)
         new_securities.append(new_security)
     print 'saving...',
     Security.objects.bulk_create(new_securities)
@@ -235,6 +242,23 @@ def update_securities():
     print 'done.'
 
 
+def link_form_objects_to_securities():
+    print 'Finding and linking Form345Entry objects with Security objects'
+    print '    Sorting, linking and saving...',
+    unlinked_form_objects =\
+        Form345Entry.objects.filter(security=None)\
+        .values_list('issuer_cik_num', 'short_sec_title').distinct()
+    for issuer_cik_num, short_sec_title in unlinked_form_objects:
+        security =\
+            Security.objects.get(issuer_id=issuer_cik_num,
+                                 short_sec_title=short_sec_title)
+        Form345Entry.objects.filter(security=None)\
+            .filter(issuer_cik_num=issuer_cik_num)\
+            .filter(short_sec_title=short_sec_title)\
+            .update(security=security)
+    print 'done.'
+
+
 def check_securitypricehist():
     print 'Checking for unlinked tickers...',
     unlinked_security_price_hist =\
@@ -249,9 +273,44 @@ def check_securitypricehist():
         print 'none found.'
 
 
+def link_underlying_securities():
+    print 'Checking for unlinked Form345Entry objects...'
+
+    unlinked_form_ciks_and_underlying_set =\
+        set(Form345Entry.objects.filter(deriv_or_nonderiv='D')
+            .filter(underlying_security=None)
+            .exclude(scrubbed_underlying_title=None)
+            .values_list('issuer_cik', 'scrubbed_underlying_title')
+            .distinct())
+    underlying_securities =\
+        set(Security.objects.filter(deriv_or_nonderiv='N')
+            .exclude(short_sec_title=None)
+            .values_list('issuer', 'short_sec_title'))
+    print '    Sorting...',
+    underlying_securities_to_link =\
+        unlinked_form_ciks_and_underlying_set &\
+        underlying_securities
+
+    underlying_securities_to_link_list = list(underlying_securities_to_link)
+
+    print 'linking and saving...',
+    for cik, underlying_title in underlying_securities_to_link_list:
+        security_id = \
+            Security.objects.filter(issuer=cik)\
+            .filter(short_sec_title=underlying_title)[0].id
+        Form345Entry.objects.filter(deriv_or_nonderiv='D')\
+            .filter(issuer_cik=cik)\
+            .filter(underlying_security=None)\
+            .filter(scrubbed_underlying_title=underlying_title)\
+            .update(underlying_security=security_id)
+    print 'done.'
+
+
 updatetitles.update_short_titles()
 update_reportingpersons()
 update_affiliations()
 link_entries_for_reporting_person_foreign_keys()
 update_securities()
+link_form_objects_to_securities()
 check_securitypricehist()
+link_underlying_securities()

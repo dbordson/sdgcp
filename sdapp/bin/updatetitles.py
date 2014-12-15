@@ -28,6 +28,7 @@ def update_short_titles():
                         Q(security_title__icontains='class d'))\
                 .exclude(security_title__icontains='preferred')\
                 .exclude(security_title__icontains='unit')\
+                .exclude(security_title__icontains='phantom')\
                 .exclude(security_title__icontains='option')\
                 .exclude(security_title__icontains='rsu').exists():
             multiple_classes_of_common = True
@@ -40,6 +41,7 @@ def update_short_titles():
                         Q(security_title__icontains='stock'))\
                 .exclude(security_title__icontains='preferred')\
                 .exclude(security_title__icontains='unit')\
+                .exclude(security_title__icontains='phantom')\
                 .exclude(security_title__icontains='option')\
                 .exclude(security_title__icontains='rsu')
             for form in forms_for_assignment:
@@ -64,6 +66,7 @@ def update_short_titles():
                         Q(underlying_title__icontains='stock'))\
                 .exclude(underlying_title__icontains='preferred')\
                 .exclude(underlying_title__icontains='unit')\
+                .exclude(underlying_title__icontains='phantom')\
                 .exclude(underlying_title__icontains='option')\
                 .exclude(underlying_title__icontains='rsu')
             for form in forms_for_assignment:
@@ -89,6 +92,7 @@ def update_short_titles():
                         Q(security_title__icontains='stock'))\
                 .exclude(security_title__icontains='preferred')\
                 .exclude(security_title__icontains='unit')\
+                .exclude(security_title__icontains='phantom')\
                 .exclude(security_title__icontains='option')\
                 .exclude(security_title__icontains='rsu')\
                 .update(short_sec_title='common stock')
@@ -99,6 +103,7 @@ def update_short_titles():
                         Q(underlying_title__icontains='stock'))\
                 .exclude(underlying_title__icontains='preferred')\
                 .exclude(underlying_title__icontains='unit')\
+                .exclude(underlying_title__icontains='phantom')\
                 .exclude(underlying_title__icontains='rsu')\
                 .update(scrubbed_underlying_title='common stock')
 
