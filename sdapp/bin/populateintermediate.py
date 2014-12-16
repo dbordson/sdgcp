@@ -1,5 +1,5 @@
-from sdapp.models import (ReportingPerson, Form345Entry,\
-    Affiliation, Security, SecurityPriceHist)
+from sdapp.models import (ReportingPerson, Form345Entry,
+                          Affiliation, Security, SecurityPriceHist)
 # from django.db import connection
 import datetime
 from collections import Counter
@@ -11,6 +11,16 @@ def weighted_avg(vectorunitoutput, weightingvector):
     divisor = sum(weightingvector)
     wavg = dotproduct / divisor
     return wavg
+
+
+def median(medlist):
+    medlist.sort()
+    i = len(medlist)/2
+    if len(medlist) % 2 == 0:
+        median_number = (medlist[i] + medlist[i-1])/2
+    else:
+        median_number = medlist[i]
+    return median_number
 
 
 def wavgdate(datevector, weightvector):
@@ -306,6 +316,25 @@ def link_underlying_securities():
     print 'done.'
 
 
+def populate_conversion_factors():
+    print 'Replacing conversion factors...'
+    latest_conv_list = Form345Entry.objects.filter(transaction_code='M')\
+        .filter(deriv_or_nonderiv='D')\
+        .exclude(underlying_security__ticker=None)\
+        .values_list('security_id', flat=True).distinct()
+    for security_id in latest_conv_list:
+        sampleentries =\
+            Form345Entry.objects.filter(security=security_id)\
+            .filter(transaction_code='M')\
+            .order_by('filedatetime')[:10]\
+            .values_list('underlying_shares', 'transaction_shares')
+        conversion_multiples = [p / q for p, q in sampleentries]
+        conversion_multiple = median(conversion_multiples)
+        Security.objects.filter(id=security_id)\
+            .update(conversion_multiple=conversion_multiple)
+    print 'done.'
+
+
 updatetitles.update_short_titles()
 update_reportingpersons()
 update_affiliations()
@@ -314,3 +343,4 @@ update_securities()
 link_form_objects_to_securities()
 check_securitypricehist()
 link_underlying_securities()
+populate_conversion_factors()

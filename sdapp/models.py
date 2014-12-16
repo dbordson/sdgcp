@@ -96,8 +96,10 @@ class SecurityView(models.Model):
                                           null=True)
     # underlying_title = models.CharField(max_length=80, null=True)
     scrubbed_underlying_title = models.CharField(max_length=80, null=True)
-    underlying_shares = models.DecimalField(max_digits=15, decimal_places=4,
-                                            null=True)
+    ticker = models.CharField(max_length=10, null=True)
+    underlying_shares_total = models.DecimalField(max_digits=15,
+                                                  decimal_places=4,
+                                                  null=True)
     intrinsic_value = models.DecimalField(max_digits=15, decimal_places=4,
                                           null=True)
     first_xn = models.DateField(null=True)

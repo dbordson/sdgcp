@@ -3,14 +3,17 @@ from sdapp.models import Form345Entry
 import datetime
 
 
+def convert_date_to_datetimestring(date):
+    c = str(date)
+    return c[:10] + " 23:59:59Z"
+
 # entries34, untagged_entries
+
 
 def superseded_initialize():
     print "Calculating superseded dates of unsuperseded forms..."
     entries34 = Form345Entry.objects\
         .exclude(filedatetime=None)\
-        .exclude(form_type="5")\
-        .exclude(form_type="5/A")\
         .exclude(short_sec_title=None)
     untagged_entries = entries34.filter(supersededdt=None)
     looplength = float(len(untagged_entries))
@@ -74,7 +77,8 @@ def superseded_initialize():
         if supersededdt_already_assigned is False and\
                 untagged_entry.expiration_date is not None and\
                 today >= untagged_entry.expiration_date:
-            untagged_entry.supersededdt = untagged_entry.expiration_date
+            untagged_entry.supersededdt = \
+                convert_date_to_datetimestring(untagged_entry.expiration_date)
             untagged_entry.save()
             supersededdt_already_assigned = True
 
