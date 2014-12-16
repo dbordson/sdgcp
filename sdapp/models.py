@@ -80,6 +80,8 @@ class SecurityView(models.Model):
     security = models.ForeignKey(Security)
     short_sec_title = models.CharField(max_length=80, null=True)
     ticker = models.CharField(max_length=10, null=True)
+    last_close_price = models.DecimalField(max_digits=15, decimal_places=4,
+                                           null=True)
     # security_title = models.CharField(max_length=80, null=True)
     units_held = models.DecimalField(max_digits=15, decimal_places=4,
                                      null=True)
@@ -101,6 +103,9 @@ class SecurityView(models.Model):
     underlying_shares_total = models.DecimalField(max_digits=15,
                                                   decimal_places=4,
                                                   null=True)
+    underlying_close_price = models.DecimalField(max_digits=15,
+                                                 decimal_places=4,
+                                                 null=True)
     intrinsic_value = models.DecimalField(max_digits=15, decimal_places=4,
                                           null=True)
     first_xn = models.DateField(null=True)
@@ -114,8 +119,13 @@ class SecurityView(models.Model):
 class PersonHoldingView(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
     owner = models.ForeignKey(ReportingPerson)
+    person_name = models.CharField(max_length=80, null=True)
+    security = models.ForeignKey(Security)
     affiliation = models.ForeignKey(Affiliation)
     short_sec_title = models.CharField(max_length=80, null=True)
+    ticker = models.CharField(max_length=10, null=True)
+    last_close_price = models.DecimalField(max_digits=15, decimal_places=4,
+                                           null=True)
     # security_title = models.CharField(max_length=80, null=True)
     units_held = models.DecimalField(max_digits=15, decimal_places=4,
                                      null=True)
@@ -133,10 +143,13 @@ class PersonHoldingView(models.Model):
                                           null=True)
     # underlying_title = models.CharField(max_length=80, null=True)
     scrubbed_underlying_title = models.CharField(max_length=80, null=True)
-    underlying_shares = models.DecimalField(max_digits=15, decimal_places=4,
-                                            null=True)
-    underlying_price = models.DecimalField(max_digits=15, decimal_places=4,
-                                           null=True)
+    underlying_ticker = models.CharField(max_length=10, null=True)
+    underlying_shares_total = models.DecimalField(max_digits=15,
+                                                  decimal_places=4,
+                                                  null=True)
+    underlying_close_price = models.DecimalField(max_digits=15,
+                                                 decimal_places=4,
+                                                 null=True)
     intrinsic_value = models.DecimalField(max_digits=15, decimal_places=4,
                                           null=True)
     first_xn = models.DateField(null=True)
@@ -174,6 +187,7 @@ class Form345Entry(models.Model):
     reporting_owner_cik = models.ForeignKey(ReportingPerson, null=True)
     reporting_owner_cik_num = models.IntegerField(max_length=10)
     reporting_owner_name = models.CharField(max_length=80, null=True)
+    affiliation = models.ForeignKey(Affiliation, null=True)
     is_director = models.BooleanField()
     is_officer = models.BooleanField()
     is_ten_percent = models.BooleanField()

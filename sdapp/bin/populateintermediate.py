@@ -126,7 +126,7 @@ def update_affiliations():
     print 'done.'
 
 
-def link_entries_for_reporting_person_foreign_keys():
+def link_entries_for_reporting_person_and_affiliation_foreign_keys():
     print 'Linking Form345Entry objects to ReportingPerson objects...'
     print '    Sorting...',
     reporting_owner_ciks_with_unlinked_forms =\
@@ -140,6 +140,26 @@ def link_entries_for_reporting_person_foreign_keys():
         Form345Entry.objects.filter(reporting_owner_cik=None)\
             .filter(reporting_owner_cik_num=reporting_owner_cik)\
             .update(reporting_owner_cik=reporting_owner)
+    print 'done.'
+
+    print 'Linking Form345Entry objects to Affiliation objects...'
+    print '    Sorting...',
+    affiliations_with_unlinked_forms =\
+        Form345Entry.objects.filter(affiliation=None)\
+        .values_list('reporting_owner_cik', 'issuer_cik').distinct()
+    print 'linking and saving...',
+    for reporting_owner_cik, issuer_cik\
+            in affiliations_with_unlinked_forms:
+        # print reporting_owner_cik, issuer_cik_num
+        affiliation =\
+            Affiliation.objects\
+            .filter(issuer_id=issuer_cik)\
+            .get(reporting_owner_id=reporting_owner_cik)
+        # print affiliation, affiliation.id
+        Form345Entry.objects.filter(reporting_owner_cik=reporting_owner_cik)\
+            .filter(reporting_owner_cik=reporting_owner_cik)\
+            .filter(issuer_cik=issuer_cik)\
+            .update(affiliation=affiliation.id)
     print 'done.'
 
 
@@ -338,7 +358,7 @@ def populate_conversion_factors():
 updatetitles.update_short_titles()
 update_reportingpersons()
 update_affiliations()
-link_entries_for_reporting_person_foreign_keys()
+link_entries_for_reporting_person_and_affiliation_foreign_keys()
 update_securities()
 link_form_objects_to_securities()
 check_securitypricehist()
