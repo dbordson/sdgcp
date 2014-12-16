@@ -77,6 +77,7 @@ class SplitOrAdjustmentEvent(models.Model):
 
 class SecurityView(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
+    security = models.ForeignKey(Security)
     short_sec_title = models.CharField(max_length=80, null=True)
     ticker = models.CharField(max_length=10, null=True)
     # security_title = models.CharField(max_length=80, null=True)
@@ -96,7 +97,7 @@ class SecurityView(models.Model):
                                           null=True)
     # underlying_title = models.CharField(max_length=80, null=True)
     scrubbed_underlying_title = models.CharField(max_length=80, null=True)
-    ticker = models.CharField(max_length=10, null=True)
+    underlying_ticker = models.CharField(max_length=10, null=True)
     underlying_shares_total = models.DecimalField(max_digits=15,
                                                   decimal_places=4,
                                                   null=True)

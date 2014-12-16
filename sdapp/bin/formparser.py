@@ -1,6 +1,7 @@
 from sdapp.models import Form345Entry, FullForm
 import os
 import sys
+from decimal import Decimal
 
 try:
     import xml.etree.cElementTree as ET
@@ -162,6 +163,7 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilepath,
     a.security_title = scrub_title(t_att(80, child2, 'securityTitle/value'))
     # a.short_sec_title = scrub_title(a.security_title)
     a.conversion_price = f_att(4, child2, 'conversionOrExercisePrice/value')
+
     a.transaction_date = t_att(20, child2, 'transactionDate/value')
     a.transaction_code =\
         t_att(2, child2, 'transactionCoding/transactionCode')
@@ -215,6 +217,18 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilepath,
         + deriv_or_nonderiv + '-'\
         + str(entrynumber) + '-'\
         + str(a.form_type)
+
+    if deriv_or_nonderiv == 'D' and a.conversion_price is None:
+        a.conversion_price = Decimal(0.0)
+
+    if a.transaction_date is None and\
+            a.transaction_code is None and\
+            a.shares_following_xn is None and\
+            a.transaction_shares is not None:
+        a.shares_following_xn = a.transaction_shares
+        a.transaction_shares = None
+    if a.shares_following_xn is None:
+        a.shares_following_xn = Decimal(0.0)
 
     return a
 
