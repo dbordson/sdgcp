@@ -4,4 +4,3 @@ staticfiles
 .env
 .DS_Store
 emailaddress.txt
-hellodjango/settings.py
