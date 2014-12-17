@@ -17,10 +17,26 @@ def savetickerinfo(SPH_id, ticker, security_id):
 
     tickerdata['Adj Factor Old/New'] =\
         tickerdata['Adj Factor Shifted'].divide(tickerdata['Adj Factor'])
+
+    # The data_to_cp does not need to exit if we are not limited on rows
+    # to the extent we need past prices for the full period,
+    # we may collapse these two calls into one DataFrame
+    data_to_cp = DataReader(ticker, "yahoo", datetime(enddate.year-1,
+                                                      enddate.month,
+                                                      enddate.day))
+    data_to_cp['Adj Factor'] =\
+        data_to_cp['Close'].divide(data_to_cp['Adj Close'])
+
+    data_to_cp['Adj Factor Shifted'] =\
+        data_to_cp['Adj Factor'].shift(1)
+
+    data_to_cp['Adj Factor Old/New'] =\
+        data_to_cp['Adj Factor Shifted'].divide(data_to_cp['Adj Factor'])
+
     ClosePrice.objects.filter(securitypricehist_id=SPH_id)\
         .delete()
     closepricesforsave = []
-    for a in tickerdata.itertuples():
+    for a in data_to_cp.itertuples():
         newcloseprice = ClosePrice(close_price=a[4],
                                    adj_close_price=a[6],
                                    close_date=str(datetime.date(a[0])),

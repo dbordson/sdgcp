@@ -1,7 +1,7 @@
-{% if ticker_sym_avail %}
+{% if ticker_avail %}
     <ul>
-    {% for SecurityPriceHist in ticker_sym_avail %}
-        <li><a href="/sdapp/{{ SecurityPriceHist.ticker_sym }}/">{{ SecurityPriceHist.ticker_sym }}</a></li>
+    {% for SecurityPriceHist in ticker_avail %}
+        <li><a href="/sdapp/{{ SecurityPriceHist.ticker }}/">{{ SecurityPriceHist.ticker }}</a></li>
     {% endfor %}
     </ul>
 {% else %}

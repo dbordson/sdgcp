@@ -113,13 +113,14 @@ class SecurityView(models.Model):
     wavg_xn_date = models.DateField(null=True)
 
     def __unicode__(self):
-        return unicode(self.security_title) or u''
+        return unicode(self.short_sec_title) or u''
 
 
 class PersonHoldingView(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
     owner = models.ForeignKey(ReportingPerson)
     person_name = models.CharField(max_length=80, null=True)
+    person_title = models.CharField(max_length=80, null=True)
     security = models.ForeignKey(Security)
     affiliation = models.ForeignKey(Affiliation)
     short_sec_title = models.CharField(max_length=80, null=True)
@@ -157,7 +158,7 @@ class PersonHoldingView(models.Model):
     wavg_xn_date = models.DateField(null=True)
 
     def __unicode__(self):
-        return unicode(self.security_title) or u''
+        return unicode(self.short_sec_title) or u''
 
 
 class FTPFileList(models.Model):
@@ -182,6 +183,7 @@ class Form345Entry(models.Model):
     period_of_report = models.DateField(null=True)
     issuer_cik = models.ForeignKey(IssuerCIK, null=True)
     issuer_cik_num = models.IntegerField(max_length=10)
+    issuer_name = models.CharField(max_length=80, null=True)
     security = models.ForeignKey(Security, null=True,
                                  related_name="security_relationship")
     reporting_owner_cik = models.ForeignKey(ReportingPerson, null=True)

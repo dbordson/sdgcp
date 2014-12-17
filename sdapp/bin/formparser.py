@@ -142,6 +142,7 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilepath,
 
     a.period_of_report = t_att(20, root, 'periodOfReport')
     a.issuer_cik_num = int(t_att(10, root, 'issuer/issuerCik'))
+    a.issuer_name = t_att(80, root, 'issuer/issuerName')
     a.issuer_cik_id = a.issuer_cik_num
     # a.reporting_owner_cik = SPACER
     a.reporting_owner_cik_num =\

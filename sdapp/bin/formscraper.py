@@ -1,5 +1,5 @@
 import os
-from sdapp.models import IssuerCIK, Form345Entry, FTPFileList, FullForm
+from sdapp.models import IssuerCIK, FTPFileList, FullForm
 from ftplib import FTP
 from StringIO import StringIO
 import sys

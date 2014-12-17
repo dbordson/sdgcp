@@ -433,6 +433,7 @@ def build_security_views_by_affiliation():
         affiliation_obj = Affiliation.objects.get(id=affiliation)
         owner = affiliation_obj.reporting_owner
         person_name = affiliation_obj.person_name
+        person_title = latest_transaction.reporting_owner_title
 
 # FOR CHECKING IN CASE OF ERROR
         # print 'sec_obj.issuer', sec_obj.issuer
@@ -460,6 +461,7 @@ def build_security_views_by_affiliation():
             PersonHoldingView(issuer=sec_obj.issuer,
                               owner=owner,
                               person_name=person_name,
+                              person_title=person_title,
                               security_id=security_id,
                               affiliation=affiliation_obj,
                               short_sec_title=sec_obj.short_sec_title,

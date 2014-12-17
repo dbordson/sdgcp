@@ -1,35 +1,34 @@
-<h1>{{ ticker_sym }} Holding Table </h1>
+<h1>{{ issuer_name }} Holding Table ({{ ticker }})</h1>
 <table border="1" cellspacing="0" cellpadding="1" style="width:200px">
 <thead>
-    <th style="text-align:left;"  colspan="6">Non-Derivative Holdings</th>
+    <th style="text-align:left;" border="0"; colspan="5">Non-Derivative Holdings</th>
 </thead>
-{% for sectitle, holdings, total in stockholdinglists %}
+{% for sectitle, holdings, total in non_deriv_table %}
     <thead>
-        <th colspan="6">{{ sectitle }} Holdings</th>
+        <th border="0"; colspan="5"> </th>
+    <thead>
+        <th colspan="5">{{ sectitle }} Holdings (Ticker: {{ total.ticker }})</th>
     </thead>
     <thead>
         <th>Holder</th>
         <th>Title</th>
         <th>Units Held</th>
-        <th>W. Avg. Expiration</th>
         <th>Most Recent Transaction</th>
         <th>Intrinsic Value</th>
     </thead>
     {% for holding in holdings %}
     <tr>
-        <td style="text-align:center;"><a href="/sdapp/{{ ticker_sym }}/{{ holding.affiliation.reporting_owner_cik_num }}/holdingtypes">{{ holding.owner }}</a></td>
-        <td style="text-align:center;">{{ holding.affiliation }}</td>
+        <td style="text-align:center;"><a href="/sdapp/{{ ticker }}/{{ holding.owner_id }}/byperson">{{ holding.person_name }}</a></td>
+        <td style="text-align:center;">{{ holding.person_title }}</td>
         <td style="text-align:right;">{{ holding.units_held }}</td>
-        <td style="text-align:center;">{{ holding.wavg_xn_date }}</td>
         <td style="text-align:center;">{{ holding.most_recent_xn }}</td>
         <td style="text-align:center;">{{ holding.intrinsic_value }}</td>
     </tr>
     {% endfor %}
     <tr>
         <td style="text-align:center;">Total</td>
-        <td style="text-align:center;"></td>
+        <td style="text-align:center;"> </td>
         <td style="text-align:right;">{{ total.units_held }}</td>
-        <td style="text-align:center;">{{ total.wavg_xn_date }}</td>
         <td style="text-align:center;">{{ total.most_recent_xn }}</td>
         <td style="text-align:center;">{{ total.intrinsic_value }}</td>
     </tr>
@@ -40,9 +39,11 @@
 <thead>
     <th style="text-align:left;" colspan="9">Derivative Holdings</th>
 </thead>
-{% for sectitle, holdings, total in derivholdinglists %}
+{% for sectitle, holdings, total in deriv_table %}
     <thead>
-        <th colspan="9">{{ sectitle }} Holdings</th>
+        <th border="0"; colspan="9"></th>
+    <thead>
+        <th colspan="9">{{ sectitle }} Holdings (Underlying Ticker: {{ total.underlying_ticker }})</th>
     </thead>
     <thead>
         <th>Holder</th>
@@ -57,13 +58,13 @@
     </thead>
     {% for holding in holdings %}
     <tr>
-        <td style="text-align:center;"><a href="/sdapp/{{ ticker_sym }}/{{ holding.affiliation.reporting_owner_cik_num }}/holdingtypes">{{ holding.owner }}</a></td>
-        <td style="text-align:center;">{{ holding.affiliation }}</td>
+        <td style="text-align:center;"><a href="/sdapp/{{ ticker }}/{{ holding.owner_id }}/byperson">{{ holding.person_name }}</a></td>
+        <td style="text-align:center;">{{ holding.person_title }}</td>
         <td style="text-align:right;">{{ holding.units_held }}</td>
         <td style="text-align:center;">{{ holding.wavg_expiration_date }}</td>
         <th style="text-align:center;">{{ holding.wavg_conversion }}</td>
-        <td style="text-align:center;">{{ holding.underlying_title }}</td>
-        <td style="text-align:center;">{{ holding.underlying_shares }}</td>
+        <td style="text-align:center;">{{ holding.scrubbed_underlying_title }}</td>
+        <td style="text-align:center;">{{ holding.underlying_shares_total }}</td>
         <td style="text-align:center;">{{ holding.most_recent_xn }}</td>
         <td style="text-align:center;">{{ holding.intrinsic_value }}</td>
     </tr>
@@ -74,8 +75,8 @@
         <td style="text-align:right;">{{ total.units_held }}</td>
         <td style="text-align:center;">{{ total.wavg_expiration_date }}</td>
         <th style="text-align:center;">{{ total.wavg_conversion }}</td>
-        <td style="text-align:center;">{{ total.underlying_title }}</td>
-        <td style="text-align:center;">{{ total.underlying_shares }}</td>
+        <td style="text-align:center;">{{ total.scrubbed_underlying_title }}</td>
+        <td style="text-align:center;">{{ total.underlying_shares_total }}</td>
         <td style="text-align:center;">{{ total.most_recent_xn }}</td>
         <td style="text-align:center;">{{ total.intrinsic_value }}</td>
     </tr>
