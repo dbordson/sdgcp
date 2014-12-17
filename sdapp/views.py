@@ -1,5 +1,5 @@
 from django.shortcuts import render_to_response
-from sdapp.models import Security, ClosePrice, SecurityPriceHist,\
+from sdapp.models import Security, \
     Form345Entry, PersonHoldingView, SecurityView
 # import datetime
 
