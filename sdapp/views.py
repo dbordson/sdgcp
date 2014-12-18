@@ -1,6 +1,6 @@
 from django.shortcuts import render_to_response
-from sdapp.models import Security, \
-    Form345Entry, PersonHoldingView, SecurityView
+from sdapp.models import (Security,
+                          Form345Entry, PersonHoldingView, SecurityView)
 # import datetime
 
 
@@ -74,11 +74,9 @@ def compile_holdings_into_table(person_view_set, total_view_set,
         sec_holdings = person_view_set.filter(security_id=security_id)\
             .order_by('-units_held')[:5]
         total = total_view_set.filter(security=security_id)[0]
-
         holding_list = [short_sec_title, sec_holdings, total]
-
         holding_lists.append(holding_list)
-        return holding_lists
+    return holding_lists
 
 
 def holdingtable(request, ticker):
