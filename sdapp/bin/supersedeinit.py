@@ -24,10 +24,14 @@ def superseded_initialize():
     looplength = float(len(untagged_entries))
     counter = 0.0
     today = datetime.date.today()
-    individualcutoffyears = 2
-    individualcutoffdate = datetime.date(today.year-individualcutoffyears,
+    nonofficercutoffyears = 5
+    nonofficercutoffdate = datetime.date(today.year-nonofficercutoffyears,
                                          today.month, today.day)
-    individualcutoffdt = convert_date_to_datetimestring(individualcutoffdate)
+    nonofficercutoffdt = convert_date_to_datetimestring(nonofficercutoffdate)
+    officercutoffyears = 2
+    officercutoffdate = datetime.date(today.year-officercutoffyears,
+                                      today.month, today.day)
+    officercutoffdt = convert_date_to_datetimestring(officercutoffdate)
     for untagged_entry in untagged_entries:
         # Counter below
         if float(int(10*counter/looplength)) !=\
@@ -120,15 +124,15 @@ def superseded_initialize():
                 supersededdt_already_assigned = True
 
         # Does the filer (if an officer) have any recent activity?
-        are_there_recent_trades_for_the_individual = \
+        are_there_recent_trades_for_the_officer = \
             entries34\
             .filter(issuer_cik_num=untagged_entry.issuer_cik_num)\
             .filter(reporting_owner_cik_num=untagged_entry
                     .reporting_owner_cik_num)\
-            .filter(filedatetime__gt=individualcutoffdt).exists()
+            .filter(filedatetime__gt=officercutoffdt).exists()
         if supersededdt_already_assigned is False and\
                 untagged_entry.is_officer is True and\
-                are_there_recent_trades_for_the_individual is False:
+                are_there_recent_trades_for_the_officer is False:
             latest_file_dt_as_iso = \
                 entries34\
                 .filter(issuer_cik_num=untagged_entry.issuer_cik_num)\
@@ -136,7 +140,7 @@ def superseded_initialize():
                         .reporting_owner_cik_num)\
                 .latest('filedatetime').filedatetime.isoformat()
             supersededdt_for_filer = \
-                string_date_with_years_added(individualcutoffyears,
+                string_date_with_years_added(officercutoffyears,
                                              latest_file_dt_as_iso)
             # Supersedes ALL remaining entries for affiliation
             entries34\
@@ -148,6 +152,33 @@ def superseded_initialize():
 
             supersededdt_already_assigned = True
 
+        are_there_recent_trades_for_the_nonofficer = \
+            entries34\
+            .filter(issuer_cik_num=untagged_entry.issuer_cik_num)\
+            .filter(reporting_owner_cik_num=untagged_entry
+                    .reporting_owner_cik_num)\
+            .filter(filedatetime__gt=nonofficercutoffdt).exists()
+        if supersededdt_already_assigned is False and\
+                untagged_entry.is_officer is False and\
+                are_there_recent_trades_for_the_nonofficer is False:
+            latest_file_dt_as_iso = \
+                entries34\
+                .filter(issuer_cik_num=untagged_entry.issuer_cik_num)\
+                .filter(reporting_owner_cik_num=untagged_entry
+                        .reporting_owner_cik_num)\
+                .latest('filedatetime').filedatetime.isoformat()
+            supersededdt_for_filer = \
+                string_date_with_years_added(nonofficercutoffyears,
+                                             latest_file_dt_as_iso)
+            # Supersedes ALL remaining entries for affiliation
+            entries34\
+                .filter(issuer_cik_num=untagged_entry.issuer_cik_num)\
+                .filter(reporting_owner_cik_num=untagged_entry
+                        .reporting_owner_cik_num)\
+                .filter(supersededdt=None)\
+                .update(supersededdt=supersededdt_for_filer)
+
+            supersededdt_already_assigned = True
     print 'Done.'
     return
 
