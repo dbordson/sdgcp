@@ -25,8 +25,9 @@ def superseded_initialize():
     counter = 0.0
     today = datetime.date.today()
     individualcutoffyears = 2
-    individualcutoff = datetime.date(today.year-individualcutoffyears,
-                                     today.month, today.day)
+    individualcutoffdate = datetime.date(today.year-individualcutoffyears,
+                                         today.month, today.day)
+    individualcutoffdt = convert_date_to_datetimestring(individualcutoffdate)
     for untagged_entry in untagged_entries:
         # Counter below
         if float(int(10*counter/looplength)) !=\
@@ -124,7 +125,7 @@ def superseded_initialize():
             .filter(issuer_cik_num=untagged_entry.issuer_cik_num)\
             .filter(reporting_owner_cik_num=untagged_entry
                     .reporting_owner_cik_num)\
-            .filter(filedatetime__gt=individualcutoff).exists()
+            .filter(filedatetime__gt=individualcutoffdt).exists()
         if supersededdt_already_assigned is False and\
                 untagged_entry.is_officer is True and\
                 are_there_recent_trades_for_the_individual is False:
