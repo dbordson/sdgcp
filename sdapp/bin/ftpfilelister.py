@@ -39,13 +39,19 @@ for filename in os.listdir(qindexdirectory):
 secfileset = set()
 for index in qindexfilelist:
     with open(index) as infile:
-        print '...for ' + index + ' ...'
+        print '...for ' + index + '...'
         for line in infile:
+            # print "'edgar/data/' in line", 'edgar/data/' in line
+            # print "cikfinder(line) in cik_num_set", cikfinder(line) in cik_num_set
+            # print "formfinder(line) in formset", formfinder(line) in formset
+            # print 'line', line
             if 'edgar/data/' in line and\
-                    cikfinder(line) in cik_num_set and\
+                    int(cikfinder(line)) in cik_num_set and\
                     formfinder(line) in formset:
                 formfilename = filepathfinder(line)
                 secfileset.add(formfilename)
+                # print 'len(secfileset)'
+                # print len(secfileset)
 secfilestring = ','.join(secfileset)
 print 'Saving ...'
 FTPFileList(files=secfilestring).save()
