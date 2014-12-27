@@ -118,11 +118,11 @@ def f_att(numdec, treeobject, path):
 def b_att(treeobject, path):
     try:
         if treeobject.find(path).text[0:1] == '1':
-            a = '1'
+            a = True
         else:
-            a = '0'
+            a = False
     except:
-        a = '0'
+        a = False
 
     return a
 

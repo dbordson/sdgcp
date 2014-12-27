@@ -10,6 +10,11 @@ def convert_date_to_datetimestring(date):
 # entries34, untagged_entries
 
 
+def string_date_with_years_added(yearsafter, date_in_iso):
+    c = date_in_iso
+    return str(int(c[0:4]) + yearsafter) + c[4:10] + " " + c[11:19] + "Z"
+
+
 def superseded_initialize():
     print "Calculating superseded dates of unsuperseded forms..."
     entries34 = Form345Entry.objects\
@@ -19,6 +24,9 @@ def superseded_initialize():
     looplength = float(len(untagged_entries))
     counter = 0.0
     today = datetime.date.today()
+    individualcutoffyears = 2
+    individualcutoff = datetime.date(today.year-individualcutoffyears,
+                                     today.month, today.day)
     for untagged_entry in untagged_entries:
         # Counter below
         if float(int(10*counter/looplength)) !=\
@@ -108,6 +116,37 @@ def superseded_initialize():
             if filtered_entries.exists():
                 untagged_entry.supersededdt = filtered_entries[0].filedatetime
                 untagged_entry.save()
+                supersededdt_already_assigned = True
+
+        # Does the filer (if an officer) have any recent activity?
+        are_there_recent_trades_for_the_individual = \
+            entries34\
+            .filter(issuer_cik_num=untagged_entry.issuer_cik_num)\
+            .filter(reporting_owner_cik_num=untagged_entry
+                    .reporting_owner_cik_num)\
+            .filter(filedatetime__gt=individualcutoff).exists()
+        if supersededdt_already_assigned is False and\
+                untagged_entry.is_officer is True and\
+                are_there_recent_trades_for_the_individual is False:
+            latest_file_dt_as_iso = \
+                entries34\
+                .filter(issuer_cik_num=untagged_entry.issuer_cik_num)\
+                .filter(reporting_owner_cik_num=untagged_entry
+                        .reporting_owner_cik_num)\
+                .latest('filedatetime').filedatetime.isoformat()
+            supersededdt_for_filer = \
+                string_date_with_years_added(individualcutoffyears,
+                                             latest_file_dt_as_iso)
+            # Supersedes ALL remaining entries for affiliation
+            entries34\
+                .filter(issuer_cik_num=untagged_entry.issuer_cik_num)\
+                .filter(reporting_owner_cik_num=untagged_entry
+                        .reporting_owner_cik_num)\
+                .filter(supersededdt=None)\
+                .update(supersededdt=supersededdt_for_filer)
+
+            supersededdt_already_assigned = True
+
     print 'Done.'
     return
 
