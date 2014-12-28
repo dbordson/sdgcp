@@ -179,7 +179,7 @@ def link_security_and_security_price_hist(cik, title):
 def create_primary_security(cik):
     nonderiv_form_title_set =\
         set(Form345Entry.objects.filter(issuer_cik_num=cik)
-            .filter(deriv_or_nonderiv='N')
+            .exclude(deriv_or_nonderiv='D')
             .values_list('short_sec_title', flat=True))
 
     deriv_form_underlying_title_list =\
@@ -199,12 +199,12 @@ def create_primary_security(cik):
     # If the above does not give a result (perhaps because only stock grants),
     # then the below checks to see if there is just one non_derivative title,
     # in which case, that's probably the public stock.
-    elif Form345Entry.objects.filter(deriv_or_nonderiv='N')\
+    elif Form345Entry.objects.exclude(deriv_or_nonderiv='D')\
             .exclude(short_sec_title__icontains='preferred')\
             .values_list('short_sec_title', flat=True)\
             .count() == 1:
         short_title =\
-            Form345Entry.objects.filter(deriv_or_nonderiv='N')\
+            Form345Entry.objects.exclude(deriv_or_nonderiv='D')\
             .exclude(short_sec_title__icontains='preferred')\
             .values_list('short_sec_title', flat=True)[0]
         link_security_and_security_price_hist(cik, short_title)
@@ -215,40 +215,85 @@ def create_primary_security(cik):
 # UNDERLYING SECURITIES (already put in basic mechanics, check flow through to
 # rest of script and other scripts)
 def update_securities():
-    print 'Adding new Security objects...'
+    print 'Completing or adding complete Security objects...'
     print '    Sorting...',
     formtitleset =\
         set(Form345Entry.objects
             .values_list('issuer_cik_num',
                          'short_sec_title',
-                         'scrubbed_underlying_title'))
+                         'scrubbed_underlying_title',
+                         'deriv_or_nonderiv'))
     storedtitleset =\
         set(Security.objects
             .values_list('issuer_id',
                          'short_sec_title',
-                         'scrubbed_underlying_title'))
+                         'scrubbed_underlying_title',
+                         'deriv_or_nonderiv'))
 
     security_titles_to_add =\
         formtitleset\
         - (formtitleset & storedtitleset)
     new_securities = []
     print 'building...',
-    for issuer_id, title_to_add, underlying_title in security_titles_to_add:
-        rep_form =\
-            Form345Entry.objects.filter(short_sec_title=title_to_add)\
-            .filter(scrubbed_underlying_title=underlying_title)\
-            .filter(issuer_cik_num=issuer_id)\
-            .order_by('-filedatetime')[0]
-        new_security =\
-            Security(issuer_id=issuer_id,
-                     short_sec_title=title_to_add,
-                     ticker=None,
-                     deriv_or_nonderiv=rep_form.deriv_or_nonderiv,
-                     scrubbed_underlying_title=underlying_title)
-        new_securities.append(new_security)
+    # Adjust to permit new securities to be filled in without underlying
+    # and later filled in.  This logic could create a problem if a security
+    # with a single short title is actually two separate securities which are
+    # referenced only as underlying securities.  I suspect this risk is remote.
+    for issuer_id, title_to_add, underlying_title, deriv_or_nonderiv\
+            in security_titles_to_add:
+        short_title_with_no_underlying = \
+            Security.objects.filter(short_sec_title=title_to_add)\
+            .filter(scrubbed_underlying_title=None)\
+            .filter(deriv_or_nonderiv=None)\
+            .filter(issuer_id=issuer_id)
+        if short_title_with_no_underlying.exists():
+            sec_for_update = short_title_with_no_underlying[0]
+            sec_for_update.scrubbed_underlying_title = underlying_title
+            sec_for_update.deriv_or_nonderiv = deriv_or_nonderiv
+            sec_for_update.save()
+        else:
+            new_security =\
+                Security(issuer_id=issuer_id,
+                         short_sec_title=title_to_add,
+                         ticker=None,
+                         deriv_or_nonderiv=deriv_or_nonderiv,
+                         scrubbed_underlying_title=underlying_title)
+            new_securities.append(new_security)
     print 'saving...',
     Security.objects.bulk_create(new_securities)
     print 'done.'
+    # Below adds securities which are only named as underlying securities
+    # and not directly transacted in the available form history.  For example
+    # this could happen if a company goes public and insiders hold only deriv.
+    # securities (RSUs and common stock) and do not directly hold common stock.
+    print 'Adding incomplete Security objects...'
+    print '    Sorting...',
+    incomplete_formtitleset =\
+        set(Form345Entry.objects
+            .exclude(scrubbed_underlying_title=None)
+            .values_list('issuer_cik_num',
+                         'scrubbed_underlying_title'))
+    incomplete_storedtitleset =\
+        set(Security.objects
+            .values_list('issuer_id',
+                         'short_sec_title'))
+    incomplete_security_titles_to_add =\
+        incomplete_formtitleset\
+        - (incomplete_formtitleset & incomplete_storedtitleset)
+    new_incomplete_securities = []
+    print 'building...',
+    for issuer_id, title_to_add in incomplete_security_titles_to_add:
+        new_incomplete_security =\
+            Security(issuer_id=issuer_id,
+                     short_sec_title=title_to_add,
+                     ticker=None,
+                     deriv_or_nonderiv=None,
+                     scrubbed_underlying_title=None)
+        new_incomplete_securities.append(new_incomplete_security)
+    print 'saving...',
+    Security.objects.bulk_create(new_incomplete_securities)
+    print 'done.'
+
     # below determines if any don't have at least one associated
     # ticker.
     print 'Finding and linking objects with associated',
