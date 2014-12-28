@@ -111,6 +111,7 @@ def build_security_views():
         xndatevector =\
             Form345Entry.objects\
             .filter(security_id=security_id)\
+            .filter(supersededdt=None)\
             .exclude(transaction_date=None)\
             .values_list('transaction_date', flat=True)
         if len(xndatevector) > 0:
@@ -319,6 +320,7 @@ def build_security_views_by_affiliation():
         xndatevector =\
             Form345Entry.objects\
             .filter(security_id=security_id)\
+            .filter(supersededdt=None)\
             .filter(affiliation=affiliation)\
             .exclude(transaction_date=None)\
             .values_list('transaction_date', flat=True)

@@ -1,6 +1,7 @@
 from sdapp.models import Form345Entry
 # from django.db import connection
 import datetime
+from decimal import Decimal
 
 
 def convert_date_to_datetimestring(date):
@@ -92,6 +93,17 @@ def superseded_initialize():
                 today >= untagged_entry.expiration_date:
             untagged_entry.supersededdt = \
                 convert_date_to_datetimestring(untagged_entry.expiration_date)
+            untagged_entry.save()
+            supersededdt_already_assigned = True
+
+        # The below handles transactions that close out a position (leave the
+        # reporting person with zero shares remaining.  We don't want to use
+        # these positions as current holdings, as it makes logical sense to
+        # say that a position of zero shares is superseded, leaving the person
+        # with no position in the security.
+        if supersededdt_already_assigned is False and\
+                untagged_entry.shares_following_xn == Decimal('0'):
+            untagged_entry.supersededdt = untagged_entry.filedatetime
             untagged_entry.save()
             supersededdt_already_assigned = True
 
