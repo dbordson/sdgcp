@@ -187,6 +187,7 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilepath,
     a.shares_following_xn =\
         f_att(4, child2,
               'postTransactionAmounts/sharesOwnedFollowingTransaction/value')
+    a.reported_shares_following_xn = a.shares_following_xn
     a.direct_or_indirect =\
         t_att(2, child2, 'ownershipNature/directOrIndirectOwnership/value')
     # MAKE SURE THIS WORKS
@@ -228,8 +229,11 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilepath,
             a.transaction_shares is not None:
         a.shares_following_xn = a.transaction_shares
         a.transaction_shares = None
+        a.reported_shares_following_xn = None
     if a.shares_following_xn is None:
         a.shares_following_xn = Decimal(0.0)
+    if a.reported_shares_following_xn is None:
+        a.reported_shares_following_xn = Decimal(0.0)
 
     return a
 

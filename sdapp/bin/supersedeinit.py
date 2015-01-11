@@ -45,6 +45,7 @@ def superseded_initialize():
         # This adjusts Form 3, 3/A entries to work, since they lack
         # transaction dates and instead tie to the period of the report.
         date_of_untagged_entry = untagged_entry.transaction_date
+        direct_or_indirect = untagged_entry.direct_or_indirect
         if date_of_untagged_entry is None:
             date_of_untagged_entry = \
                 untagged_entry.period_of_report
@@ -60,6 +61,7 @@ def superseded_initialize():
             .filter(expiration_date=untagged_entry.expiration_date)\
             .filter(filedatetime__lt=untagged_entry.filedatetime)\
             .filter(transaction_date__gt=date_of_untagged_entry)\
+            .filter(direct_or_indirect=direct_or_indirect)\
             .exists()
         if was_the_filing_superseded_before_filed is True:
             untagged_entry.supersededdt = untagged_entry.filedatetime
@@ -79,6 +81,7 @@ def superseded_initialize():
             .filter(expiration_date=untagged_entry.expiration_date)\
             .filter(filedatetime=untagged_entry.filedatetime)\
             .filter(transaction_number__gt=untagged_entry.transaction_number)\
+            .filter(direct_or_indirect=direct_or_indirect)\
             .exists()
         if supersededdt_already_assigned is False and\
                 was_the_filing_superseded_by_the_same_form is True:
@@ -128,6 +131,7 @@ def superseded_initialize():
                 .filter(short_sec_title=untagged_entry.short_sec_title)\
                 .filter(expiration_date=untagged_entry.expiration_date)\
                 .filter(filedatetime__gt=untagged_entry.filedatetime)\
+                .filter(direct_or_indirect=direct_or_indirect)\
                 .exclude(transaction_date__lte=date_of_untagged_entry)\
                 .order_by('filedatetime')
             if filtered_entries.exists():

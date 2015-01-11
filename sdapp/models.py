@@ -213,6 +213,10 @@ class Form345Entry(models.Model):
                                             null=True)
     shares_following_xn = models.DecimalField(max_digits=15, decimal_places=4,
                                               null=True)
+    reported_shares_following_xn = models.DecimalField(max_digits=15,
+                                                       decimal_places=4,
+                                                       null=True)
+    shares_following_xn_is_adjusted = models.BooleanField(default=False)
     direct_or_indirect = models.CharField(max_length=2, null=True)
     tenbfive_note = models.IntegerField(null=True)
     transaction_number = models.IntegerField(null=True)
