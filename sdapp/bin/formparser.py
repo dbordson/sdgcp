@@ -170,6 +170,8 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilepath,
         t_att(2, child2, 'transactionCoding/transactionCode')
     a.transaction_shares =\
         f_att(4, child2, 'transactionAmounts/transactionShares/value')
+    if a.transaction_shares == 0:
+        a.transaction_shares = None
     a.xn_price_per_share =\
         f_att(4, child2,
               'transactionAmounts/transactionPricePerShare/value')

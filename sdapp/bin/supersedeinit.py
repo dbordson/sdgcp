@@ -59,6 +59,8 @@ def superseded_initialize():
                     .reporting_owner_cik_num)\
             .filter(short_sec_title=untagged_entry.short_sec_title)\
             .filter(expiration_date=untagged_entry.expiration_date)\
+            .filter(scrubbed_underlying_title=
+                    untagged_entry.scrubbed_underlying_title)\
             .filter(filedatetime__lt=untagged_entry.filedatetime)\
             .filter(transaction_date__gt=date_of_untagged_entry)\
             .filter(direct_or_indirect=direct_or_indirect)\
@@ -79,6 +81,8 @@ def superseded_initialize():
                     .reporting_owner_cik_num)\
             .filter(short_sec_title=untagged_entry.short_sec_title)\
             .filter(expiration_date=untagged_entry.expiration_date)\
+            .filter(scrubbed_underlying_title=
+                    untagged_entry.scrubbed_underlying_title)\
             .filter(filedatetime=untagged_entry.filedatetime)\
             .filter(transaction_number__gt=untagged_entry.transaction_number)\
             .filter(direct_or_indirect=direct_or_indirect)\
@@ -130,6 +134,8 @@ def superseded_initialize():
                         .reporting_owner_cik_num)\
                 .filter(short_sec_title=untagged_entry.short_sec_title)\
                 .filter(expiration_date=untagged_entry.expiration_date)\
+                .filter(scrubbed_underlying_title=
+                        untagged_entry.scrubbed_underlying_title)\
                 .filter(filedatetime__gt=untagged_entry.filedatetime)\
                 .filter(direct_or_indirect=direct_or_indirect)\
                 .exclude(transaction_date__lte=date_of_untagged_entry)\
