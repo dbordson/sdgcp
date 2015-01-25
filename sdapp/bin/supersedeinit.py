@@ -48,7 +48,7 @@ def superseded_initialize():
         direct_or_indirect = untagged_entry.direct_or_indirect
         if date_of_untagged_entry is None:
             date_of_untagged_entry = \
-                untagged_entry.period_of_report
+                untagged_entry.filedatetime.date()
 
         # The below may happen when a form 5 reflecting an old transaction
         # is filed.
@@ -164,14 +164,8 @@ def superseded_initialize():
             supersededdt_for_filer = \
                 string_date_with_years_added(officercutoffyears,
                                              latest_file_dt_as_iso)
-            # Supersedes ALL remaining entries for affiliation
-            entries34\
-                .filter(issuer_cik_num=untagged_entry.issuer_cik_num)\
-                .filter(reporting_owner_cik_num=untagged_entry
-                        .reporting_owner_cik_num)\
-                .filter(supersededdt=None)\
-                .update(supersededdt=supersededdt_for_filer)
-
+            untagged_entry.supersededdt = supersededdt_for_filer
+            untagged_entry.save()
             supersededdt_already_assigned = True
 
         are_there_recent_trades_for_the_nonofficer = \
@@ -192,13 +186,8 @@ def superseded_initialize():
             supersededdt_for_filer = \
                 string_date_with_years_added(nonofficercutoffyears,
                                              latest_file_dt_as_iso)
-            # Supersedes ALL remaining entries for affiliation
-            entries34\
-                .filter(issuer_cik_num=untagged_entry.issuer_cik_num)\
-                .filter(reporting_owner_cik_num=untagged_entry
-                        .reporting_owner_cik_num)\
-                .filter(supersededdt=None)\
-                .update(supersededdt=supersededdt_for_filer)
+            untagged_entry.supersededdt = supersededdt_for_filer
+            untagged_entry.save()
 
             supersededdt_already_assigned = True
     print 'Done.'

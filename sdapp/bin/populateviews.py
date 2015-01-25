@@ -53,8 +53,8 @@ def intrinsicvalcalc(units_held_and_adj_and_conv_vectors,
     # print units_held_and_adj_and_conv_vectors
     up = underlyingprice
     # print up
-        # The below list comprehension is finding in the money options
-        # and the number of shares each converts into.
+    # The below list comprehension is finding in the money options
+    # and the number of shares each converts into.
     value_and_units_vectors =\
         [[max((up - (conv_price / adjustment)), Decimal(0.0)),
           units * adjustment * conversion_multiple]
