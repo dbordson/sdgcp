@@ -1,5 +1,6 @@
 from sdapp.models import Form345Entry
 from django.db.models import Sum
+from decimal import Decimal
 
 # Intro note: the way shares following transaction variable is defined is
 # confusing.  The logic tracks rolls forms forward by filing date and not by
@@ -100,8 +101,10 @@ for affiliation, short_sec_title, scrubbed_underlying_title,\
 
         non_xn_form_shares_remaining = \
             formentries.filter(transaction_shares=None)\
-            .aggregate(Sum('reported_shares_following_xn'))
-
+            .aggregate(Sum('reported_shares_following_xn'))[
+                'reported_shares_following_xn__sum']
+        if non_xn_form_shares_remaining is None:
+            non_xn_form_shares_remaining = Decimal(0)
         # Below grabs the last transaction and adds the shares remaining to the
         # holdings above.  The rationale is we don't know how many transactions
         # were in the same security, but we know the last transaction is likely
