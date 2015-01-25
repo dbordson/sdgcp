@@ -51,7 +51,7 @@ for affiliation, short_sec_title, scrubbed_underlying_title,\
         .exclude(form_type='4/A')\
         .exclude(form_type='5/A')\
         .order_by('filedatetime')\
-        .values_list('sec_path')\
+        .values_list('sec_path', flat=True)\
         .distinct()
     # The "type" is unadjusted forms that represent the same bucket of security
     entries_of_this_type =\
@@ -77,7 +77,7 @@ for affiliation, short_sec_title, scrubbed_underlying_title,\
 
     # This logic finds the last adjusted entry to get the starting shares
     # remaining value.  This only works if the last entry adjusted was filed
-    # before all unadjusted entries.  This should be true based on how this 
+    # before all unadjusted entries.  This should be true based on how this
     # script works, but be careful to update the below if this changes.
     if adjusted_entries_of_this_type.exists():
         starting_shares =\
