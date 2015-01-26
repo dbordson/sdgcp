@@ -12,15 +12,18 @@ from decimal import Decimal
 # to incorporate amendments.
 
 
-def transaction_share_calculator(shares_acquired_disposed):
+def transaction_share_calculator(shares_acquired_disposed,
+                                 ending_adjustment_factor):
     form_transaction_shares = 0
     if shares_acquired_disposed.exists():
-        for xn_acq_disp_code, transaction_shares\
+        for xn_acq_disp_code, transaction_shares, adjustment_factor\
                 in shares_acquired_disposed:
             if xn_acq_disp_code == 'A':
-                form_transaction_shares += transaction_shares
+                form_transaction_shares += transaction_shares *\
+                    (adjustment_factor / ending_adjustment_factor)
             if xn_acq_disp_code == 'D':
-                form_transaction_shares -= transaction_shares
+                form_transaction_shares -= transaction_shares *\
+                    (adjustment_factor / ending_adjustment_factor)
     return form_transaction_shares
 
 affiliations_and_securities_with_unadjusted_indirect_entries = \
@@ -82,29 +85,50 @@ for affiliation, short_sec_title, scrubbed_underlying_title,\
     if adjusted_entries_of_this_type.exists():
         starting_shares =\
             adjusted_entries_of_this_type[0].shares_following_xn_is_adjusted
+        starting_adjustment_factor =\
+            adjusted_entries_of_this_type[0].adjustment_factor
     else:
         starting_shares = 0
+        starting_adjustment_factor = 1
 
     shares_held = starting_shares
-
     for sec_path in sec_paths_with_unadjusted_indirect_entries:
         formentries = entries_of_this_type.filter(sec_path=sec_path)
-
+        starting_shares = shares_held
         # Below adds up the transactions on the forms and rolls forward the
         # shares held for this form.
         shares_acquired_disposed =\
             formentries.exclude(xn_acq_disp_code=None)\
-            .values_list('xn_acq_disp_code', 'transaction_shares')
+            .order_by('-transaction_number')\
+            .values_list('xn_acq_disp_code',
+                         'transaction_shares',
+                         'adjustment_factor')
+        if len(shares_acquired_disposed) > 0:
+            ending_adjustment_factor = shares_acquired_disposed[0][3]
+        else:
+            ending_adjustment_factor = starting_adjustment_factor
+
         form_transaction_shares =\
-            transaction_share_calculator(shares_acquired_disposed)
+            transaction_share_calculator(shares_acquired_disposed,
+                                         ending_adjustment_factor)
+        shares_held = shares_held *\
+            (starting_adjustment_factor / ending_adjustment_factor)
         shares_held += form_transaction_shares
 
-        non_xn_form_shares_remaining = \
+        non_xn_form_share_balances =\
             formentries.filter(transaction_shares=None)\
-            .aggregate(Sum('reported_shares_following_xn'))[
-                'reported_shares_following_xn__sum']
-        if non_xn_form_shares_remaining is None:
-            non_xn_form_shares_remaining = Decimal(0)
+            .order_by('transaction_number')\
+            .values_list('reported_shares_following_xn', 'adjustment_factor')
+
+        non_xn_form_shares_remaining = Decimal(0)
+        for balance, adjustment_factor in non_xn_form_share_balances:
+            if balance is None:
+                entry_shares_remaining = Decimal(0)
+            else:
+                entry_shares_remaining = balance
+            non_xn_form_shares_remaining += entry_shares_remaining\
+                * (adjustment_factor / ending_adjustment_factor)
+
         # Below grabs the last transaction and adds the shares remaining to the
         # holdings above.  The rationale is we don't know how many transactions
         # were in the same security, but we know the last transaction is likely
@@ -118,9 +142,15 @@ for affiliation, short_sec_title, scrubbed_underlying_title,\
         xn_form_entries = \
             formentries.exclude(transaction_shares=None)
         if xn_form_entries.exists():
-            xn_form_shares_remaining =\
+            reported_shares_remaining = \
                 xn_form_entries.order_by('-transaction_number')[0]\
                 .reported_shares_following_xn
+            adjustment_factor =\
+                xn_form_entries.order_by('-transaction_number')[0]\
+                .adjustment_factor
+            xn_form_shares_remaining =\
+                reported_shares_remaining\
+                * (adjustment_factor / ending_adjustment_factor)
         else:
             xn_form_shares_remaining = 0
         form_entry_min_shares_remaining =\
@@ -131,20 +161,33 @@ for affiliation, short_sec_title, scrubbed_underlying_title,\
                 form_entry_min_shares_remaining)
 
         formentries_by_xn_number =\
-            formentries.order_by('transaction_number')
-        shares_remaining_prior_to_form =\
-            shares_following_xn - form_transaction_shares
-        temp_shares_remaining = shares_remaining_prior_to_form
+            formentries.order_by('-transaction_number')
+        temp_shares_remaining = shares_following_xn
+        succeeding_adjustment_factor = ending_adjustment_factor
         for formentry in formentries_by_xn_number:
             xn_acq_disp_code = formentry.xn_acq_disp_code
             transaction_shares = formentry.transaction_shares
-            if xn_acq_disp_code == 'A':
-                temp_shares_remaining += transaction_shares
-            if xn_acq_disp_code == 'D':
-                temp_shares_remaining -= transaction_shares
+            adjustment_factor = formentry.adjustment_factor
+
+            # Note the acq / disp logic is reversed because this is rolling
+            # backward in time
+
+            if succeeding_adjustment_factor != adjustment_factor:
+                temp_shares_remaining =\
+                    temp_shares_remaining *\
+                    (succeeding_adjustment_factor / adjustment_factor)
+
             formentry.shares_following_xn = temp_shares_remaining
             formentry.save()
 
+            if xn_acq_disp_code == 'A':
+                temp_shares_remaining -= transaction_shares
+            if xn_acq_disp_code == 'D':
+                temp_shares_remaining += transaction_shares
+
+            succeeding_adjustment_factor = adjustment_factor
+
         shares_held = shares_following_xn
+        starting_adjustment_factor = ending_adjustment_factor
 
     entries_of_this_type.update(shares_following_xn_is_adjusted=True)
