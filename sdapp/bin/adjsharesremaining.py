@@ -26,6 +26,9 @@ def transaction_share_calculator(shares_acquired_disposed,
                     (adjustment_factor / ending_adjustment_factor)
     return form_transaction_shares
 
+print "Adjusting indirect holdings..."
+print "Sorting...",
+
 affiliations_and_securities_with_unadjusted_indirect_entries = \
     Form345Entry.objects.filter(shares_following_xn_is_adjusted=False)\
     .filter(direct_or_indirect='I')\
@@ -38,7 +41,7 @@ affiliations_and_securities_with_unadjusted_indirect_entries = \
                  'expiration_date')\
     .distinct()
 
-
+print 'building and saving...',
 for affiliation, short_sec_title, scrubbed_underlying_title,\
         expiration_date in \
         affiliations_and_securities_with_unadjusted_indirect_entries:
@@ -104,7 +107,7 @@ for affiliation, short_sec_title, scrubbed_underlying_title,\
                          'transaction_shares',
                          'adjustment_factor')
         if len(shares_acquired_disposed) > 0:
-            ending_adjustment_factor = shares_acquired_disposed[0][3]
+            ending_adjustment_factor = shares_acquired_disposed[0][2]
         else:
             ending_adjustment_factor = starting_adjustment_factor
 
@@ -191,3 +194,5 @@ for affiliation, short_sec_title, scrubbed_underlying_title,\
         starting_adjustment_factor = ending_adjustment_factor
 
     entries_of_this_type.update(shares_following_xn_is_adjusted=True)
+
+print 'done.'
