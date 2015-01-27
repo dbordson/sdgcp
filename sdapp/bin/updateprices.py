@@ -1,4 +1,4 @@
-from sdapp.models import CompanyStockHist
+from sdapp.models import SecurityPriceHist
 from django.db import connection
 import requests
 import datetime
@@ -43,7 +43,7 @@ def tickerprices(entry):
     csvurl = urlbase + ticker + '&a=%s&b=%s&c=%s' % startdaytuple \
         + '&d=%s&e=%s&f=%s&g=d&ignore=.csv' % todaytuple
     tickerdata = csvscraper(csvurl)
-    q = CompanyStockHist.objects.filter(ticker_sym=ticker)[0]
+    q = SecurityPriceHist.objects.filter(ticker_sym=ticker)[0]
     for daydata in tickerdata:
         date = daydata[0]
         adjclose = daydata[6]
@@ -53,7 +53,7 @@ def tickerprices(entry):
 
 
 def newstockprices():
-    for entry in CompanyStockHist.objects.all():
+    for entry in SecurityPriceHist.objects.all():
         print entry
         tickerprices(entry)
     return

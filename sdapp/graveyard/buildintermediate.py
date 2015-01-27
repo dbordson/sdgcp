@@ -1,5 +1,5 @@
 from sdapp.models import ReportingPerson, IssuerCIK, Form345Entry,\
-    Affiliation, Holding, HoldingType, ClosePrice, CompanyStockHist,\
+    Affiliation, Holding, HoldingType, ClosePrice, SecurityPriceHist,\
     AggHoldingType
 # from django.db import connection
 import datetime
@@ -371,8 +371,8 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
     # issuer CIK, but this means the IssuerCIK model must be updated daily.
     # I don't think this would create a headache, but I'm not sure.
     companycik = samp_obj.issuer
-    companystockhist = CompanyStockHist.objects.filter(issuer=companycik)
-    closeprices = ClosePrice.objects.filter(companystockhist=companystockhist)\
+    SecurityPriceHist = SecurityPriceHist.objects.filter(issuer=companycik)
+    closeprices = ClosePrice.objects.filter(SecurityPriceHist=SecurityPriceHist)\
         .order_by('-close_date')
     underlyingprice = None
     if len(closeprices) > 0:
@@ -465,7 +465,7 @@ def new_holdingtype(samp_obj, all_holdings, allentries):
 
 
 def refresh_holdingtypes():
-    allentries = Form345Entry.objects.exclude(transaction_date=None)
+    allentries = Form345Entry.objects.filter(supersededdt=None)
     all_holdings = Holding.objects.exclude(most_recent_xn=None)\
         .exclude(units_held=0)
     all_holdingtypes = HoldingType.objects.exclude(most_recent_xn=None)
@@ -535,8 +535,8 @@ def new_aggholdingtype(samp_obj, all_holdings, all_holdingtypes, allentries):
     # issuer CIK, but this means the IssuerCIK model must be updated daily.
     # I don't think this would create a headache, but I'm not sure.
     companycik = samp_obj.issuer
-    companystockhist = CompanyStockHist.objects.filter(issuer=companycik)
-    closeprices = ClosePrice.objects.filter(companystockhist=companystockhist)\
+    SecurityPriceHist = SecurityPriceHist.objects.filter(issuer=companycik)
+    closeprices = ClosePrice.objects.filter(SecurityPriceHist=SecurityPriceHist)\
         .order_by('-close_date')
     underlyingprice = None
     if len(closeprices) > 0:

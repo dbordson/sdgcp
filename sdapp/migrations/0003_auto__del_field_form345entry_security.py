@@ -8,46 +8,31 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # Adding field 'Holding.conversion_price'
-        db.add_column(u'sdapp_holding', 'conversion_price',
-                      self.gf('django.db.models.fields.DecimalField')(null=True, max_digits=15, decimal_places=4),
-                      keep_default=False)
+        # Deleting field 'Form345Entry.security'
+        db.delete_column(u'sdapp_form345entry', 'security_id')
 
 
     def backwards(self, orm):
-        # Deleting field 'Holding.conversion_price'
-        db.delete_column(u'sdapp_holding', 'conversion_price')
+        # Adding field 'Form345Entry.security'
+        db.add_column(u'sdapp_form345entry', 'security',
+                      self.gf('django.db.models.fields.related.ForeignKey')(to=orm['sdapp.Security'], null=True),
+                      keep_default=False)
 
 
     models = {
         u'sdapp.affiliation': {
             'Meta': {'object_name': 'Affiliation'},
-            'first_filing': ('django.db.models.fields.DateField', [], {'null': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'is_director': ('django.db.models.fields.BooleanField', [], {}),
-            'is_officer': ('django.db.models.fields.BooleanField', [], {}),
-            'is_something_else': ('django.db.models.fields.BooleanField', [], {}),
-            'is_ten_percent': ('django.db.models.fields.BooleanField', [], {}),
             'issuer': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.IssuerCIK']"}),
-            'issuer_cik_num': ('django.db.models.fields.CharField', [], {'max_length': '10'}),
-            'most_recent_filing': ('django.db.models.fields.DateField', [], {'null': 'True'}),
             'person_name': ('django.db.models.fields.CharField', [], {'max_length': '80', 'null': 'True'}),
-            'reporting_owner': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.ReportingPerson']"}),
-            'reporting_owner_cik_num': ('django.db.models.fields.CharField', [], {'max_length': '10'}),
-            'title': ('django.db.models.fields.CharField', [], {'max_length': '30', 'null': 'True'})
+            'reporting_owner': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.ReportingPerson']"})
         },
         u'sdapp.closeprice': {
             'Meta': {'object_name': 'ClosePrice'},
+            'SecurityPriceHist': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.SecurityPriceHist']", 'null': 'True'}),
             'close_date': ('django.db.models.fields.DateField', [], {}),
             'close_price': ('django.db.models.fields.DecimalField', [], {'max_digits': '12', 'decimal_places': '4'}),
-            'companystockhist': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.CompanyStockHist']", 'null': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
-        },
-        u'sdapp.companystockhist': {
-            'Meta': {'object_name': 'CompanyStockHist'},
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'issuer': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.IssuerCIK']", 'null': 'True'}),
-            'ticker_sym': ('django.db.models.fields.CharField', [], {'max_length': '5'})
         },
         u'sdapp.form345entry': {
             'Meta': {'object_name': 'Form345Entry'},
@@ -56,6 +41,7 @@ class Migration(SchemaMigration):
             'direct_or_indirect': ('django.db.models.fields.CharField', [], {'max_length': '2', 'null': 'True'}),
             'entry_internal_id': ('django.db.models.fields.CharField', [], {'max_length': '80'}),
             'expiration_date': ('django.db.models.fields.DateField', [], {'null': 'True'}),
+            'filedatetime': ('django.db.models.fields.DateTimeField', [], {}),
             'five_form_four_transactions': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
             'five_form_three_holdings': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
             'five_not_subject_to_section_sixteen': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
@@ -66,15 +52,18 @@ class Migration(SchemaMigration):
             'is_something_else': ('django.db.models.fields.BooleanField', [], {}),
             'is_ten_percent': ('django.db.models.fields.BooleanField', [], {}),
             'issuer_cik': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.IssuerCIK']", 'null': 'True'}),
-            'issuer_cik_num': ('django.db.models.fields.CharField', [], {'max_length': '10'}),
+            'issuer_cik_num': ('django.db.models.fields.IntegerField', [], {'max_length': '10'}),
             'period_of_report': ('django.db.models.fields.DateField', [], {'null': 'True'}),
             'reporting_owner_cik': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.ReportingPerson']", 'null': 'True'}),
-            'reporting_owner_cik_num': ('django.db.models.fields.CharField', [], {'max_length': '10'}),
+            'reporting_owner_cik_num': ('django.db.models.fields.IntegerField', [], {'max_length': '10'}),
             'reporting_owner_name': ('django.db.models.fields.CharField', [], {'max_length': '80', 'null': 'True'}),
             'reporting_owner_title': ('django.db.models.fields.CharField', [], {'max_length': '80', 'null': 'True'}),
+            'scrubbed_underlying_title': ('django.db.models.fields.CharField', [], {'max_length': '80', 'null': 'True'}),
+            'sec_path': ('django.db.models.fields.CharField', [], {'max_length': '150', 'null': 'True'}),
             'security_title': ('django.db.models.fields.CharField', [], {'max_length': '80', 'null': 'True'}),
             'shares_following_xn': ('django.db.models.fields.DecimalField', [], {'null': 'True', 'max_digits': '15', 'decimal_places': '4'}),
-            'source_name_partial_path': ('django.db.models.fields.CharField', [], {'max_length': '80', 'null': 'True'}),
+            'short_sec_title': ('django.db.models.fields.CharField', [], {'max_length': '80', 'null': 'True'}),
+            'supersededdt': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'tenbfive_note': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
             'transaction_code': ('django.db.models.fields.CharField', [], {'max_length': '2', 'null': 'True'}),
             'transaction_date': ('django.db.models.fields.DateField', [], {'null': 'True'}),
@@ -85,32 +74,49 @@ class Migration(SchemaMigration):
             'xn_acq_disp_code': ('django.db.models.fields.CharField', [], {'max_length': '2', 'null': 'True'}),
             'xn_price_per_share': ('django.db.models.fields.DecimalField', [], {'null': 'True', 'max_digits': '15', 'decimal_places': '4'})
         },
-        u'sdapp.holding': {
-            'Meta': {'object_name': 'Holding'},
-            'affiliation': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.Affiliation']"}),
-            'conversion_price': ('django.db.models.fields.DecimalField', [], {'null': 'True', 'max_digits': '15', 'decimal_places': '4'}),
-            'deriv_or_nonderiv': ('django.db.models.fields.CharField', [], {'max_length': '1', 'null': 'True'}),
-            'expiration_date': ('django.db.models.fields.DateField', [], {'null': 'True'}),
-            'first_xn': ('django.db.models.fields.DateField', [], {'null': 'True'}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'issuer': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.IssuerCIK']"}),
-            'most_recent_xn': ('django.db.models.fields.DateField', [], {'null': 'True'}),
-            'owner': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.ReportingPerson']"}),
-            'security_title': ('django.db.models.fields.CharField', [], {'max_length': '80', 'null': 'True'}),
-            'underlying_shares': ('django.db.models.fields.DecimalField', [], {'null': 'True', 'max_digits': '15', 'decimal_places': '4'}),
-            'underlying_title': ('django.db.models.fields.CharField', [], {'max_length': '80', 'null': 'True'}),
-            'units_held': ('django.db.models.fields.DecimalField', [], {'null': 'True', 'max_digits': '15', 'decimal_places': '4'})
+        u'sdapp.ftpfilelist': {
+            'Meta': {'object_name': 'FTPFileList'},
+            'files': ('django.db.models.fields.TextField', [], {}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
+        },
+        u'sdapp.fullform': {
+            'Meta': {'object_name': 'FullForm'},
+            'issuer_cik_num': ('django.db.models.fields.CharField', [], {'max_length': '10'}),
+            'save_date': ('django.db.models.fields.DateField', [], {'null': 'True'}),
+            'sec_path': ('django.db.models.fields.CharField', [], {'max_length': '150', 'primary_key': 'True'}),
+            'text': ('django.db.models.fields.TextField', [], {})
         },
         u'sdapp.issuercik': {
             'Meta': {'object_name': 'IssuerCIK'},
-            'cik_num': ('django.db.models.fields.CharField', [], {'max_length': '10'}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
+            'cik_num': ('django.db.models.fields.IntegerField', [], {'primary_key': 'True'})
         },
         u'sdapp.reportingperson': {
             'Meta': {'object_name': 'ReportingPerson'},
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'person_name': ('django.db.models.fields.CharField', [], {'max_length': '80'}),
-            'reporting_owner_cik_num': ('django.db.models.fields.CharField', [], {'max_length': '10'})
+            'reporting_owner_cik_num': ('django.db.models.fields.IntegerField', [], {'primary_key': 'True'})
+        },
+        u'sdapp.security': {
+            'Meta': {'object_name': 'Security'},
+            'deriv_or_nonderiv': ('django.db.models.fields.CharField', [], {'max_length': '1', 'null': 'True'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'issuer': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.IssuerCIK']"}),
+            'security_title': ('django.db.models.fields.CharField', [], {'max_length': '80', 'null': 'True'}),
+            'ticker': ('django.db.models.fields.CharField', [], {'max_length': '10', 'null': 'True'}),
+            'underlying_title': ('django.db.models.fields.CharField', [], {'max_length': '80', 'null': 'True'})
+        },
+        u'sdapp.securitypricehist': {
+            'Meta': {'object_name': 'SecurityPriceHist'},
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'issuer': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.IssuerCIK']", 'null': 'True'}),
+            'security': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.Security']", 'null': 'True'}),
+            'ticker_sym': ('django.db.models.fields.CharField', [], {'max_length': '10'})
+        },
+        u'sdapp.splitoradjustmentevent': {
+            'Meta': {'object_name': 'SplitOrAdjustmentEvent'},
+            'adjustment_factor': ('django.db.models.fields.DecimalField', [], {'max_digits': '15', 'decimal_places': '4'}),
+            'event_date': ('django.db.models.fields.DateField', [], {'null': 'True'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'security': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sdapp.Security']"})
         }
     }
 
