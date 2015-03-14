@@ -88,17 +88,22 @@ class TransactionEvent(models.Model):
     price_at_period_end = models.DecimalField(max_digits=15, decimal_places=4,
                                               null=True)
     perf_at_91_days = models.DecimalField(max_digits=15, decimal_places=4,
-                                           null=True)
+                                          null=True)
     perf_at_182_days = models.DecimalField(max_digits=15, decimal_places=4,
-                                            null=True)
+                                           null=True)
     perf_at_274_days = models.DecimalField(max_digits=15, decimal_places=4,
-                                            null=True)
+                                           null=True)
     perf_at_365_days = models.DecimalField(max_digits=15,
-                                            decimal_places=4,
-                                            null=True)
+                                           decimal_places=4,
+                                           null=True)
     perf_at_456_days = models.DecimalField(max_digits=15,
-                                            decimal_places=4,
-                                            null=True)
+                                           decimal_places=4,
+                                           null=True)
+
+    def __unicode__(self):
+        return u"%s, %s, %s" % (str(self.issuer),
+                                str(self.period_start),
+                                str(self.period_end))
 
 
 class SecurityView(models.Model):
