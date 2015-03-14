@@ -187,6 +187,8 @@ def period_queries(issuer, start_datetime, end_datetime,
         intrinsicvalcalc(ending_holding_values, period_adj_factor,
                          close_price_at_end_datetime)
 
+    # Eventually modify this so that only large changes are noted
+    # or modify whole script to capture only private sale acq transactions
     if end_holding_val == Decimal(0) or\
             end_holding_val is None:
         net_xn_pct = None
