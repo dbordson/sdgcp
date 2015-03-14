@@ -8,6 +8,8 @@ import bisect
 import pytz
 from operator import mul
 
+print "Starting regression analysis;"
+print "organizing input objects..."
 a = Form345Entry.objects\
     .exclude(transaction_shares=None)\
     .exclude(transaction_date=None)\
@@ -85,9 +87,9 @@ def xnvalcalc(units_xcted_acq_disp_and_conv_vectors, dp_lists):
         # print "units, date, acq_disp, conv_price, conv_mult",
         # print units, date, acq_disp, conv_price, conv_mult
         price = dp_lists[1][bisect.bisect_left(dp_lists[0], date)]
-        print dp_lists[0][bisect.bisect_left(dp_lists[0], date)]
-        print date
-        print price
+        # print dp_lists[0][bisect.bisect_left(dp_lists[0], date)]
+        # print date
+        # print price
         xns_val += \
             max((price - zerofill(conv_price)), Decimal(0.0))\
             * units * conv_mult * ad(acq_disp)
@@ -97,13 +99,15 @@ def xnvalcalc(units_xcted_acq_disp_and_conv_vectors, dp_lists):
 def intrinsicvalcalc(units_held_and_adj_and_conv_vectors,
                      period_adj_factor,
                      close_price_at_end_datetime):
+    if close_price_at_end_datetime == None:
+        return None
     intrinsicval = Decimal(0)
     price = close_price_at_end_datetime
     for shares_held, holding_adjustment_factor, conv_price, conv_mult\
             in units_held_and_adj_and_conv_vectors:
         # print "units, date, acq_disp, conv_price, conv_mult",
         # print units, date, acq_disp, conv_price, conv_mult
-        print price
+        # print price
         intrinsicval += \
             max((price - zerofill(conv_price)), Decimal(0.0))\
             * shares_held * conv_mult\
@@ -111,19 +115,26 @@ def intrinsicvalcalc(units_held_and_adj_and_conv_vectors,
     return intrinsicval
 
 
-def later_price(sec_price_hist, end_date, td_days):
-    td = datetime.datetime.timedelta(td_days)
+def later_price(sec_price_hist, end_date, ep, td_days):
+    td = datetime.timedelta(td_days)
     qs_at_td_days =\
         ClosePrice.objects\
         .filter(securitypricehist=sec_price_hist)\
         .filter(close_date__lt=end_date + td)\
+        .filter(close_date__gte=end_date + td - datetime.timedelta(5))\
         .order_by('-close_date')
-    if qs_at_td_days.exists():
+    # print 'end_date, ep, td_days, td'
+    # print end_date, ep, td_days, td
+
+    if qs_at_td_days.exists() and ep is not None:
         price_at_td_days = qs_at_td_days[0].adj_close_price
+        performance = (price_at_td_days / ep) - 1
     else:
-        price_at_td_days = None
-    
-    return price_at_td_days
+
+        performance = None
+    # print performance
+    return performance
+
 
 def period_queries(issuer, start_datetime, end_datetime,
                    sec_price_hist, unadj_date_price_lists):
@@ -144,7 +155,7 @@ def period_queries(issuer, start_datetime, end_datetime,
                      'xn_acq_disp_code',
                      'conversion_price',
                      'security__conversion_multiple')
-    net_xn_val = xnvalcalc(period_net_xn_amtues, unadj_date_price_lists)
+    net_xn_val = xnvalcalc(period_xns_values, unadj_date_price_lists)
     ending_entries =\
         Form345Entry.objects.filter(issuer_cik=issuer)\
         .filter(is_officer=True)\
@@ -152,18 +163,27 @@ def period_queries(issuer, start_datetime, end_datetime,
         .filter(filedatetime__lte=end_datetime)\
         .exclude(shares_following_xn=None)
     ending_holding_values =\
-        period_entries\
+        ending_entries\
         .values_list('shares_following_xn',
                      'adjustment_factor',
                      'conversion_price',
                      'security__conversion_multiple')
 
     end_date = end_datetime.date()
-    close_price_at_end_datetime =\
+    close_price_obj_at_end_datetime =\
         ClosePrice.objects\
         .filter(securitypricehist=sec_price_hist)\
         .filter(close_date__lt=end_date)\
-        .order_by('-close_date')[0].close_price
+        .order_by('-close_date')
+    if close_price_obj_at_end_datetime.exists():
+        close_price_at_end_datetime =\
+            close_price_obj_at_end_datetime[0].close_price
+        price_at_period_end =\
+            close_price_obj_at_end_datetime[0].adj_close_price
+    else:
+        close_price_at_end_datetime = None
+        price_at_period_end = None
+
     end_period_adj_factors =\
         SplitOrAdjustmentEvent.objects\
         .filter(security=sec_price_hist.security)\
@@ -175,32 +195,33 @@ def period_queries(issuer, start_datetime, end_datetime,
         intrinsicvalcalc(ending_holding_values, period_adj_factor,
                          close_price_at_end_datetime)
 
-    net_xn_pct = net_xn_val / end_holding_val
-
-    price_at_period_end =\
-        ClosePrice.objects\
-        .filter(securitypricehist=sec_price_hist)\
-        .filter(close_date__lt=end_date)\
-        .order_by('-close_date')[0].adj_close_price
-    price_at_91_days = later_price(sec_price_hist, end_date, 91)
-    price_at_182_days = later_price(sec_price_hist, end_date, 182)
-    price_at_274_days = later_price(sec_price_hist, end_date, 274)
-    price_at_365_days = later_price(sec_price_hist, end_date, 365)
-    price_at_456_days = later_price(sec_price_hist, end_date, 456)
+    if end_holding_val == Decimal(0) or\
+            end_holding_val is None:
+        net_xn_pct = None
+    else:
+        net_xn_pct = net_xn_val / end_holding_val
+    ep = price_at_period_end
+    # print 'end_holding_val, end_datetime'
+    # print end_holding_val, end_datetime
+    perf_at_91_days = later_price(sec_price_hist, end_date, ep, 91)
+    perf_at_182_days = later_price(sec_price_hist, end_date, ep, 182)
+    perf_at_274_days = later_price(sec_price_hist, end_date, ep, 274)
+    perf_at_365_days = later_price(sec_price_hist, end_date, ep, 365)
+    perf_at_456_days = later_price(sec_price_hist, end_date, ep, 456)
 
     new_xn_event =\
-        TransactionEvent(issuer=issuer,
+        TransactionEvent(issuer_id=issuer,
                          net_xn_val=net_xn_val,
                          end_holding_val=end_holding_val,
                          net_xn_pct=net_xn_pct,
                          period_start=start_datetime.date(),
                          period_end=end_datetime.date(),
                          price_at_period_end=price_at_period_end,
-                         price_at_91_days=price_at_91_days,
-                         price_at_182_days=price_at_182_days,
-                         price_at_274_days=price_at_274_days,
-                         price_at_365_days=price_at_365_days,
-                         price_at_456_days=price_at_456_days)
+                         perf_at_91_days=perf_at_91_days,
+                         perf_at_182_days=perf_at_182_days,
+                         perf_at_274_days=perf_at_274_days,
+                         perf_at_365_days=perf_at_365_days,
+                         perf_at_456_days=perf_at_456_days)
     return new_xn_event
 
 
@@ -214,7 +235,12 @@ issuers =\
 
 TransactionEvent.objects.all().delete()
 events_to_save = []
+totalissuers = len(issuers)
+count = 0
 for issuer in issuers:
+    count += 1
+    print "Issuer CIK:", issuer
+    print count, "of", totalissuers
     sec_price_hist =\
         SecurityPriceHist.objects.filter(issuer=issuer)[0]
     unadj_date_price_lists = \
@@ -236,7 +262,7 @@ for issuer in issuers:
     TransactionEvent.objects.bulk_create(events_to_save)
     events_to_save = []
 
-
+print "TransactionEvent objects saved.  Done"
 
 
 

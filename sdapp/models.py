@@ -77,27 +77,27 @@ class SplitOrAdjustmentEvent(models.Model):
 
 class TransactionEvent(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
-    net_xn_val = models.DecimalField(max_digits=15, decimal_places=2,
+    net_xn_val = models.DecimalField(max_digits=15, decimal_places=4,
                                      null=True)
-    end_holding_val = models.DecimalField(max_digits=15, decimal_places=2,
+    end_holding_val = models.DecimalField(max_digits=15, decimal_places=4,
                                           null=True)
-    net_xn_pct = models.DecimalField(max_digits=15, decimal_places=2,
+    net_xn_pct = models.DecimalField(max_digits=15, decimal_places=4,
                                      null=True)
     period_start = models.DateField(null=True)
     period_end = models.DateField(null=True)
-    price_at_period_end = models.DecimalField(max_digits=15, decimal_places=2,
+    price_at_period_end = models.DecimalField(max_digits=15, decimal_places=4,
                                               null=True)
-    price_at_91_days = models.DecimalField(max_digits=15, decimal_places=2,
+    perf_at_91_days = models.DecimalField(max_digits=15, decimal_places=4,
                                            null=True)
-    price_at_182_days = models.DecimalField(max_digits=15, decimal_places=2,
+    perf_at_182_days = models.DecimalField(max_digits=15, decimal_places=4,
                                             null=True)
-    price_at_274_days = models.DecimalField(max_digits=15, decimal_places=2,
+    perf_at_274_days = models.DecimalField(max_digits=15, decimal_places=4,
                                             null=True)
-    price_at_365_days = models.DecimalField(max_digits=15,
-                                            decimal_places=2,
+    perf_at_365_days = models.DecimalField(max_digits=15,
+                                            decimal_places=4,
                                             null=True)
-    price_at_456_days = models.DecimalField(max_digits=15,
-                                            decimal_places=2,
+    perf_at_456_days = models.DecimalField(max_digits=15,
+                                            decimal_places=4,
                                             null=True)
 
 
