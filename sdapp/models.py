@@ -75,6 +75,35 @@ class SplitOrAdjustmentEvent(models.Model):
         return unicode(self.security) or u''
 
 
+class TransactionEvent(models.Model):
+    issuer = models.ForeignKey(IssuerCIK)
+    reporting_person = models.ForeignKey(ReportingPerson)
+    minimum_agg_xns_value = models.DecimalField(max_digits=15,
+                                                decimal_places=2)
+    minimum_agg_xn_percent = models.DecimalField(max_digits=15,
+                                                 decimal_places=2)
+    net_xn_amt = models.DecimalField(max_digits=15, decimal_places=2,
+                                     null=True)
+    net_xn_pct = models.DecimalField(max_digits=15, decimal_places=2,
+                                     null=True)
+    period_start = models.DateField(null=True)
+    period_end = models.DateField(null=True)
+    price_at_period_end = models.DecimalField(max_digits=15, decimal_places=2,
+                                              null=True)
+    price_after_three_mo = models.DecimalField(max_digits=15, decimal_places=2,
+                                               null=True)
+    price_after_six_mo = models.DecimalField(max_digits=15, decimal_places=2,
+                                             null=True)
+    price_after_nine_mo = models.DecimalField(max_digits=15, decimal_places=2,
+                                              null=True)
+    price_after_twelve_mo = models.DecimalField(max_digits=15,
+                                                decimal_places=2,
+                                                null=True)
+    price_after_fifteen_mo = models.DecimalField(max_digits=15,
+                                                 decimal_places=2,
+                                                 null=True)
+
+
 class SecurityView(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
     security = models.ForeignKey(Security)
