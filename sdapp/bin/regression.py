@@ -91,16 +91,12 @@ def xnvalcalc(units_xcted_acq_disp_and_conv_vectors, dp_lists):
         xns_val += \
             max((price - zerofill(conv_price)), Decimal(0.0))\
             * units * conv_mult * ad(acq_disp)
-        # print max((price - zerofill(conv_price)), Decimal(0.0)) * units * conv_mult * ad(acq_disp)
     return xns_val
 
 
 def intrinsicvalcalc(units_held_and_adj_and_conv_vectors,
                      period_adj_factor,
                      close_price_at_end_datetime):
-    # units_vect, price_vect, adjustment_vector,\
-    #     conv_price_vect, conv_mult_vect =\
-    #     zip(*units_held_and_adj_and_conv_vectors)
     intrinsicval = Decimal(0)
     price = close_price_at_end_datetime
     for shares_held, holding_adjustment_factor, conv_price, conv_mult\
@@ -112,17 +108,22 @@ def intrinsicvalcalc(units_held_and_adj_and_conv_vectors,
             max((price - zerofill(conv_price)), Decimal(0.0))\
             * shares_held * conv_mult\
             * holding_adjustment_factor / period_adj_factor
-    # up = adj_close_price_at_end_datetime
-    # The below list comprehension is finding in the money options
-    # and the number of shares each converts into.
-    # value_and_units_vectors =\
-    #     [max((up - (zerofill(conv_price) / adjustment)), Decimal(0.0)) *
-    #      units * adjustment * conv_mult
-    #      for units, adjustment_factor, conv_price, conv_mult
-    #      in units_held_and_adj_and_conv_vectors]
-    # intrinsicval = sum(value_and_units_vectors) / adjustment_at_valuation_time
     return intrinsicval
 
+
+def later_price(sec_price_hist, end_date, td_days):
+    td = datetime.datetime.timedelta(td_days)
+    qs_at_td_days =\
+        ClosePrice.objects\
+        .filter(securitypricehist=sec_price_hist)\
+        .filter(close_date__lt=end_date + td)\
+        .order_by('-close_date')
+    if qs_at_td_days.exists():
+        price_at_td_days = qs_at_td_days[0].adj_close_price
+    else:
+        price_at_td_days = None
+    
+    return price_at_td_days
 
 def period_queries(issuer, start_datetime, end_datetime,
                    sec_price_hist, unadj_date_price_lists):
@@ -143,7 +144,7 @@ def period_queries(issuer, start_datetime, end_datetime,
                      'xn_acq_disp_code',
                      'conversion_price',
                      'security__conversion_multiple')
-    xns_val = xnvalcalc(period_xns_values, unadj_date_price_lists)
+    net_xn_val = xnvalcalc(period_net_xn_amtues, unadj_date_price_lists)
     ending_entries =\
         Form345Entry.objects.filter(issuer_cik=issuer)\
         .filter(is_officer=True)\
@@ -170,13 +171,37 @@ def period_queries(issuer, start_datetime, end_datetime,
         .values_list('adjustment_factor', flat=True)
     period_adj_factor = reduce(mul, end_period_adj_factors, Decimal(1.0))
 
-    intrinsicval =\
+    end_holding_val =\
         intrinsicvalcalc(ending_holding_values, period_adj_factor,
                          close_price_at_end_datetime)
 
-    end_period_val = 
+    net_xn_pct = net_xn_val / end_holding_val
 
-    return
+    price_at_period_end =\
+        ClosePrice.objects\
+        .filter(securitypricehist=sec_price_hist)\
+        .filter(close_date__lt=end_date)\
+        .order_by('-close_date')[0].adj_close_price
+    price_at_91_days = later_price(sec_price_hist, end_date, 91)
+    price_at_182_days = later_price(sec_price_hist, end_date, 182)
+    price_at_274_days = later_price(sec_price_hist, end_date, 274)
+    price_at_365_days = later_price(sec_price_hist, end_date, 365)
+    price_at_456_days = later_price(sec_price_hist, end_date, 456)
+
+    new_xn_event =\
+        TransactionEvent(issuer=issuer,
+                         net_xn_val=net_xn_val,
+                         end_holding_val=end_holding_val,
+                         net_xn_pct=net_xn_pct,
+                         period_start=start_datetime.date(),
+                         period_end=end_datetime.date(),
+                         price_at_period_end=price_at_period_end,
+                         price_at_91_days=price_at_91_days,
+                         price_at_182_days=price_at_182_days,
+                         price_at_274_days=price_at_274_days,
+                         price_at_365_days=price_at_365_days,
+                         price_at_456_days=price_at_456_days)
+    return new_xn_event
 
 
 periodspans = period_tuple_lister()
@@ -184,9 +209,11 @@ issuers =\
     SecurityPriceHist.objects\
     .values_list('issuer', flat=True)\
     .distinct()
+# significance_aggregate = Decimal(100 * 1000)
+# significance_percent = Decimal(0.20)
 
-list_for_dataframe = []
-
+TransactionEvent.objects.all().delete()
+events_to_save = []
 for issuer in issuers:
     sec_price_hist =\
         SecurityPriceHist.objects.filter(issuer=issuer)[0]
@@ -202,6 +229,12 @@ for issuer in issuers:
             datetime.datetime(year, end_mo, end_day, tzinfo=pytz.UTC)\
             + datetime.timedelta(1)
 
+        new_xn_event = \
+            period_queries(issuer, start_datetime, end_datetime,
+                           sec_price_hist, unadj_date_price_lists)
+        events_to_save.append(new_xn_event)
+    TransactionEvent.objects.bulk_create(events_to_save)
+    events_to_save = []
 
 
 
@@ -216,96 +249,96 @@ for issuer in issuers:
 
 
 
-significance_hurdle = Decimal(0.20)
-xn_layover_days = 30
-tdelt = datetime.timedelta(days=-xn_layover_days)
 
-for reporting_owner, issuer in affiliations:
-    a = Form345Entry.objects\
-        .filter(issuer_cik_num=issuer)\
-        .filter(is_officer=True)\
-        .filter(reporting_owner=reporting_owner)\
-        .exclude(transaction_shares=None)\
-        .exclude(transaction_date=None)\
-        .values_list('issuer_cik',
-                     'security',
-                     'affiliation',
-                     'xn_acq_disp_code',
-                     'transaction_code',
-                     'transaction_shares',
-                     'filedatetime')
-    for row in a:
-        prior_xns = Form345Entry.objects\
-            .filter(issuer_cik_num=issuer)\
-            .filter(reporting_owner=reporting_owner)\
-            .filter(filedatetime_lte=row[6])\
-            .filter(filedatetime_gt=row[6] + tdelt)\
-            .filter(is_officer=True)\
-            .exclude(transaction_shares=None)\
-            .exclude(transaction_date=None)\
-            .values_list('security',
-                         'xn_acq_disp_code',
-                         'transaction_code',
-                         'transaction_shares')
-        # INSERT FUNCTION TO TURN THIS INTO NET XN AMT
-        xn_event =\
-            TransactionEvent(issuer=issuer,
-                             reporting_person=reporting_owner,
+# xn_layover_days = 30
+# tdelt = datetime.timedelta(days=-xn_layover_days)
 
-            )
+# for reporting_owner, issuer in affiliations:
+#     a = Form345Entry.objects\
+#         .filter(issuer_cik_num=issuer)\
+#         .filter(is_officer=True)\
+#         .filter(reporting_owner=reporting_owner)\
+#         .exclude(transaction_shares=None)\
+#         .exclude(transaction_date=None)\
+#         .values_list('issuer_cik',
+#                      'security',
+#                      'affiliation',
+#                      'xn_acq_disp_code',
+#                      'transaction_code',
+#                      'transaction_shares',
+#                      'filedatetime')
+#     for row in a:
+#         prior_xns = Form345Entry.objects\
+#             .filter(issuer_cik_num=issuer)\
+#             .filter(reporting_owner=reporting_owner)\
+#             .filter(filedatetime_lte=row[6])\
+#             .filter(filedatetime_gt=row[6] + tdelt)\
+#             .filter(is_officer=True)\
+#             .exclude(transaction_shares=None)\
+#             .exclude(transaction_date=None)\
+#             .values_list('security',
+#                          'xn_acq_disp_code',
+#                          'transaction_code',
+#                          'transaction_shares')
+#         # INSERT FUNCTION TO TURN THIS INTO NET XN AMT
+#         xn_event =\
+#             TransactionEvent(issuer=issuer,
+#                              reporting_person=reporting_owner,
 
-
+#             )
 
 
-dCPs = {}
-dCPsIndex = {}
-dCPsValues = {}
-for issuer in issuers:
-    issuercloseprices =\
-        ClosePrice.objects\
-        .filter(securitypricehist__issuer=issuer)\
-        .exclude(adj_close_price=None)\
-        .exclude(close_date=None)
-    dCPs[issuer] = {}
-
-    dCPsIndex[issuer] =\
-        issuercloseprices\
-        .order_by('close_date')\
-        .values_list('close_date', flat=True)
-
-    dCPsValues[issuer] =\
-        issuercloseprices\
-        .order_by('close_date')\
-        .values_list('adj_close_price', flat=True)
-
-    CPs =\
-        issuercloseprices\
-        .values('close_date',
-                'adj_close_price')
-    for CP in CPs:
-        dCPs[issuer][CP['close_date']] = CP['adj_close_price']
 
 
-newa = []
-for item in a:
-    issuer = item[0]
-    close_date = item[4]
-    adj_close_price = None
-    if issuer in dCPs:
-        if close_date in dCPs[issuer]:
-            adj_close_price = dCPs[issuer][close_date]
-    listrow = list(item)
-    listrow.append(adj_close_price)
-    newa.append(listrow)
-a = newa
+# dCPs = {}
+# dCPsIndex = {}
+# dCPsValues = {}
+# for issuer in issuers:
+#     issuercloseprices =\
+#         ClosePrice.objects\
+#         .filter(securitypricehist__issuer=issuer)\
+#         .exclude(adj_close_price=None)\
+#         .exclude(close_date=None)
+#     dCPs[issuer] = {}
 
-b = zip(*a)
-d = {'issuer_cik': list(b[0]),
-     'security': list(b[1]),
-     'affiliation': list(b[2]),
-     'transaction_shares': list(b[3]),
-     'transaction_date': pandas.to_datetime(pandas.Series(list(b[4]))),
-     'adj_close_price': list(b[5])}
-transaction_data = pandas.DataFrame(d)\
-    .sort('transaction_date', ascending=False)
-print transaction_data.head()
+#     dCPsIndex[issuer] =\
+#         issuercloseprices\
+#         .order_by('close_date')\
+#         .values_list('close_date', flat=True)
+
+#     dCPsValues[issuer] =\
+#         issuercloseprices\
+#         .order_by('close_date')\
+#         .values_list('adj_close_price', flat=True)
+
+#     CPs =\
+#         issuercloseprices\
+#         .values('close_date',
+#                 'adj_close_price')
+#     for CP in CPs:
+#         dCPs[issuer][CP['close_date']] = CP['adj_close_price']
+
+
+# newa = []
+# for item in a:
+#     issuer = item[0]
+#     close_date = item[4]
+#     adj_close_price = None
+#     if issuer in dCPs:
+#         if close_date in dCPs[issuer]:
+#             adj_close_price = dCPs[issuer][close_date]
+#     listrow = list(item)
+#     listrow.append(adj_close_price)
+#     newa.append(listrow)
+# a = newa
+
+# b = zip(*a)
+# d = {'issuer_cik': list(b[0]),
+#      'security': list(b[1]),
+#      'affiliation': list(b[2]),
+#      'transaction_shares': list(b[3]),
+#      'transaction_date': pandas.to_datetime(pandas.Series(list(b[4]))),
+#      'adj_close_price': list(b[5])}
+# transaction_data = pandas.DataFrame(d)\
+#     .sort('transaction_date', ascending=False)
+# print transaction_data.head()
