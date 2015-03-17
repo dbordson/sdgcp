@@ -106,6 +106,24 @@ class TransactionEvent(models.Model):
                                 str(self.period_end))
 
 
+class ReportingPersonAtts(models.Model):
+    reporting_person = models.ForeignKey(ReportingPerson)
+    transactions = models.IntegerField()
+    buys = models.IntegerField()
+    sells = models.IntegerField()
+    activity_threshold = models.BooleanField()
+    tot_perf = models.DecimalField(max_digits=7, decimal_places=4, null=True)
+    buy_perf = models.DecimalField(max_digits=7, decimal_places=4, null=True)
+    sell_perf = models.DecimalField(max_digits=7, decimal_places=4, null=True)
+    activity_years = models.DecimalField(max_digits=7, decimal_places=4,
+                                         null=True)
+
+    def __unicode__(self):
+        return u"%s, %s, %s" % (str(self.reporting_person),
+                                str(self.transactions),
+                                str(self.activity_threshold))
+
+
 class SecurityView(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
     security = models.ForeignKey(Security)

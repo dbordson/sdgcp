@@ -9,6 +9,7 @@ def CIKFind(ticker):
     # This grabs the CIK for a ticker from the SEC website search bar for
     # finding filings by typing in the ticker.  Returns None if it doesn't
     # work.
+    ticker = ticker.replace('.', '')
     url = ('http://www.sec.gov/cgi-bin/browse-edgar?company=&match=&CIK=%s&o' +
            'wner=exclude&Find=Find+Companies&action=getcompany') % ticker
     starttag = 'CIK='

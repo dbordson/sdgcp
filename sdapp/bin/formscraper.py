@@ -121,10 +121,10 @@ for formpath in formdownloadlist:
         print int(count/looplength*100), 'percent'
     count += 1.0
     formsforsave.append(a)
-    if sys.getsizeof(formsforsave) > 10000000:  # 10 mb
-        print 'Saving'
+    if len(formsforsave) > 1000:  # 10 mb
+        print 'Saving a batch',
         formsforsave = saveandclear(formsforsave)
-        print 'Done with this batch, starting next batch'
+        print 'done with this batch, starting next batch'
 
 print 'Saving'
 formsforsave = saveandclear(formsforsave)
