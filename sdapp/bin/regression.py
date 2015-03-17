@@ -3,6 +3,7 @@ import pandas as pd
 import statsmodels.api as sm
 import numpy as np
 
+
 def fl(x):
     try:
         a = float(x)
@@ -12,7 +13,6 @@ def fl(x):
 
 
 df = TransactionEvent.objects.all().values_list()
-b = zip(*a)
 
 
 def regression(ystring, xstring):
@@ -37,19 +37,6 @@ ystring = 'perf_at_91_days'
 xstring = 'net_xn_pct'
 regression(ystring, xstring)
 
-result = sm.OLS(df['perf_at_91_days'], df['net_xn_pct'])
-# result = sm.ols(formula="A ~ B + C", data=df).fit()
-result = s
-
-# d = 'issuer':
-#     'net_xn_val':
-#     'end_holding_val':
-#     'net_xn_pct':
-#     'period_start':
-#     'period_end':
-#     'price_at_period_end':
-#     'perf_at_91_days':
-#     'perf_at_182_days':
-#     'perf_at_274_days';
-#     'perf_at_365_days':
-#     'perf_at_456_days':
+# result = sm.OLS(df['perf_at_91_days'], df['net_xn_pct'])
+# # result = sm.ols(formula="A ~ B + C", data=df).fit()
+# result = s

@@ -115,8 +115,7 @@ class ReportingPersonAtts(models.Model):
     tot_perf = models.DecimalField(max_digits=7, decimal_places=4, null=True)
     buy_perf = models.DecimalField(max_digits=7, decimal_places=4, null=True)
     sell_perf = models.DecimalField(max_digits=7, decimal_places=4, null=True)
-    activity_years = models.DecimalField(max_digits=7, decimal_places=4,
-                                         null=True)
+    exec_years = models.DecimalField(max_digits=7, decimal_places=4, null=True)
 
     def __unicode__(self):
         return u"%s, %s, %s" % (str(self.reporting_person),
