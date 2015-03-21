@@ -1,7 +1,9 @@
-from sdapp.models import Form345Entry, FullForm
+from sdapp.models import Form345Entry, FullForm, IssuerCIK
 import os
 import sys
 from decimal import Decimal
+from django import forms
+
 
 try:
     import xml.etree.cElementTree as ET
@@ -104,6 +106,28 @@ def t_att(numchar, treeobject, path):
     return a
 
 
+# Extracts date attribute
+def d_att(treeobject, path):
+    try:
+        a = treeobject.find(path).text[0:20]
+        b = forms.DateField(required=False)
+        b.clean(a)
+    except:
+        a = None
+
+    return a
+
+
+# Extracts integer attribute
+def i_att(treeobject, path):
+    try:
+        a = int(treeobject.find(path).text)
+    except:
+        a = None
+
+    return a
+
+
 # Extracts float attribute
 def f_att(numdec, treeobject, path):
     try:
@@ -137,16 +161,18 @@ def b_att(treeobject, path):
 
 
 def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilepath,
-          tenbfivenotenames, filingdatetimestring):
+          tenbfivenotenames, filingdatetimestring, list_of_ciks):
     a = Form345Entry()
 
-    a.period_of_report = t_att(20, root, 'periodOfReport')
-    a.issuer_cik_num = int(t_att(10, root, 'issuer/issuerCik'))
+    a.period_of_report = d_att(root, 'periodOfReport')
+    a.issuer_cik_num = i_att(root, 'issuer/issuerCik')
+    if a.issuer_cik_num not in list_of_ciks:
+        raise ZeroDivisionError('Issuer cik not in the list of ciks')
     a.issuer_name = t_att(80, root, 'issuer/issuerName')
     a.issuer_cik_id = a.issuer_cik_num
     # a.reporting_owner_cik = SPACER
     a.reporting_owner_cik_num =\
-        int(t_att(10, root, 'reportingOwner/reportingOwnerId/rptOwnerCik'))
+        i_att(root, 'reportingOwner/reportingOwnerId/rptOwnerCik')
     a.reporting_owner_name =\
         t_att(80, root, 'reportingOwner/reportingOwnerId/rptOwnerName')
     a.is_director =\
@@ -165,7 +191,7 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilepath,
     # a.short_sec_title = scrub_title(a.security_title)
     a.conversion_price = f_att(4, child2, 'conversionOrExercisePrice/value')
 
-    a.transaction_date = t_att(20, child2, 'transactionDate/value')
+    a.transaction_date = d_att(child2, 'transactionDate/value')
     a.transaction_code =\
         t_att(2, child2, 'transactionCoding/transactionCode')
     a.transaction_shares =\
@@ -178,7 +204,7 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilepath,
     a.xn_acq_disp_code =\
         t_att(2, child2,
               'transactionAmounts/transactionAcquiredDisposedCode/value')
-    a.expiration_date = t_att(20, child2, 'expirationDate/value')
+    a.expiration_date = d_att(child2, 'expirationDate/value')
     a.underlying_title =\
         scrub_title(t_att(80,
                           child2,
@@ -202,10 +228,10 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilepath,
     a.transaction_number = entrynumber
     a.sec_path = xmlfilepath
     a.five_not_subject_to_section_sixteen =\
-        t_att(15, root, 'notSubjectToSection16')
-    a.five_form_three_holdings = t_att(15, root, 'form3HoldingsReported')
+        i_att(root, 'notSubjectToSection16')
+    a.five_form_three_holdings = i_att(root, 'form3HoldingsReported')
     a.five_form_four_transactions =\
-        t_att(15, root, 'form4TransactionsReported')
+        i_att(root, 'form4TransactionsReported')
     a.form_type = \
         t_att(5, root,
               'documentType')
@@ -251,7 +277,7 @@ def filingdatetimepull(textstring):
         return "error!"
 
 
-def formcrawl(fullformobject):
+def formcrawl(fullformobject, list_of_ciks):
     textstring = fullformobject.text
     xmlfilepath = fullformobject.sec_path
 
@@ -279,7 +305,8 @@ def formcrawl(fullformobject):
         for child2 in child.findall("./"):
             entry = parse(root, child, child2, NonDerivEntryNumber,
                           deriv_or_nonderiv, xmlfilepath,
-                          tenbfivenotenames, filingdatetimestring)
+                          tenbfivenotenames, filingdatetimestring,
+                          list_of_ciks)
             formentries.append(entry)
             NonDerivEntryNumber += 1
 
@@ -289,7 +316,8 @@ def formcrawl(fullformobject):
         for child2 in child.findall('./'):
             entry = parse(root, child, child2, DerivEntryNumber,
                           deriv_or_nonderiv, xmlfilepath,
-                          tenbfivenotenames, filingdatetimestring)
+                          tenbfivenotenames, filingdatetimestring,
+                          list_of_ciks)
             formentries.append(entry)
             DerivEntryNumber += 1
 
@@ -310,17 +338,23 @@ def formentryinsert():
 
     forms_to_parse =\
         FullForm.objects.filter(pk__in=list(paths_to_parse))
-
+    # SHOULD THIS BE CHANGED TO LIMIT THE QS SIZE?
+    list_of_ciks =\
+        list(IssuerCIK.objects.all()
+             .values_list('cik_num', flat=True).distinct())
     entries = []
     parseerrorlist = []
+    ciksnotinlist = []
     i = 0
     totalformslength = len(paths_to_parse)
     count = 0.0
     print 'Beginning parse loop'
     for form in forms_to_parse:
         try:
-            entries += formcrawl(form)
+            entries += formcrawl(form, list_of_ciks)
             i += 1
+        except ZeroDivisionError:
+            ciksnotinlist.append(form)
         except:
             parseerrorlist.append(form)
 
@@ -344,13 +378,17 @@ def formentryinsert():
     print "The total number of files reviewed was:", totalformslength
     print "how many times did the for loop run?", i
     print "Length of error list indicating omitted files:", len(parseerrorlist)
+    print "Number of forms where issuer not an IssuerCIK", len(ciksnotinlist)
     print "Here are any files from above that were filed in 2005 or later:"
     oldyears = ['94', '95', '96', '97', '98', '99',
                 '00', '01', '02', '03', '04']
+    count = 0
     for line in parseerrorlist:
         if not any(line.sec_path.find('-' + oldyear + '-') != -1
                    for oldyear in oldyears):
             print line.sec_path
+            count += 1
+    print 'Total 2005 or later errors:', count
 
     print 'Done adding new entries'
 

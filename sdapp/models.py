@@ -223,7 +223,10 @@ class FullForm(models.Model):
     text = models.TextField()
 
     def __unicode__(self):
-        return unicode(self.sec_path, str(self.save_date)) or u''
+        return u"%s, %s" % (str(self.sec_path),
+                            str(self.save_date))
+    # def __unicode__(self):
+        # return str(self.sec_path), str(self.save_date)
 
 
 class Form345Entry(models.Model):
