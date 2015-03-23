@@ -4,6 +4,8 @@ from sdapp.models import (ReportingPerson, Form345Entry,
 import datetime
 from collections import Counter
 from sdapp.bin import updatetitles
+from django.db.models import Q
+from decimal import Decimal
 
 
 def weighted_avg(vectorunitoutput, weightingvector):
@@ -14,6 +16,8 @@ def weighted_avg(vectorunitoutput, weightingvector):
 
 
 def median(medlist):
+    if len(medlist) == 0:
+        return Decimal(1)
     medlist.sort()
     i = len(medlist)/2
     if len(medlist) % 2 == 0:
@@ -164,11 +168,16 @@ def link_entries_for_reporting_person_and_affiliation_foreign_keys():
 
 
 def link_security_and_security_price_hist(cik, title):
+    print cik
+    print title
     security_price_hist =\
         SecurityPriceHist.objects.filter(issuer_id=cik)[0]
     ticker = security_price_hist.ticker_sym
+    print ticker
+
     security = \
         Security.objects.get(issuer_id=cik,
+                             deriv_or_nonderiv='N',
                              short_sec_title=title)
     security.ticker = ticker
     security_price_hist.security = security
@@ -179,7 +188,7 @@ def link_security_and_security_price_hist(cik, title):
 def create_primary_security(cik):
     nonderiv_form_title_set =\
         set(Form345Entry.objects.filter(issuer_cik_num=cik)
-            .exclude(deriv_or_nonderiv='D')
+            .filter(deriv_or_nonderiv='N')
             .values_list('short_sec_title', flat=True))
 
     deriv_form_underlying_title_list =\
@@ -199,15 +208,62 @@ def create_primary_security(cik):
     # If the above does not give a result (perhaps because only stock grants),
     # then the below checks to see if there is just one non_derivative title,
     # in which case, that's probably the public stock.
-    elif Form345Entry.objects.exclude(deriv_or_nonderiv='D')\
+    elif Form345Entry.objects.filter(issuer_cik_num=cik)\
+            .filter(deriv_or_nonderiv='N')\
             .exclude(short_sec_title__icontains='preferred')\
             .values_list('short_sec_title', flat=True)\
             .count() == 1:
         short_title =\
-            Form345Entry.objects.exclude(deriv_or_nonderiv='D')\
+            Form345Entry.objects.filter(issuer_cik_num=cik)\
+            .filter(deriv_or_nonderiv='N')\
             .exclude(short_sec_title__icontains='preferred')\
             .values_list('short_sec_title', flat=True)[0]
         link_security_and_security_price_hist(cik, short_title)
+    # # The below checks to see if there is just one 'stock' title,
+    # # in which case, that's probably the public stock.
+    # elif Form345Entry.objects.exclude(deriv_or_nonderiv='D')\
+    #         .exclude(short_sec_title__icontains='preferred')\
+    #         .filter(short_sec_title__icontains='stock')\
+    #         .values_list('short_sec_title', flat=True)\
+    #         .count() == 1:
+    #     short_title =\
+    #         Form345Entry.objects.exclude(deriv_or_nonderiv='D')\
+    #         .exclude(short_sec_title__icontains='preferred')\
+    #         .filter(short_sec_title__icontains='stock')\
+    #         .values_list('short_sec_title', flat=True)[0]
+    #     link_security_and_security_price_hist(cik, short_title)
+    # # The below checks to see if there is just one 'common' title,
+    # # in which case, that's probably the public stock.
+    # elif Form345Entry.objects.exclude(deriv_or_nonderiv='D')\
+    #         .exclude(short_sec_title__icontains='preferred')\
+    #         .filter(short_sec_title__icontains='common')\
+    #         .values_list('short_sec_title', flat=True)\
+    #         .count() == 1:
+    #     short_title =\
+    #         Form345Entry.objects.exclude(deriv_or_nonderiv='D')\
+    #         .exclude(short_sec_title__icontains='preferred')\
+    #         .filter(short_sec_title__icontains='common')\
+    #         .values_list('short_sec_title', flat=True)[0]
+    #     link_security_and_security_price_hist(cik, short_title)
+    # The below checks to see if the most common security that is
+    # traded under the 'P' and 'S' transaction codes.
+    elif Form345Entry.objects.filter(issuer_cik_num=cik)\
+            .filter(deriv_or_nonderiv='N')\
+            .exclude(short_sec_title__icontains='preferred')\
+            .filter(Q(transaction_code='P') |
+                    Q(transaction_code='S'))\
+            .values_list('security', flat=True)\
+            .count() > 0:
+        securities =\
+            Counter(Form345Entry.objects.filter(issuer_cik_num=cik)
+                    .filter(deriv_or_nonderiv='N')
+                    .exclude(short_sec_title__icontains='preferred')
+                    .filter(Q(transaction_code='P') |
+                            Q(transaction_code='S'))
+                    .values_list('security', flat=True))
+        primary_security = securities.most_common(1)[0][0]
+        primary_security_title = Security.objects.get(pk=primary_security)
+        link_security_and_security_price_hist(cik, primary_security_title)
 
 
 # Must create all issuer foreign key linkages in Form345Entry before running
@@ -299,43 +355,50 @@ def update_securities():
     print 'Finding and linking objects with associated',
     print 'SecurityPriceHist objects, none of which are linked to a ',
     print 'security...'
-    print '    Sorting...',
-    issuer_ciks_with_linked_tickers =\
-        set(Security.objects.exclude(ticker=None)
+    print '    Sorting...'
+    issuer_with_unlinked_securities =\
+        set(Security.objects.filter(ticker=None)
             .values_list('issuer', flat=True))
+    print len(issuer_with_unlinked_securities)
+    issuers_with_unlinked_sph_objects =\
+        set(SecurityPriceHist.objects.filter(security=None)
+            .values_list('issuer', flat=True))
+    print len(issuers_with_unlinked_sph_objects)
+    ciks_with_tickers_unlinked =\
+        (issuers_with_unlinked_sph_objects & issuer_with_unlinked_securities)
 
-    issuer_ciks_tickers =\
-        set(SecurityPriceHist.objects.values_list('issuer', flat=True))
-
-    ciks_with_all_tickers_unlinked =\
-        issuer_ciks_tickers\
-        - (issuer_ciks_tickers & issuer_ciks_with_linked_tickers)
-
-    print 'linking and saving...',
-    for cik in ciks_with_all_tickers_unlinked:
+    # print len(issuers_with_unlinked_sph_objects)
+    print '    linking and saving...'
+    for cik in ciks_with_tickers_unlinked:
         create_primary_security(cik)
     print 'done.'
 
 
 def link_form_objects_to_securities():
     print 'Finding and linking Form345Entry objects with Security objects'
-    print '    Sorting, linking and saving...',
+    print '    Sorting, linking and saving...'
     unlinked_form_objects =\
         Form345Entry.objects.filter(security=None)\
-        .values_list('issuer_cik_num', 'short_sec_title').distinct()
-    for issuer_cik_num, short_sec_title in unlinked_form_objects:
+        .values_list('issuer_cik_num',
+                     'deriv_or_nonderiv',
+                     'short_sec_title').distinct()
+    for issuer_cik_num, deriv_or_nonderiv, short_sec_title\
+            in unlinked_form_objects:
         security =\
-            Security.objects.get(issuer_id=issuer_cik_num,
-                                 short_sec_title=short_sec_title)
+            Security.objects\
+            .filter(issuer_id=issuer_cik_num)\
+            .filter(deriv_or_nonderiv=deriv_or_nonderiv)\
+            .filter(short_sec_title=short_sec_title)[0]
         Form345Entry.objects.filter(security=None)\
             .filter(issuer_cik_num=issuer_cik_num)\
+            .filter(deriv_or_nonderiv=deriv_or_nonderiv)\
             .filter(short_sec_title=short_sec_title)\
             .update(security=security)
     print 'done.'
 
 
 def check_securitypricehist():
-    print 'Checking for unlinked tickers...',
+    print 'Checking for unlinked tickers...'
     unlinked_security_price_hist =\
         SecurityPriceHist.objects.filter(security=None)\
         .values_list('ticker_sym', 'issuer')
@@ -391,6 +454,8 @@ def populate_conversion_factors():
         sampleentries =\
             Form345Entry.objects.filter(security=security_id)\
             .filter(transaction_code='M')\
+            .exclude(underlying_shares=None)\
+            .exclude(transaction_shares=None)\
             .order_by('filedatetime')[:10]\
             .values_list('underlying_shares', 'transaction_shares')
         conversion_multiples = [p / q for p, q in sampleentries]

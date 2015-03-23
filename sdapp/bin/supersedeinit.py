@@ -21,8 +21,9 @@ def superseded_initialize():
     entries34 = Form345Entry.objects\
         .exclude(filedatetime=None)\
         .exclude(short_sec_title=None)
-    untagged_entries = entries34.filter(supersededdt=None)
-    looplength = float(len(untagged_entries))
+    untagged_entry_ids =\
+        entries34.filter(supersededdt=None).values_list('pk', flat=True)
+    looplength = float(len(untagged_entry_ids))
     counter = 0.0
     today = datetime.date.today()
     nonofficercutoffyears = 5
@@ -33,7 +34,9 @@ def superseded_initialize():
     officercutoffdate = datetime.date(today.year-officercutoffyears,
                                       today.month, today.day)
     officercutoffdt = convert_date_to_datetimestring(officercutoffdate)
-    for untagged_entry in untagged_entries:
+    for untagged_entry_id in untagged_entry_ids:
+        untagged_entry = Form345Entry.objects\
+            .get(pk=untagged_entry_id)
         # Counter below
         if float(int(10*counter/looplength)) !=\
                 float(int(10*(counter-1)/looplength)):
@@ -59,8 +62,8 @@ def superseded_initialize():
                     .reporting_owner_cik_num)\
             .filter(short_sec_title=untagged_entry.short_sec_title)\
             .filter(expiration_date=untagged_entry.expiration_date)\
-            .filter(scrubbed_underlying_title=
-                    untagged_entry.scrubbed_underlying_title)\
+            .filter(scrubbed_underlying_title=untagged_entry
+                    .scrubbed_underlying_title)\
             .filter(filedatetime__lt=untagged_entry.filedatetime)\
             .filter(transaction_date__gt=date_of_untagged_entry)\
             .filter(direct_or_indirect=direct_or_indirect)\

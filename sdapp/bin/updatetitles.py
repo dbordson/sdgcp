@@ -19,7 +19,7 @@ def update_short_titles():
 # titles (for derivatives) in an attempt to keep these consistently named.
 # The queries below look quite similar, but they are not indentically
 # structured.  This was an attempt at aligning queries with conceptual
-# between categories.
+# categories.
 
 # Common Stock Naming
         if Form345Entry.objects.filter(issuer_cik_num=issuer_cik)\
