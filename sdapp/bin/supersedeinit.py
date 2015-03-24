@@ -57,9 +57,9 @@ def superseded_initialize():
         # is filed.
         was_the_filing_superseded_before_filed = \
             entries34\
-            .filter(issuer_cik_num=untagged_entry.issuer_cik_num)\
-            .filter(reporting_owner_cik_num=untagged_entry
-                    .reporting_owner_cik_num)\
+            .filter(issuer_cik=untagged_entry.issuer_cik)\
+            .filter(reporting_owner_cik=untagged_entry
+                    .reporting_owner_cik)\
             .filter(short_sec_title=untagged_entry.short_sec_title)\
             .filter(expiration_date=untagged_entry.expiration_date)\
             .filter(scrubbed_underlying_title=untagged_entry
@@ -79,9 +79,9 @@ def superseded_initialize():
 
         was_the_filing_superseded_by_the_same_form = \
             entries34\
-            .filter(issuer_cik_num=untagged_entry.issuer_cik_num)\
-            .filter(reporting_owner_cik_num=untagged_entry
-                    .reporting_owner_cik_num)\
+            .filter(issuer_cik=untagged_entry.issuer_cik)\
+            .filter(reporting_owner_cik=untagged_entry
+                    .reporting_owner_cik)\
             .filter(short_sec_title=untagged_entry.short_sec_title)\
             .filter(expiration_date=untagged_entry.expiration_date)\
             .filter(scrubbed_underlying_title=
@@ -132,9 +132,9 @@ def superseded_initialize():
 
         if supersededdt_already_assigned is False:
             filtered_entries = entries34\
-                .filter(issuer_cik_num=untagged_entry.issuer_cik_num)\
-                .filter(reporting_owner_cik_num=untagged_entry
-                        .reporting_owner_cik_num)\
+                .filter(issuer_cik=untagged_entry.issuer_cik)\
+                .filter(reporting_owner_cik=untagged_entry
+                        .reporting_owner_cik)\
                 .filter(short_sec_title=untagged_entry.short_sec_title)\
                 .filter(expiration_date=untagged_entry.expiration_date)\
                 .filter(scrubbed_underlying_title=
@@ -151,18 +151,18 @@ def superseded_initialize():
         # Does the filer (if an officer) have any recent activity?
         are_there_recent_trades_for_the_officer = \
             entries34\
-            .filter(issuer_cik_num=untagged_entry.issuer_cik_num)\
-            .filter(reporting_owner_cik_num=untagged_entry
-                    .reporting_owner_cik_num)\
+            .filter(issuer_cik=untagged_entry.issuer_cik)\
+            .filter(reporting_owner_cik=untagged_entry
+                    .reporting_owner_cik)\
             .filter(filedatetime__gt=officercutoffdt).exists()
         if supersededdt_already_assigned is False and\
                 untagged_entry.is_officer is True and\
                 are_there_recent_trades_for_the_officer is False:
             latest_file_dt_as_iso = \
                 entries34\
-                .filter(issuer_cik_num=untagged_entry.issuer_cik_num)\
-                .filter(reporting_owner_cik_num=untagged_entry
-                        .reporting_owner_cik_num)\
+                .filter(issuer_cik=untagged_entry.issuer_cik)\
+                .filter(reporting_owner_cik=untagged_entry
+                        .reporting_owner_cik)\
                 .latest('filedatetime').filedatetime.isoformat()
             supersededdt_for_filer = \
                 string_date_with_years_added(officercutoffyears,
@@ -173,18 +173,18 @@ def superseded_initialize():
 
         are_there_recent_trades_for_the_nonofficer = \
             entries34\
-            .filter(issuer_cik_num=untagged_entry.issuer_cik_num)\
-            .filter(reporting_owner_cik_num=untagged_entry
-                    .reporting_owner_cik_num)\
+            .filter(issuer_cik=untagged_entry.issuer_cik)\
+            .filter(reporting_owner_cik=untagged_entry
+                    .reporting_owner_cik)\
             .filter(filedatetime__gt=nonofficercutoffdt).exists()
         if supersededdt_already_assigned is False and\
                 untagged_entry.is_officer is False and\
                 are_there_recent_trades_for_the_nonofficer is False:
             latest_file_dt_as_iso = \
                 entries34\
-                .filter(issuer_cik_num=untagged_entry.issuer_cik_num)\
-                .filter(reporting_owner_cik_num=untagged_entry
-                        .reporting_owner_cik_num)\
+                .filter(issuer_cik=untagged_entry.issuer_cik)\
+                .filter(reporting_owner_cik=untagged_entry
+                        .reporting_owner_cik)\
                 .latest('filedatetime').filedatetime.isoformat()
             supersededdt_for_filer = \
                 string_date_with_years_added(nonofficercutoffyears,
