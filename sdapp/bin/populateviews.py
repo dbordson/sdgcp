@@ -3,7 +3,20 @@ from sdapp.models import Form345Entry, ClosePrice, Security, SecurityView,\
 # from django.db import connection
 import datetime
 from decimal import Decimal
+import django.db
 
+
+def rd(a, s_id):
+    # print a
+    if a > 99999999999:
+        print "ERROR in security_id:", s_id
+        print a, "is too big"
+        return None
+
+    if a is None:
+        return None
+    # return Decimal(format(Decimal(a), '.4f'))
+    return a
 
 def calc_weighted_avg_conversion(units_held_and_adj_and_conv_vectors):
     unitsvector, adjustment_vector, conv_vector =\
@@ -36,8 +49,10 @@ def wavgdate(expiration_date_unit_list):
          in zip(unit_vector, adjustment_vector)]
     dotproduct = sum(float(p) * float(q)
                      for p, q in zip(tdvector, adj_unit_vector))
-    denominator = sum(adj_unit_vector)
-    wavgdelta = dotproduct / float(denominator)
+    denominator = float(sum(adj_unit_vector))
+    if denominator == float(0):
+        return None
+    wavgdelta = dotproduct / denominator
     wavg = today + datetime.timedelta(wavgdelta)
     return wavg
     # except:
@@ -70,10 +85,12 @@ def intrinsicvalcalc(units_held_and_adj_and_conv_vectors,
 
 def build_security_views():
     print 'Building SecurityView objects'
-    print '    Sorting and linking...',
+    print '    Sorting and linking...'
     security_view_objects = []
     security_ids = Form345Entry.objects.filter(supersededdt=None)\
         .values_list('security', flat=True).distinct()
+    # REMOVE BELOW AFTER BUG FIXED
+    # SecurityView.objects.all().delete()
     for security_id in security_ids:
         latest_transaction =\
             Form345Entry.objects.filter(supersededdt=None)\
@@ -94,6 +111,7 @@ def build_security_views():
             .exclude(underlying_shares=0)\
             .exclude(underlying_shares=None)\
             .exclude(expiration_date=None)\
+            .exclude(adjustment_factor=None)\
             .values_list('expiration_date',
                          'underlying_shares',
                          'adjustment_factor')
@@ -164,8 +182,8 @@ def build_security_views():
 
             underlyingprice = \
                 ClosePrice.objects\
-                .filter(securitypricehist__security_id=
-                        latest_transaction.underlying_security)\
+                .filter(securitypricehist__security_id=latest_transaction
+                        .underlying_security)\
                 .latest('close_date').adj_close_price
             intrinsic_value =\
                 intrinsicvalcalc(units_held_and_adj_and_conv_vectors,
@@ -233,7 +251,7 @@ def build_security_views():
         # print 'max_conversion_price', max_conversion_price
         # print 'weighted_avg_conversion', weighted_avg_conversion
         # print 'sec_obj.scrubbed_underlying_title', \
-            # sec_obj.scrubbed_underlying_title
+        #     sec_obj.scrubbed_underlying_title
         # print 'underlying_ticker', underlying_ticker
         # print 'underlying_shares_total', underlying_shares_total
         # print 'intrinsic_value', intrinsic_value
@@ -241,41 +259,46 @@ def build_security_views():
         # print 'last_transaction_date', last_transaction_date
         # print ''
         # print ''
-
+        s_id = security_id
         security_view_object =\
             SecurityView(issuer=sec_obj.issuer,
                          security_id=security_id,
                          short_sec_title=sec_obj.short_sec_title,
                          ticker=sec_obj.ticker,
-                         last_close_price=last_close_price,
-                         units_held=units_held,
+                         last_close_price=rd(last_close_price, s_id),
+                         units_held=rd(units_held, s_id),
                          deriv_or_nonderiv=sec_obj.deriv_or_nonderiv,
                          first_expiration_date=first_expiration_date,
                          last_expiration_date=last_expiration_date,
                          wavg_expiration_date=wavg_exp_date,
-                         min_conversion_price=min_conversion_price,
-                         max_conversion_price=max_conversion_price,
-                         wavg_conversion=weighted_avg_conversion,
-                         scrubbed_underlying_title=
-                         sec_obj.scrubbed_underlying_title,
+                         min_conversion_price=rd(min_conversion_price, s_id),
+                         max_conversion_price=rd(max_conversion_price, s_id),
+                         wavg_conversion=rd(weighted_avg_conversion, s_id),
+                         scrubbed_underlying_title=sec_obj
+                         .scrubbed_underlying_title,
                          underlying_ticker=underlying_ticker,
-                         underlying_shares_total=underlying_shares_total,
-                         underlying_close_price=underlying_close_price,
-                         intrinsic_value=intrinsic_value,
+                         underlying_shares_total=rd(underlying_shares_total,
+                                                    s_id),
+                         underlying_close_price=rd(underlying_close_price,
+                                                   s_id),
+                         intrinsic_value=rd(intrinsic_value, s_id),
                          first_xn=first_transaction_date,
                          most_recent_xn=last_transaction_date)
 
+        # security_view_object.save()
+
         security_view_objects.append(security_view_object)
-    print 'deleting old...',
+    print 'deleting old...'
     SecurityView.objects.all().delete()
-    print 'saving...',
+    print 'saving...'
     SecurityView.objects.bulk_create(security_view_objects)
+    django.db.reset_queries()
     print 'done.'
 
 
 def build_security_views_by_affiliation():
     print 'Building PersonHoldingView objects'
-    print '    Sorting and linking...',
+    print '    Sorting and linking...'
     person_holding_view_objects = []
     security_ids_and_affiliations = Form345Entry.objects\
         .filter(supersededdt=None)\
@@ -302,6 +325,8 @@ def build_security_views_by_affiliation():
             .exclude(expiration_date=None)\
             .exclude(shares_following_xn=0)\
             .exclude(shares_following_xn=None)\
+            .exclude(underlying_shares=None)\
+            .exclude(adjustment_factor=None)\
             .values_list('expiration_date',
                          'underlying_shares',
                          'adjustment_factor')
@@ -373,8 +398,8 @@ def build_security_views_by_affiliation():
 
             underlyingprice = \
                 ClosePrice.objects\
-                .filter(securitypricehist__security_id=
-                        latest_transaction.underlying_security)\
+                .filter(securitypricehist__security_id=latest_transaction
+                        .underlying_security)\
                 .latest('close_date').adj_close_price
             intrinsic_value =\
                 intrinsicvalcalc(units_held_and_adj_and_conv_vectors,
@@ -396,6 +421,7 @@ def build_security_views_by_affiliation():
             .filter(affiliation=affiliation)\
             .exclude(shares_following_xn=0)\
             .exclude(shares_following_xn=None)\
+            .exclude(adjustment_factor=0)\
             .values_list('shares_following_xn',
                          'adjustment_factor',
                          'conversion_price')
@@ -448,7 +474,7 @@ def build_security_views_by_affiliation():
         # print 'max_conversion_price', max_conversion_price
         # print 'weighted_avg_conversion', weighted_avg_conversion
         # print 'sec_obj.scrubbed_underlying_title', \
-            # sec_obj.scrubbed_underlying_title
+        #     sec_obj.scrubbed_underlying_title
         # print 'underlying_ticker', underlying_ticker
         # print 'underlying_shares_total', underlying_shares_total
         # print 'intrinsic_value', intrinsic_value
@@ -456,7 +482,7 @@ def build_security_views_by_affiliation():
         # print 'last_transaction_date', last_transaction_date
         # print ''
         # print ''
-
+        s_id = security_id
         person_holding_view_object =\
             PersonHoldingView(issuer=sec_obj.issuer,
                               owner=owner,
@@ -466,29 +492,35 @@ def build_security_views_by_affiliation():
                               affiliation=affiliation_obj,
                               short_sec_title=sec_obj.short_sec_title,
                               ticker=sec_obj.ticker,
-                              last_close_price=last_close_price,
-                              units_held=units_held,
+                              last_close_price=rd(last_close_price, s_id),
+                              units_held=rd(units_held, s_id),
                               deriv_or_nonderiv=sec_obj.deriv_or_nonderiv,
                               first_expiration_date=first_expiration_date,
                               last_expiration_date=last_expiration_date,
                               wavg_expiration_date=wavg_exp_date,
-                              min_conversion_price=min_conversion_price,
-                              max_conversion_price=max_conversion_price,
-                              wavg_conversion=weighted_avg_conversion,
-                              scrubbed_underlying_title=
-                              sec_obj.scrubbed_underlying_title,
+                              min_conversion_price=rd(min_conversion_price,
+                                                      s_id),
+                              max_conversion_price=rd(max_conversion_price,
+                                                      s_id),
+                              wavg_conversion=rd(weighted_avg_conversion,
+                                                 s_id),
+                              scrubbed_underlying_title=sec_obj
+                              .scrubbed_underlying_title,
                               underlying_ticker=underlying_ticker,
-                              underlying_shares_total=underlying_shares_total,
-                              underlying_close_price=underlying_close_price,
-                              intrinsic_value=intrinsic_value,
+                              underlying_shares_total=
+                              rd(underlying_shares_total, s_id),
+                              underlying_close_price=rd(underlying_close_price,
+                                                        s_id),
+                              intrinsic_value=rd(intrinsic_value, s_id),
                               first_xn=first_transaction_date,
                               most_recent_xn=last_transaction_date)
 
         person_holding_view_objects.append(person_holding_view_object)
-    print 'deleting old...',
+    print 'deleting old...'
     PersonHoldingView.objects.all().delete()
-    print 'saving...',
+    print 'saving...'
     PersonHoldingView.objects.bulk_create(person_holding_view_objects)
+    django.db.reset_queries()
     print 'done.'
 
 
