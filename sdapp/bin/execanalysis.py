@@ -19,9 +19,9 @@ def get_price(sec_price_hist, date):
     close_prices = ClosePrice.objects.filter(securitypricehist=sec_price_hist)
     price_list = \
         close_prices.filter(close_date__lte=date)\
-        .filter(close_date__gt=date-wkd_td).order_by('-close_prices')
+        .filter(close_date__gt=date-wkd_td).order_by('-close_price')
     if price_list.exists():
-        return price_list[0]
+        return price_list[0].close_price
     else:
         return None
 
@@ -51,7 +51,7 @@ def issuerdailyperf(sec_price_hist, repperson):
 
 
 def xnanalyze(repperson, xndate, acq_or_disp, issuer, trade_delta):
-    sec_price_hist_qs = SecurityPriceHist.objects.filter(issuer_pk=issuer)
+    sec_price_hist_qs = SecurityPriceHist.objects.filter(issuer=issuer)
     # First figure out if the necessary information (ticker sym, necessary
     # price history exist)
     if sec_price_hist_qs.exists():
@@ -69,6 +69,8 @@ def xnanalyze(repperson, xndate, acq_or_disp, issuer, trade_delta):
     # which we don't have a closing price.  We should generally be okay,
     # though.
     trade_days = Decimal(trade_delta.days)
+    if start_price == 0:
+        return irrelevant()
     xn_daily_perf = ((end_price - start_price) / start_price) / trade_days
     issuer_daily_perf = issuerdailyperf(sec_price_hist, repperson)
     if issuer_daily_perf is None:
@@ -146,9 +148,15 @@ def execanalyze(repperson, trade_delta):
                 good_sells += 1
             else:
                 good_buys += 1
-    tot_perf = Decimal(good_xns) / Decimal(xns)
-    buy_perf = Decimal(good_buys) / Decimal(buys)
-    sell_perf = Decimal(good_sells) / Decimal(sells)
+    if Decimal(xns) == 0:
+        tot_perf = None
+        buy_perf = None
+        sell_perf = None
+        return
+    else:
+        tot_perf = Decimal(good_xns) / Decimal(xns)
+        buy_perf = Decimal(good_buys) / Decimal(buys)
+        sell_perf = Decimal(good_sells) / Decimal(sells)
     if xns >= necessary_xns and buys >= necessary_buys\
             and sells >= necessary_sales:
         activity_threshold = True
