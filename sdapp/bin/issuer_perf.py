@@ -1,5 +1,4 @@
 from sdapp.models import SecurityPriceHist, ClosePrice
-import datetime
 from decimal import Decimal
 
 all_issuers = \
@@ -11,7 +10,8 @@ ticker_returns = []
 counter = 0
 years_in_index = []
 for issuer in all_issuers:
-    sph_object = SecurityPriceHist.objects.filter(issuer=issuer)[0]
+    sph_object = SecurityPriceHist.objects.filter(issuer=issuer)\
+        .order_by('-ticker_sym')[0]
     print counter, sph_object.ticker_sym
     counter += 1
     CP_objects = \
