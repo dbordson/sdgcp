@@ -5,10 +5,13 @@ from pandas.io.data import DataReader
 
 
 def savetickerinfo(SPH_id, ticker, security_id):
+    yrs_of_pricing = 10
+    yrs_of_adj = 10
     enddate = date.today()
-    tickerdata = DataReader(ticker, "yahoo", datetime(enddate.year-10,
-                                                      enddate.month,
-                                                      enddate.day))
+    tickerdata =\
+        DataReader(ticker, "yahoo", datetime(enddate.year-yrs_of_adj,
+                                             enddate.month,
+                                             enddate.day))
     tickerdata['Adj Factor'] =\
         tickerdata['Close'].divide(tickerdata['Adj Close'])
 
@@ -21,9 +24,10 @@ def savetickerinfo(SPH_id, ticker, security_id):
     # The data_to_cp does not need to exit if we are not limited on rows
     # to the extent we need past prices for the full period,
     # we may collapse these two calls into one DataFrame
-    data_to_cp = DataReader(ticker, "yahoo", datetime(enddate.year-1,
-                                                      enddate.month,
-                                                      enddate.day))
+    data_to_cp =\
+        DataReader(ticker, "yahoo", datetime(enddate.year-yrs_of_pricing,
+                                             enddate.month,
+                                             enddate.day))
     data_to_cp['Adj Factor'] =\
         data_to_cp['Close'].divide(data_to_cp['Adj Close'])
 

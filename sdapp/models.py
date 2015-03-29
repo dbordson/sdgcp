@@ -112,10 +112,13 @@ class ReportingPersonAtts(models.Model):
     buys = models.IntegerField()
     sells = models.IntegerField()
     activity_threshold = models.BooleanField()
-    tot_perf = models.DecimalField(max_digits=7, decimal_places=4, null=True)
-    buy_perf = models.DecimalField(max_digits=7, decimal_places=4, null=True)
-    sell_perf = models.DecimalField(max_digits=7, decimal_places=4, null=True)
+    t_win_rate = models.DecimalField(max_digits=7, decimal_places=4, null=True)
+    b_win_rate = models.DecimalField(max_digits=7, decimal_places=4, null=True)
+    s_win_rate = models.DecimalField(max_digits=7, decimal_places=4, null=True)
     exec_years = models.DecimalField(max_digits=7, decimal_places=4, null=True)
+    t_perf = models.DecimalField(max_digits=10, decimal_places=4, null=True)
+    b_perf = models.DecimalField(max_digits=10, decimal_places=4, null=True)
+    s_perf = models.DecimalField(max_digits=10, decimal_places=4, null=True)
 
     def __unicode__(self):
         return u"%s, %s, %s" % (str(self.reporting_person),
