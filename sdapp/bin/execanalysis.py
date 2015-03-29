@@ -23,9 +23,9 @@ def get_price(sec_price_hist, date):
         ClosePrice.objects.filter(securitypricehist=sec_price_hist)
     price_list = \
         close_prices.filter(close_date__lte=date)\
-        .filter(close_date__gt=date-wkd_td).order_by('-close_price')
+        .filter(close_date__gt=date-wkd_td).order_by('-close_date')
     if price_list.exists():
-        return price_list[0].close_price
+        return price_list[0].adj_close_price
     else:
         return None
 
@@ -134,7 +134,7 @@ def execanalyze(repperson, trade_delta, win_hurdle):
     gross_t_perf = Decimal(0)
     gross_b_perf = Decimal(0)
     gross_s_perf = Decimal(0)
-    
+
     for execentry in execentries:
         xndate = execentry.transaction_date
         acq_or_disp = execentry.xn_acq_disp_code
