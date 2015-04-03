@@ -23,7 +23,7 @@ def laxer_get_price(sec_price_hist, date):
         ClosePrice.objects.filter(securitypricehist=sec_price_hist)
     price_list = \
         close_prices.filter(close_date__lt=date+wkd_td)\
-        .filter(close_date__gte=date).order_by('-close_date')
+        .filter(close_date__gte=date).order_by('close_date')
     if price_list.exists():
         return price_list[0].adj_close_price
     else:
