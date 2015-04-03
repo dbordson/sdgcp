@@ -17,17 +17,27 @@ def irrelevant():
     return relevant, success, xn_perf
 
 
-def get_price(sec_price_hist, date):
+def laxer_get_price(sec_price_hist, date):
     wkd_td = datetime.timedelta(5)
     close_prices = \
         ClosePrice.objects.filter(securitypricehist=sec_price_hist)
     price_list = \
-        close_prices.filter(close_date__lte=date)\
-        .filter(close_date__gt=date-wkd_td).order_by('-close_date')
+        close_prices.filter(close_date__lt=date+wkd_td)\
+        .filter(close_date__gte=date).order_by('-close_date')
     if price_list.exists():
         return price_list[0].adj_close_price
     else:
         return None
+
+
+def get_price(sec_price_hist, date):
+    close_price = \
+        ClosePrice.objects.filter(securitypricehist=sec_price_hist)\
+        .filter(close_date=date)
+    if close_price.exists():
+        return close_price[0].adj_close_price
+    else:
+        return laxer_get_price(sec_price_hist, date)
 
 # NOT USED, BUT MAY BE USEFUL
 # def issuerdailyperf(sec_price_hist, repperson):
@@ -54,7 +64,8 @@ def get_price(sec_price_hist, date):
 #     return daily_return
 
 
-def xnanalyze(repperson, xndate, acq_or_disp, issuer, trade_delta, win_hurdle):
+def xnanalyze(repperson, filedate, acq_or_disp, issuer, trade_delta,
+              win_hurdle):
     sec_price_hist_qs = SecurityPriceHist.objects.filter(issuer=issuer)
     # First figure out if the necessary information (ticker sym, necessary
     # price history exist)
@@ -63,8 +74,8 @@ def xnanalyze(repperson, xndate, acq_or_disp, issuer, trade_delta, win_hurdle):
     else:
         return irrelevant()
     # print 'repperson:', repperson,
-    start_price = get_price(sec_price_hist, xndate)
-    enddate = xndate + trade_delta
+    start_price = get_price(sec_price_hist, filedate)
+    enddate = filedate + trade_delta
     end_price = get_price(sec_price_hist, enddate)
     if start_price is None or end_price is None:
         # print 'no start price'
@@ -121,27 +132,47 @@ def execanalyze(repperson, trade_delta, win_hurdle):
     necessary_buys = 2
     necessary_sales = 2
 
-    entrydates =\
-        list(Form345Entry.objects
-             .filter(reporting_owner_cik=repperson)
-             .exclude(is_officer=False)
-             .order_by('filedatetime')
-             .values_list('filedatetime', flat=True).distinct())
-    exec_start = entrydates[0]
-    exec_end = entrydates[-1]
+    # entrydates =\
+    #     list(Form345Entry.objects
+    #          .filter(reporting_owner_cik=repperson)
+    #          .exclude(is_officer=False)
+    #          .order_by('filedatetime')
+    #          .values_list('filedatetime', flat=True).distinct())
+    exec_start =\
+        Form345Entry.objects.filter(reporting_owner_cik=repperson)\
+        .exclude(is_officer=False).earliest('filedatetime').filedatetime
+    # entrydates[0]
+
+    exec_end =\
+        Form345Entry.objects.filter(reporting_owner_cik=repperson)\
+        .exclude(is_officer=False).latest('filedatetime').filedatetime
+    # entrydates[-1]
     # Note that exec years is years as an SEC reporting exec
     exec_years = Decimal((exec_end - exec_start).days) / Decimal(365.25)
     gross_t_perf = Decimal(0)
     gross_b_perf = Decimal(0)
     gross_s_perf = Decimal(0)
-
-    for execentry in execentries:
-        xndate = execentry.transaction_date
-        acq_or_disp = execentry.xn_acq_disp_code
-        issuer = execentry.issuer_cik_num
-
+    exexentrydates = execentries.datetimes('filedatetime', 'day')
+    for exexentrydate in exexentrydates:
+        firstentry = \
+            Form345Entry.objects\
+            .filter(reporting_owner_cik=repperson)\
+            .filter(is_officer=True)\
+            .exclude(transaction_date=None)\
+            .exclude(xn_acq_disp_code=None)\
+            .filter(filedatetime__year=exexentrydate.year,
+                    filedatetime__month=exexentrydate.month,
+                    filedatetime__day=exexentrydate.day)\
+            .filter(Q(transaction_code='P') |
+                    Q(transaction_code='S') |
+                    Q(transaction_code='I'))\
+            .earliest('filedatetime')
+        filedate = firstentry.filedatetime.date()
+        acq_or_disp = firstentry.xn_acq_disp_code
+        issuer = firstentry.issuer_cik_num
+        # Add weighting by units / value?
         relevant, success, xn_perf =\
-            xnanalyze(repperson, xndate, acq_or_disp,
+            xnanalyze(repperson, filedate, acq_or_disp,
                       issuer, trade_delta, win_hurdle)
         if relevant:
             if acq_or_disp == 'A':
@@ -188,20 +219,20 @@ def execanalyze(repperson, trade_delta, win_hurdle):
     else:
         activity_threshold = False
 
-    # rpatts_object =\
-    ReportingPersonAtts(reporting_person_id=repperson,
-                        transactions=xns,
-                        buys=buys,
-                        sells=sells,
-                        activity_threshold=activity_threshold,
-                        t_win_rate=t_win_rate,
-                        b_win_rate=b_win_rate,
-                        s_win_rate=s_win_rate,
-                        exec_years=exec_years,
-                        t_perf=t_perf,
-                        b_perf=b_perf,
-                        s_perf=s_perf).save()
-    # return rpatts_object
+    rpatts_object =\
+        ReportingPersonAtts(reporting_person_id=repperson,
+                            transactions=xns,
+                            buys=buys,
+                            sells=sells,
+                            activity_threshold=activity_threshold,
+                            t_win_rate=t_win_rate,
+                            b_win_rate=b_win_rate,
+                            s_win_rate=s_win_rate,
+                            exec_years=exec_years,
+                            t_perf=t_perf,
+                            b_perf=b_perf,
+                            s_perf=s_perf)  # .save()
+    return rpatts_object
 
 
 def reviewreppersons(trade_delta):
@@ -222,17 +253,17 @@ def reviewreppersons(trade_delta):
     print '    Number of potential reporting persons:', len(reppersons)
     looplength = float(len(reppersons))
     counter = 0.0
-    # rpatts_objects = []
+    rpatts_objects = []
     for repperson in reppersons:
         if float(int(10*counter/looplength)) !=\
                 float(int(10*(counter-1)/looplength)):
             print '   ', int(counter/looplength*100), 'percent'
         counter += 1.0
-        # rpatts_object = \
-        execanalyze(repperson, trade_delta, win_hurdle)
-        # if rpatts_object is not None:
-        #     rpatts_objects.append(rpatts_object)
-    # ReportingPersonAtts.objects.bulk_create(rpatts_objects)
+        rpatts_object = \
+            execanalyze(repperson, trade_delta, win_hurdle)
+        if rpatts_object is not None:
+            rpatts_objects.append(rpatts_object)
+    ReportingPersonAtts.objects.bulk_create(rpatts_objects)
     django.db.reset_queries()
     print 'Done'
     return
