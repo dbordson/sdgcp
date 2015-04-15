@@ -7,41 +7,66 @@ def convert_180_day_to_annual_perf(pf_180):
     return str(pf_annual_rounded) + '%'
 
 
-print 'Evaluated by person'
+def convert_to_annual_perf(pf, days):
+    pf_annual = (float(pf) + 1.0)**(365.0/float(days)) - 1.0
+    pf_annual_rounded = round(pf_annual * 100.0, 2)
+    return str(pf_annual_rounded) + '%'
 
+
+def p_cat_perf(queryset, column_name, days):
+    b = queryset.values_list(column_name, flat=True)
+    performance = convert_to_annual_perf(sum(b) / len(b), days)
+    return performance, len(b)
+
+
+def t_cat_perf(queryset, column_name, days):
+    b = queryset.values_list(column_name, 'buys')
+    b_perf_sum = 0
+    b_perf_len = 0
+    for b_perf, buys in b:
+        b_perf_sum += b_perf * buys
+        b_perf_len += buys
+    performance = convert_to_annual_perf(b_perf_sum / b_perf_len, days)
+    return performance, b_perf_len
+
+
+def p_set_test(a):
+    print '10 days: ', p_cat_perf(a, 'b_perf_10', 10)
+    print '30 days: ', p_cat_perf(a, 'b_perf_30', 30)
+    print '60 days: ', p_cat_perf(a, 'b_perf_60', 60)
+    print '90 days: ', p_cat_perf(a, 'b_perf_90', 90)
+    print '120 days:', p_cat_perf(a, 'b_perf_120', 120)
+    print '150 days:', p_cat_perf(a, 'b_perf_150', 150)
+    print '180 days:', p_cat_perf(a, 'b_perf', 180)
+
+
+def t_set_test(a):
+    print '10 days: ', t_cat_perf(a, 'b_perf_10', 10)
+    print '30 days: ', t_cat_perf(a, 'b_perf_30', 30)
+    print '60 days: ', t_cat_perf(a, 'b_perf_60', 60)
+    print '90 days: ', t_cat_perf(a, 'b_perf_90', 90)
+    print '120 days:', t_cat_perf(a, 'b_perf_120', 120)
+    print '150 days:', t_cat_perf(a, 'b_perf_150', 150)
+    print '180 days:', t_cat_perf(a, 'b_perf', 180)
+
+
+print 'BUYING performance evaluated by PERSON (perf, transactions)'
+print 'activity_threshold == True'
 a = ReportingPersonAtts.objects.filter(activity_threshold=True)\
     .exclude(b_perf=None)
-b = a.values_list('b_perf', flat=True)
-performance = convert_180_day_to_annual_perf(sum(b) / len(b))
-print 'Performance by persons with activity_threshold == True:', performance,
-print 'Number of transactions:', len(b)
-
-a = ReportingPersonAtts.objects.exclude(b_perf=None)
-b = a.values_list('b_perf', flat=True)
-performance = convert_180_day_to_annual_perf(sum(b) / len(b))
-print 'Performance by all relevant persons:', performance
-print 'Number of transactions:', len(b)
+p_set_test(a)
 print ''
-print 'Evaluated by transaction'
-b_perf_sum = 0
-b_perf_len = 0
+print 'all persons, irrespective of activity_threshold'
+a = ReportingPersonAtts.objects.exclude(b_perf=None)
+p_set_test(a)
+print ''
+print ''
+print 'BUYING performance evaluated by TRANSACTION (perf, transactions)'
+print 'activity_threshold == True'
 a = ReportingPersonAtts.objects.filter(activity_threshold=True)\
     .exclude(b_perf=None)
-b = a.values_list('b_perf', 'buys')
-for b_perf, buys in b:
-    b_perf_sum += b_perf * buys
-    b_perf_len += buys
-print 'Performance by transaction with activity_threshold == True:',
-print convert_180_day_to_annual_perf(b_perf_sum / b_perf_len),
-print 'Number of transactions:', b_perf_len
-
-b_perf_sum = 0
-b_perf_len = 0
+t_set_test(a)
+print ''
+print 'all persons, irrespective of activity_threshold'
 a = ReportingPersonAtts.objects.exclude(b_perf=None)
-b = a.values_list('b_perf', 'buys')
-for b_perf, buys in b:
-    b_perf_sum += b_perf * buys
-    b_perf_len += buys
-print 'Performance by all relevant transactions:',
-print convert_180_day_to_annual_perf(b_perf_sum / b_perf_len),
-print 'Number of transactions:', b_perf_len
+t_set_test(a)
