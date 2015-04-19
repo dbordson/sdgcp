@@ -56,7 +56,7 @@ for year in years:
         counter += 1
         CP_objects = \
             ClosePrice.objects.filter(securitypricehist=sph_object)\
-            .filter(close_date__lt=end_date)\
+            .filter(close_date__lte=end_date)\
             .filter(close_date__gte=start_date)\
             .order_by('close_date')
         if CP_objects.exists():
@@ -68,19 +68,19 @@ for year in years:
             # print 'first_date', first_date,
             last_date = list(CP_objects)[-1].close_date
             # print 'last_date', last_date,
-            years_diff = (last_date - first_date).days / Decimal(365.25)
+            years_diff = Decimal((last_date - first_date).days) /\
+                Decimal((end_date - start_date).days)
             # print 'years_diff', years_diff
             years_in_index.append(years_diff)
-            ann_return =\
-                (last_price / first_price)**(Decimal(1.0) / years_diff)\
-                - Decimal(1.0)
+            name_return =\
+                (last_price / first_price) - Decimal(1.0)
             # print 'ann_return', ann_return
-            ticker_returns.append(ann_return)
+            ticker_returns.append(name_return)
 
     # print ticker_returns
     # print 'sum(ticker_returns)', sum(ticker_returns)
     # print 'len(ticker_returns', len(ticker_returns)
-    simple_average_return = sum(ticker_returns) / len(ticker_returns)
+    simple_average_return = sum(ticker_returns) / sum(years_in_index)
     print ''
     print 'The simple average return for the tickers in', year, 'is',
     print round(float(simple_average_return) * 100.0, 2), ' percent'
