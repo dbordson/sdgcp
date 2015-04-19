@@ -158,6 +158,28 @@ class YearlyReportingPersonAtts(models.Model):
                                 str(self.activity_threshold))
 
 
+class Signal(models.Model):
+    issuer = models.ForeignKey(IssuerCIK)
+    security = models.ForeignKey(Security)
+    reporting_person = models.ForeignKey(ReportingPerson)
+    signal_name = models.CharField(max_length=80)
+    signal_date = models.DateField()
+    formentrysource = models.CharField(max_length=80)
+    security_units = models.DecimalField(max_digits=10, decimal_places=4,
+                                         null=True)
+    signal_value = models.DecimalField(max_digits=10, decimal_places=4,
+                                       null=True)
+    transactions = models.IntegerField(max_length=10)
+    unit_conversion = models.DecimalField(max_digits=10, decimal_places=4,
+                                          null=True)
+    statement = models.CharField(max_length=200)
+
+    def __unicode__(self):
+        return u"%s, %s, %s" % (str(self.reporting_person),
+                                str(self.signal_name),
+                                str(self.signal_date))
+
+
 class SecurityView(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
     security = models.ForeignKey(Security)
