@@ -1,14 +1,19 @@
 from sdapp.models import Signal, Form345Entry  # , ClosePrice
 import datetime
-from django.db.models import Q
+from django.db.models import F, Q
 import pytz
 
 
 def prep_num(a):
     float_a = float(a)
+    # This rounds to the lesser of 2 sig figs and zero decimal places
     round_amount = min(-len(str(int(a))) + 2, 0)
     rounded_a = round(float_a, round_amount)
-    formatted_a = "{:,}".format(int(rounded_a))
+    # This adds the comma separator
+    formatted_a = format(int(rounded_a), ',d')
+    if formatted_a == '0':
+        print 'ERROR -- zero value transaction caught: ', a
+        return None
     return formatted_a
 
 Signal.objects.all().delete()
@@ -19,10 +24,16 @@ lookback = datetime.timedelta(-90)
 
 # insider discretionary buy
 print '    sorting...'
+# screens recent buys
+# Note that the below contains an 'F Object'; since this may be unfamiliar,
+# I will explain -- it filters for transaction dates that are greater than
+# 5 days (timedelta) before the filedatetime.  This avoids interpreting an old
+# transaction in a newly filed form as a new signal.
 a =\
     Form345Entry.objects\
     .filter(filedatetime__gte=today + lookback)\
-    .filter(transaction_date__gte=today.date() + lookback)\
+    .filter(transaction_date__gte=F('filedatetime')
+            + datetime.timedelta(-5))\
     .filter(is_officer=True)\
     .exclude(transaction_date=None)\
     .filter(xn_acq_disp_code='A')\
@@ -32,6 +43,7 @@ a =\
 print '    interpreting and saving...'
 print '    discretionary buys...'
 for entry in a:
+    # This builds the short statement to be displayed in the signal feed
     statement = '%s: the %s, %s, bought $%s of %s on a discretionary basis'\
         %\
         (str(entry.transaction_date),
@@ -41,6 +53,9 @@ for entry in a:
                       entry.transaction_shares)),
          str(entry.short_sec_title)
          )
+    # This provides the significance of the statement.  I propose we only
+    # include the signficance for the first discretionary buy displayed in the
+    # signal feed (no need to repeat it over and over)
     significance = '; buys tend to foreshadow high stock performance.'
     new_signal = \
         Signal(issuer=entry.issuer_cik,
