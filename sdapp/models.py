@@ -162,17 +162,21 @@ class Signal(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
     security = models.ForeignKey(Security)
     reporting_person = models.ForeignKey(ReportingPerson)
-    signal_name = models.CharField(max_length=80)
+    reporting_person_name = models.CharField(max_length=80, default='ERROR')
+    reporting_person_title = models.CharField(max_length=80, default='ERROR')
+    signal_name = models.CharField(max_length=80, default='ERROR')
     signal_date = models.DateField()
-    formentrysource = models.CharField(max_length=80)
-    security_units = models.DecimalField(max_digits=10, decimal_places=4,
+    formentrysource = models.CharField(max_length=80, default='ERROR')
+    security_title = models.CharField(max_length=80, default='ERROR')
+    security_units = models.DecimalField(max_digits=15, decimal_places=4,
                                          null=True)
-    signal_value = models.DecimalField(max_digits=10, decimal_places=4,
+    signal_value = models.DecimalField(max_digits=15, decimal_places=4,
                                        null=True)
-    transactions = models.IntegerField(max_length=10)
-    unit_conversion = models.DecimalField(max_digits=10, decimal_places=4,
+    transactions = models.IntegerField(max_length=15)
+    unit_conversion = models.DecimalField(max_digits=15, decimal_places=4,
                                           null=True)
-    statement = models.CharField(max_length=200)
+    short_statement = models.CharField(max_length=200, default='ERROR')
+    long_statement = models.CharField(max_length=200, default='ERROR')
 
     def __unicode__(self):
         return u"%s, %s, %s" % (str(self.reporting_person),
