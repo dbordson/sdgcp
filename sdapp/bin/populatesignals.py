@@ -18,7 +18,7 @@ a =\
             Q(transaction_code='I'))  # Discretionary 16b-3 Xn
 
 for entry in a:
-    statement = ''
+    statement = '%s '
     new_signal = \
         Signal(issuer=entry.issuer_cik,
                security=entry.security,

@@ -8,7 +8,7 @@ import django.db
 
 def rd(a, s_id):
     # print a
-    if a > 99999999999:
+    if a > 999999999999:
         print "ERROR in security_id:", s_id
         print a, "is too big"
         return None
@@ -17,6 +17,7 @@ def rd(a, s_id):
         return None
     # return Decimal(format(Decimal(a), '.4f'))
     return a
+
 
 def calc_weighted_avg_conversion(units_held_and_adj_and_conv_vectors):
     unitsvector, adjustment_vector, conv_vector =\
@@ -159,7 +160,10 @@ def build_security_views():
             units_held = dotproduct
 
         if sec_obj.deriv_or_nonderiv == 'N' and\
-                sec_obj.ticker is not None:
+                sec_obj.ticker is not None and\
+                ClosePrice.objects\
+                .filter(securitypricehist__security_id=security_id)\
+                .exists():
             price = \
                 ClosePrice.objects\
                 .filter(securitypricehist__security_id=security_id)\
@@ -169,7 +173,11 @@ def build_security_views():
             last_close_price = price
             underlying_close_price = None
         elif sec_obj.deriv_or_nonderiv == 'D' and\
-                underlying_ticker is not None:
+                underlying_ticker is not None and\
+                ClosePrice.objects\
+                    .filter(securitypricehist__security_id=latest_transaction
+                            .underlying_security)\
+                    .exists():
             # print security_id
             units_held_and_adj_and_conv_vectors =\
                 Form345Entry.objects.filter(supersededdt=None)\
@@ -376,7 +384,10 @@ def build_security_views_by_affiliation():
             units_held = dotproduct
 
         if sec_obj.deriv_or_nonderiv == 'N' and\
-                sec_obj.ticker is not None:
+                sec_obj.ticker is not None and\
+                ClosePrice.objects\
+                .filter(securitypricehist__security_id=security_id)\
+                .exists():
             price = \
                 ClosePrice.objects\
                 .filter(securitypricehist__security_id=security_id)\
@@ -386,7 +397,10 @@ def build_security_views_by_affiliation():
             last_close_price = price
             underlying_close_price = None
         elif sec_obj.deriv_or_nonderiv == 'D' and\
-                underlying_ticker is not None:
+                underlying_ticker is not None and\
+                ClosePrice.objects\
+                .filter(securitypricehist__security_id=latest_transaction
+                        .underlying_security).exists():
             # print security_id
             units_held_and_adj_and_conv_vectors =\
                 Form345Entry.objects.filter(supersededdt=None)\

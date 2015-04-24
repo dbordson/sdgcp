@@ -2,9 +2,10 @@ from sdapp.models import YearlyReportingPersonAtts
 
 
 def convert_to_annual_perf(pf, days):
-    pf_annual = (float(pf) + 1.0)**(365.0/float(days)) - 1.0
-    pf_annual_rounded = round(pf_annual * 100.0, 2)
-    return str(pf_annual_rounded) + '%'
+    # pf_annual = (float(pf) + 1.0)**(365.0/float(days)) - 1.0
+    # pf_annual_rounded = round(pf_annual * 100.0, 2)
+    # return str(pf_annual_rounded) + '%'
+    return str(round(float(pf) * 100.0, 2)) + '%'
 
 
 def p_cat_perf(queryset, year, perf_periods, horizons):

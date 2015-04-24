@@ -211,7 +211,7 @@ class SecurityView(models.Model):
     underlying_close_price = models.DecimalField(max_digits=15,
                                                  decimal_places=4,
                                                  null=True)
-    intrinsic_value = models.DecimalField(max_digits=15, decimal_places=4,
+    intrinsic_value = models.DecimalField(max_digits=16, decimal_places=4,
                                           null=True)
     first_xn = models.DateField(null=True)
     most_recent_xn = models.DateField(null=True)
@@ -256,7 +256,7 @@ class PersonHoldingView(models.Model):
     underlying_close_price = models.DecimalField(max_digits=15,
                                                  decimal_places=4,
                                                  null=True)
-    intrinsic_value = models.DecimalField(max_digits=15, decimal_places=4,
+    intrinsic_value = models.DecimalField(max_digits=16, decimal_places=4,
                                           null=True)
     first_xn = models.DateField(null=True)
     most_recent_xn = models.DateField(null=True)
