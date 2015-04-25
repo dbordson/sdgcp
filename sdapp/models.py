@@ -161,6 +161,7 @@ class YearlyReportingPersonAtts(models.Model):
 class Signal(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
     security = models.ForeignKey(Security)
+    sph = models.ForeignKey(SecurityPriceHist, null=True)
     reporting_person = models.ForeignKey(ReportingPerson)
     reporting_person_name = models.CharField(max_length=80, default='ERROR')
     reporting_person_title = models.CharField(max_length=80, default='ERROR')

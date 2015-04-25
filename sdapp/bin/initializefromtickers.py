@@ -1,6 +1,6 @@
 from sdapp.bin import addissuers, formscraper, formparser,\
     populateintermediate, supersedeinit, grabmarketdata,\
-    populateformadjustments, populateviews
+    populateformadjustments, populateviews, populatesignals
 
 # This script calls the other executables in proper order to start with a
 # list of tickers and build out all the needed filings from an up to date
@@ -15,6 +15,10 @@ from sdapp.bin import addissuers, formscraper, formparser,\
 # from sdapp.bin import formscraper  # Can run in heroku or locally
 # from sdapp.bin import formparser  # Can run in heroku or locally
 # from sdapp.bin import populateintermediate  # Can run in heroku or locally
+# from sdapp.bin import supersedeinit  # Can run in heroku or locally
+# from sdapp.bin import grabmarketdata  # Can run in heroku or locally
+# from sdapp.bin import populateformadjustments  # Can run in heroku or locally
+# from sdapp.bin import populateviews  # Can run in heroku or locally
 
 # ** Note: The updatetitles.py script is called from inside the
 #          populateintermediates.py script; this is most of the 'securities

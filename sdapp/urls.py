@@ -1,8 +1,9 @@
 from django.conf.urls import patterns, url
 from django.views.generic import ListView
 from sdapp.models import Security
-from sdapp.views import options, formentrydetail,\
-    holdingdetail, byperson, holdingtable, personholdingtable
+from sdapp.views import options, formentrydetail, screens,\
+    holdingdetail, byperson, holdingtable, personholdingtable,\
+    discretionarybuy
 
 
 urlpatterns = \
@@ -14,6 +15,8 @@ urlpatterns = \
                 .order_by('-ticker'),
                 context_object_name='ticker_avail',
                 template_name='sdapp/index.html')),
+        url(r'^screens/$', screens, name='screens'),
+        url(r'^screens/dbuy', discretionarybuy, name='discretionarybuy'),
         url(r'^(?P<ticker>\w+)/$', options, name='options'),
         url(r'^(?P<ticker>\w+)/formentries$', formentrydetail,
             name='formentrydetail'),

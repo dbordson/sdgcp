@@ -1,4 +1,4 @@
-from sdapp.models import Signal, Form345Entry  # , ClosePrice
+from sdapp.models import Signal, Form345Entry, SecurityPriceHist  # ClosePrice
 import datetime
 from django.db.models import F, Q
 import pytz
@@ -53,6 +53,11 @@ for entry in a:
                       entry.transaction_shares)),
          str(entry.short_sec_title)
          )
+    sph_set = SecurityPriceHist.objects.filter(issuer=entry.issuer_cik)
+    if sph_set.exists():
+        sph = sph_set[0]
+    else:
+        pass
     # This provides the significance of the statement.  I propose we only
     # include the signficance for the first discretionary buy displayed in the
     # signal feed (no need to repeat it over and over)
@@ -60,6 +65,7 @@ for entry in a:
     new_signal = \
         Signal(issuer=entry.issuer_cik,
                security=entry.security,
+               sph=sph,
                reporting_person=entry.reporting_owner_cik,
                reporting_person_name=entry.reporting_owner_name,
                reporting_person_title=entry.reporting_owner_title,

@@ -1,12 +1,18 @@
 from django.shortcuts import render_to_response
-from sdapp.models import (Security,
+from sdapp.models import (Security, Signal,
                           Form345Entry, PersonHoldingView, SecurityView)
 # import datetime
 
 
 def options(request, ticker):
+    common_stock_security = \
+        Security.objects.get(ticker=ticker)
+    issuer = common_stock_security.issuer
+    issuer_name = Form345Entry.objects.filter(issuer_cik=issuer)\
+        .latest('filedatetime').issuer_name
     return render_to_response('sdapp/options.html',
-                              {'ticker': ticker})
+                              {'ticker': ticker,
+                               'issuer_name': issuer_name})
 
 
 # def pricedetail(request, ticker):
@@ -15,6 +21,19 @@ def options(request, ticker):
 #     pricelist = ClosePrice.objects.filter(SecurityPriceHist=SPH_obj)
 #     return render_to_response('sdapp/pricedetail.html',
 #                               {'pricelist': pricelist})
+
+
+def screens(request):
+
+    return render_to_response('sdapp/screens.html')
+
+
+def discretionarybuy(request):
+    qs = Signal.objects\
+        .order_by('-signal_date')
+
+    return render_to_response('sdapp/discretionarybuy.html',
+                              {'signals': qs})
 
 
 def formentrydetail(request, ticker):
