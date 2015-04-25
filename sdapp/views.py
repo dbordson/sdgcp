@@ -1,6 +1,7 @@
 from django.shortcuts import render_to_response
 from sdapp.models import (Security, Signal,
                           Form345Entry, PersonHoldingView, SecurityView)
+from django.db.models import Q
 # import datetime
 
 
@@ -32,10 +33,24 @@ def screens(request):
 
 
 def discretionarybuy(request):
+    signal_name_1 = 'Discretionary Buy'
+    signal_name_2 = 'Discretionary Buy after a Decline'
     qs = Signal.objects\
+        .filter(Q(signal_name=signal_name_1) |
+                Q(signal_name=signal_name_2))\
         .order_by('-signal_date')
 
     return render_to_response('sdapp/discretionarybuy.html',
+                              {'signals': qs})
+
+
+def weaknessbuy(request):
+    signal_name = 'Discretionary Buy after a Decline'
+    qs = Signal.objects\
+        .filter(signal_name=signal_name)\
+        .order_by('-signal_date')
+
+    return render_to_response('sdapp/weaknessbuy.html',
                               {'signals': qs})
 
 

@@ -3,7 +3,7 @@ from django.views.generic import ListView
 from sdapp.models import Security
 from sdapp.views import options, formentrydetail, screens,\
     holdingdetail, byperson, holdingtable, personholdingtable,\
-    discretionarybuy
+    discretionarybuy, weaknessbuy
 
 
 urlpatterns = \
@@ -17,6 +17,7 @@ urlpatterns = \
                 template_name='sdapp/index.html')),
         url(r'^screens/$', screens, name='screens'),
         url(r'^screens/dbuy', discretionarybuy, name='discretionarybuy'),
+        url(r'^screens/wbuy', weaknessbuy, name='weaknessbuy'),
         url(r'^(?P<ticker>\w+)/$', options, name='options'),
         url(r'^(?P<ticker>\w+)/formentries$', formentrydetail,
             name='formentrydetail'),

@@ -311,8 +311,10 @@ def execanalyze(repperson, trade_delta, win_hurdle):
                             b_perf_60=b_perf_60,
                             b_perf_90=b_perf_90,
                             b_perf_120=b_perf_120,
-                            b_perf_150=b_perf_150)  # .save()
-    return rpatts_object
+                            b_perf_150=b_perf_150).save()
+    django.db.reset_queries()
+    return
+    # return rpatts_object
 
 
 def reviewreppersons(trade_delta):
@@ -333,18 +335,18 @@ def reviewreppersons(trade_delta):
     print '    Number of potential reporting persons:', len(reppersons)
     looplength = float(len(reppersons))
     counter = 0.0
-    rpatts_objects = []
+    # rpatts_objects = []
     for repperson in reppersons:
         if float(int(10*counter/looplength)) !=\
                 float(int(10*(counter-1)/looplength)):
             print '   ', int(counter/looplength*100), 'percent'
         counter += 1.0
-        rpatts_object = \
-            execanalyze(repperson, trade_delta, win_hurdle)
-        if rpatts_object is not None:
-            rpatts_objects.append(rpatts_object)
-    ReportingPersonAtts.objects.bulk_create(rpatts_objects)
-    django.db.reset_queries()
+        # rpatts_object = \
+        execanalyze(repperson, trade_delta, win_hurdle)
+        # if rpatts_object is not None:
+        #    rpatts_objects.append(rpatts_object)
+    # ReportingPersonAtts.objects.bulk_create(rpatts_objects)
+    # django.db.reset_queries()
     print 'Done'
     return
 
