@@ -1,7 +1,7 @@
 <h1>Discretionary Buy Signals</h1>
 
 <p>Discretionary buys by executives tend to foreshadow outperformance [X]% of the time</p>
-{% if signals %}
+{% if signals.exists %}
     <ul>
     {% for signal in signals %}
         <li><a href="/sdapp/{{ signal.sph.ticker_sym }}/">{{ signal.sph.ticker_sym }} - {{ signal.short_statement }}</a></li>
