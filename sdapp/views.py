@@ -10,9 +10,12 @@ def options(request, ticker):
     issuer = common_stock_security.issuer
     issuer_name = Form345Entry.objects.filter(issuer_cik=issuer)\
         .latest('filedatetime').issuer_name
+    signals = Signal.objects.filter(issuer=issuer)\
+        .order_by('-signal_date')
     return render_to_response('sdapp/options.html',
                               {'ticker': ticker,
-                               'issuer_name': issuer_name})
+                               'issuer_name': issuer_name,
+                               'signals': signals})
 
 
 # def pricedetail(request, ticker):

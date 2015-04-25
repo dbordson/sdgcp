@@ -5,3 +5,15 @@
         <li><a href="/sdapp/{{ ticker }}/byperson">byperson</a></li>
         <li><a href="/sdapp/{{ ticker }}/holdingtable">holding table</a></li>
     </ul>
+
+
+<p>Signals</p>
+{% if signals %}
+    <ul>
+    {% for signal in signals %}
+        <li><a href="/sdapp/{{ signal.sph.ticker_sym }}/">{{ signal.sph.ticker_sym }} - {{ signal.long_statement }}</a></li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No signals are available.</p>
+{% endif %}
