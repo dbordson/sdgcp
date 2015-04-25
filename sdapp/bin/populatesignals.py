@@ -9,7 +9,7 @@ def prep_num(a):
     # This rounds to the lesser of 2 sig figs and zero decimal places
     round_amount = min(-len(str(int(a))) + 2, 0)
     rounded_a = round(float_a, round_amount)
-    # This adds the comma separator
+    # This adds the thousands separator
     formatted_a = format(int(rounded_a), ',d')
     if formatted_a == '0':
         print 'ERROR -- zero value transaction caught: ', a
