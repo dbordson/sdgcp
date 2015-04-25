@@ -5,3 +5,4 @@ staticfiles
 .DS_Store
 emailaddress.txt
 *.DS_Store
+settings.py
