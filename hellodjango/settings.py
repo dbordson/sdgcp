@@ -10,7 +10,10 @@ https://docs.djangoproject.com/en/1.6/ref/settings/
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+BASE_DIR = os.path.dirname(__file__)
+
+
+LOGIN_URL = '/accounts/login/'
 
 
 # Quick-start development settings - unsuitable for production
@@ -22,13 +25,14 @@ SECRET_KEY = 'p#mvoa0nm-xxjm5@3vu8qt_a8c%+5*8l%(v1id-^&cb(_2d_$n'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-TEMPLATE_DEBUG = True
+TEMPLATE_DEBUG = DEBUG
 
 ALLOWED_HOSTS = []
 
 TEMPLATE_DIRS = (
-    os.path.join(BASE_DIR, 'mytemplates'),
+    os.path.join(os.path.dirname(BASE_DIR), "static", "templates"),
 )
+
 
 # Application definition
 
@@ -39,6 +43,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'signups',
     'south',
     'sdapp',
 )
@@ -55,8 +60,6 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'hellodjango.urls'
 
 WSGI_APPLICATION = 'hellodjango.wsgi.application'
-
-
 # Database
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases
 
@@ -109,6 +112,15 @@ ALLOWED_HOSTS = ['*']
 STATIC_ROOT = 'staticfiles'
 STATIC_URL = '/static/'
 
-# STATICFILES_DIRS = (
-#     os.path.join(BASE_DIR, 'static'),
-# )
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'static'),
+)
+
+if DEBUG:
+    # MEDIA_URL = '/media/'
+    STATIC_ROOT =\
+        os.path.join(os.path.dirname(BASE_DIR), "static", "static-only")
+    # MEDIA_ROOT = os.path.join(os.path.dirname(BASE_DIR), "static", "media")
+    STATICFILES_DIRS = (
+        os.path.join(os.path.dirname(BASE_DIR), "static", "static"),
+    )
