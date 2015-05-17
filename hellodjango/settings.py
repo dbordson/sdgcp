@@ -10,8 +10,8 @@ https://docs.djangoproject.com/en/1.6/ref/settings/
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
-BASE_DIR = os.path.dirname(__file__)
-
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+print BASE_DIR
 
 LOGIN_URL = '/accounts/login/'
 
@@ -30,7 +30,7 @@ TEMPLATE_DEBUG = DEBUG
 ALLOWED_HOSTS = []
 
 TEMPLATE_DIRS = (
-    os.path.join(os.path.dirname(BASE_DIR), "static", "templates"),
+    os.path.join(BASE_DIR, "static", "templates"),
 )
 
 
@@ -109,8 +109,6 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.6/howto/static-files/
-
-STATIC_URL = '/static/'
 
 
 # Honor the 'X-Forwarded-Proto' header for request.is_secure()
