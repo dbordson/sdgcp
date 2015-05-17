@@ -4,6 +4,10 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from django.contrib import admin
+import re
+
+
+
 admin.autodiscover()
 
 urlpatterns =\
@@ -23,6 +27,11 @@ urlpatterns =\
              url(r'^accounts/loggedin/$', 'hellodjango.views.loggedin'),
              url(r'^accounts/invalid/$', 'hellodjango.views.invalid_login'),
              )
+
+urlpatterns += patterns('',
+                        (r'^static/(.*)$', 'django.views.static.serve',
+                         {'document_root': settings.STATIC_ROOT}),
+                        )
 
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL,
