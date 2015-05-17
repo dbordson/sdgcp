@@ -1,3 +1,8 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+
 {% if ticker_sym_avail %}
     <ul>
     {% for SecurityPriceHist in ticker_sym_avail %}
@@ -7,3 +12,5 @@
 {% else %}
     <p>No tickers are available.</p>
 {% endif %}
+
+{% endblock %}

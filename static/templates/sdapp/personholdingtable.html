@@ -1,3 +1,8 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+
 <h2>Summary of {{ ticker }} Holdings</h2>
 <h3>{{person_name}} ({{person_title}})</h3>
 
@@ -65,3 +70,6 @@
 </table>
 
 <p>Note: Omits holdings in other entities.<p>
+
+
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+<h1>{{ issuer_name }} ({{ ticker }})</h1>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h3 class="panel-title">Signals</h3>
+  </div>
+  
+  {% if signals.exists %}
+  <ul class="list-group">
+  {% for signal in signals %}
+    <li class="list-group-item">
+      <a href="/sdapp/{{ signal.sph.ticker_sym }}/">{{ signal.signal_date }} - {{ signal.long_statement }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+
+  {% else %}
+  <div class="panel-body">
+    <p>No signals are available.</p>
+  </div>
+  {% endif %}
+</div>  
+
+<h3>Tabular Data</h3>
+
+<div class="list-group">
+
+  <a href="/sdapp/{{ ticker }}/formentries" class="list-group-item">Form Entries</a>
+  <a href="/sdapp/{{ ticker }}/holdings" class="list-group-item">Current Holdings</a>
+  <a href="/sdapp/{{ ticker }}/byperson" class="list-group-item">Holder Table</a>
+  <a href="/sdapp/{{ ticker }}/holdingtable" class="list-group-item">Holding Table</a>
+</div>
+
+
+
+
+
+
+{% endblock %}

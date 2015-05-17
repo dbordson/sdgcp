@@ -1,3 +1,8 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+
 <h1>Holdings of {{affiliation.person_name}} in {{ ticker_sym }}</h1>
 
 <table border="1" cellspacing="0" cellpadding="1" style="width:200px">
@@ -35,3 +40,6 @@
 </table>
 
 <p>Note: Omits holdings in other entities.<p>
+
+
+{% endblock %}

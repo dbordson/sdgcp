@@ -14,7 +14,8 @@ urlpatterns = \
                 queryset=Security.objects.exclude(ticker=None)
                 .order_by('-ticker'),
                 context_object_name='ticker_avail',
-                template_name='sdapp/index.html')),
+                template_name='sdapp/index.html'),
+                name='sdapp'),
         url(r'^screens/$', screens, name='screens'),
         url(r'^screens/dbuy', discretionarybuy, name='discretionarybuy'),
         url(r'^screens/wbuy', weaknessbuy, name='weaknessbuy'),

@@ -1,3 +1,8 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+
 <h1>Management Monitor</h1>
 <p><a href="/sdapp/screens/">Screens</p>
 {% if ticker_avail %}
@@ -9,3 +14,6 @@
 {% else %}
     <p>No tickers are available.</p>
 {% endif %}
+
+
+{% endblock %}

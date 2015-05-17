@@ -1,3 +1,8 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+
 <h1>Buys after Stock Drops</h1>
 
 <p>Buys by executives after stock price declines foreshadow outperformance [X]% of the time</p>
@@ -10,3 +15,5 @@
 {% else %}
     <p>No signals are available.</p>
 {% endif %}
+
+{% endblock %}

@@ -1,10 +1,24 @@
-from django.shortcuts import render_to_response
+from django.shortcuts import (render_to_response, HttpResponseRedirect,
+                              RequestContext)
 from sdapp.models import (Security, Signal,
                           Form345Entry, PersonHoldingView, SecurityView)
 from django.db.models import Q
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 # import datetime
 
 
+# def check_auth(request):
+#     if request.user.is_authenticated():
+#         return True
+#     else:
+#         messagetext = \
+#             'Login required for access'
+#         messages.success(request, messagetext)
+#         return False
+
+
+@login_required()
 def options(request, ticker):
     common_stock_security = \
         Security.objects.get(ticker=ticker)
@@ -16,7 +30,9 @@ def options(request, ticker):
     return render_to_response('sdapp/options.html',
                               {'ticker': ticker,
                                'issuer_name': issuer_name,
-                               'signals': signals})
+                               'signals': signals},
+                              context_instance=RequestContext(request),
+                              )
 
 
 # def pricedetail(request, ticker):
@@ -26,12 +42,14 @@ def options(request, ticker):
 #     return render_to_response('sdapp/pricedetail.html',
 #                               {'pricelist': pricelist})
 
-
+@login_required()
 def screens(request):
+    return render_to_response('sdapp/screens.html',
+                              context_instance=RequestContext(request),
+                              )
 
-    return render_to_response('sdapp/screens.html')
 
-
+@login_required()
 def discretionarybuy(request):
     signal_name_1 = 'Discretionary Buy'
     signal_name_2 = 'Discretionary Buy after a Decline'
@@ -41,9 +59,12 @@ def discretionarybuy(request):
         .order_by('-signal_date')
 
     return render_to_response('sdapp/discretionarybuy.html',
-                              {'signals': qs})
+                              {'signals': qs},
+                              context_instance=RequestContext(request),
+                              )
 
 
+@login_required()
 def weaknessbuy(request):
     signal_name = 'Discretionary Buy after a Decline'
     qs = Signal.objects\
@@ -51,9 +72,12 @@ def weaknessbuy(request):
         .order_by('-signal_date')
 
     return render_to_response('sdapp/weaknessbuy.html',
-                              {'signals': qs})
+                              {'signals': qs},
+                              context_instance=RequestContext(request),
+                              )
 
 
+@login_required()
 def formentrydetail(request, ticker):
     headtitle = 'All Entries'
     security_obj = \
@@ -67,9 +91,11 @@ def formentrydetail(request, ticker):
                                'entrylist': entrylist,
                                'ticker': ticker,
                                'issuer': issuer,
-                               'issuer_pk': issuer_pk})
+                               'issuer_pk': issuer_pk},
+                              context_instance=RequestContext(request),)
 
 
+@login_required()
 def holdingdetail(request, ticker):
     headtitle = 'Current Holdings'
     security_obj = \
@@ -85,9 +111,11 @@ def holdingdetail(request, ticker):
                                'entrylist': entrylist,
                                'ticker': ticker,
                                'issuer': issuer,
-                               'issuer_pk': issuer_pk})
+                               'issuer_pk': issuer_pk},
+                              context_instance=RequestContext(request),)
 
 
+@login_required()
 def byperson(request, ticker):
     issuer = \
         Security.objects.get(ticker=ticker).issuer
@@ -96,7 +124,8 @@ def byperson(request, ticker):
     return render_to_response('sdapp/personviews.html',
                               {'ticker': ticker,
                                'issuer_pk': issuer.pk,
-                               'personviews': personviews})
+                               'personviews': personviews},
+                              context_instance=RequestContext(request),)
 
 
 def compile_holdings_into_table(person_view_set, total_view_set,
@@ -116,6 +145,7 @@ def compile_holdings_into_table(person_view_set, total_view_set,
     return holding_lists
 
 
+@login_required()
 def holdingtable(request, ticker):
     common_stock_security = \
         Security.objects.get(ticker=ticker)
@@ -136,7 +166,9 @@ def holdingtable(request, ticker):
                               {'ticker': ticker,
                                'issuer_name': issuer_name,
                                'non_deriv_table': non_deriv_table,
-                               'deriv_table': deriv_table})
+                               'deriv_table': deriv_table},
+                              context_instance=RequestContext(request),
+                              )
 
 
 # def holdingtable(request, ticker):
@@ -195,7 +227,7 @@ def holdingtable(request, ticker):
 #                                'stockholdinglists': stockholdinglists,
 #                                'derivholdinglists': derivholdinglists})
 
-
+@login_required()
 def personholdingtable(request, ticker, owner):
     common_stock_security = \
         Security.objects.get(ticker=ticker)
@@ -220,4 +252,6 @@ def personholdingtable(request, ticker, owner):
                                'person_title': person_title,
                                'issuer': issuer,
                                'nonderivativeholdings': nonderivativeholdings,
-                               'derivativeholdings': derivativeholdings})
+                               'derivativeholdings': derivativeholdings},
+                              context_instance=RequestContext(request),
+                              )

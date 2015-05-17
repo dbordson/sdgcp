@@ -1,3 +1,9 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+
+
 <h1>{{ ticker }} Positions by Holder ({{ issuer_pk }}) </h1>
 <table border="1" cellspacing="0" cellpadding="1" style="width:200px">
     <thead>
@@ -48,3 +54,6 @@
     </tr>
     {% endfor %}
 </table>
+
+
+{% endblock %}
