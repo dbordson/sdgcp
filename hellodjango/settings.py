@@ -1,7 +1,9 @@
 """
 Django settings for hellodjango project.
+
 For more information on this file, see
 https://docs.djangoproject.com/en/1.6/topics/settings/
+
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.6/ref/settings/
 """
@@ -58,6 +60,8 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'hellodjango.urls'
 
 WSGI_APPLICATION = 'hellodjango.wsgi.application'
+
+
 # Database
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases
 
@@ -71,6 +75,15 @@ DATABASES = {
         'PORT': '5432',
     }
 }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
+#         'NAME': 'local sdapp',
+#         'USER': 'postgres',
+#         'PASSWORD': 'es33-69Cd',
+#         'HOST': ''
+#     }
+# }
 
 # Parse database configuration from $DATABASE_URL
 
