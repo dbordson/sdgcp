@@ -15,7 +15,6 @@ def auth_view(request):
     username = request.POST.get('username', '')
     password = request.POST.get('password', '')
     user = auth.authenticate(username=username, password=password)
-    print request
     if user is not None:
         auth.login(request, user)
         # The below is probably not the right way to do this because it isn't

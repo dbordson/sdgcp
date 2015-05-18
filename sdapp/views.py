@@ -1,10 +1,12 @@
-from django.shortcuts import (render_to_response,
+from django.shortcuts import (render_to_response, get_object_or_404,
                               RequestContext)
-from sdapp.models import (Security, Signal,
+from sdapp.models import (Security, Signal, IssuerCIK,
                           Form345Entry, PersonHoldingView, SecurityView)
 from django.db.models import Q
 # from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.views.generic import ListView
+from django.utils.decorators import method_decorator
 # import datetime
 
 
@@ -41,6 +43,22 @@ def options(request, ticker):
 #     pricelist = ClosePrice.objects.filter(SecurityPriceHist=SPH_obj)
 #     return render_to_response('sdapp/pricedetail.html',
 #                               {'pricelist': pricelist})
+
+
+class filterscreens(ListView):
+
+    template_name = 'sdapp/filterscreens.html'
+    context_object_name = 'screens'
+
+    @method_decorator(login_required)
+    def dispatch(self, *args, **kwargs):
+        return super(filterscreens, self).dispatch(*args, **kwargs)
+
+    def get_queryset(self):
+        print self
+        self.issuer = get_object_or_404(IssuerCIK, cik_num=self.args[0])
+        return Signal.objects.filter(issuer=self.issuer)
+
 
 @login_required()
 def screens(request):

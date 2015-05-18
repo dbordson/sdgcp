@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+
+
+<h1>Discretionary Buy Signals</h1>
+
+<p>Discretionary buys by executives foreshadow outperformance [X]% of the time</p>
+{% if screenlist.exists %}
+    <ul>
+    {% for signal in screenlist %}
+        <li><a href="/sdapp/{{ signal.sph.ticker_sym }}/">{{ signal.signal_date }} - {{ signal.sph.ticker_sym }}: {{ signal.short_statement }}</a></li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No signals are available.</p>
+{% endif %}
+
+
+{% endblock %}
