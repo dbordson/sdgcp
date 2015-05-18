@@ -15,10 +15,18 @@ def auth_view(request):
     username = request.POST.get('username', '')
     password = request.POST.get('password', '')
     user = auth.authenticate(username=username, password=password)
-
+    print request
     if user is not None:
         auth.login(request, user)
-        return HttpResponseRedirect('/sdapp/')
+        # The below is probably not the right way to do this because it isn't
+        # clean, but it works for now.  
+        if 'HTTP_REFERER' in request.META \
+                and request.META['HTTP_REFERER'].find('/?next=/') != -1:
+            source_url = request.META['HTTP_REFERER']
+            redirect = source_url[source_url.find('/?next=/')+7:]
+        else:
+            redirect = '/sdapp/'
+        return HttpResponseRedirect(redirect)
     else:
         return HttpResponseRedirect('/accounts/invalid')
 

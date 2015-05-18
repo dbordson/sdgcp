@@ -1,9 +1,9 @@
-from django.shortcuts import (render_to_response, HttpResponseRedirect,
+from django.shortcuts import (render_to_response,
                               RequestContext)
 from sdapp.models import (Security, Signal,
                           Form345Entry, PersonHoldingView, SecurityView)
 from django.db.models import Q
-from django.contrib import messages
+# from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 # import datetime
 
