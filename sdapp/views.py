@@ -102,19 +102,25 @@ def screens(request):
     query_string = None
     found_entries = None
     signal_types = []
+    dbuyactive = True
+    wbuyactive = True
     # print 'q', request.GET['q']
     # print ('q' in request.GET)
     # print request.GET['q'] == ''
     # print 'dbuy', 'discretionarybuy' in request.GET
+    if ('q' in request.GET):
+        query_string = request.GET['q'].strip()
+        dbuyactive = False
+        wbuyactive = False
+
     if 'discretionarybuy' in request.GET:
         signal_types.append('Discretionary Buy')
+        dbuyactive = True
         # print 'discretionarybuy', request.GET['discretionarybuy'].strip()
     if 'buyonweakness' in request.GET:
         signal_types.append('Discretionary Buy after a Decline')
+        wbuyactive = True
         # print 'buyonweakness', request.GET['buyonweakness'].strip()
-
-    if ('q' in request.GET):
-        query_string = request.GET['q'].strip()
 
     if ('q' in request.GET) and\
             SecurityPriceHist.objects\
@@ -140,7 +146,10 @@ def screens(request):
 
     return render_to_response('sdapp/screens.html',
                               {'found_entries': found_entries,
-                               'query_string': query_string},
+                               'query_string': query_string,
+                               'dbuyactive': dbuyactive,
+                               'wbuyactive': wbuyactive,
+                               },
                               context_instance=RequestContext(request),
                               )
 

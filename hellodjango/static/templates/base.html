@@ -48,7 +48,9 @@
 
 
             {% for message in messages %}
+            <div class="spacer10"></div>
             <p {% if message.tags == "success" %} class="alert alert-success"{% endif %}>{{ message }}</p>
+            
             {% endfor %}
           
         </div>

@@ -4,7 +4,7 @@
 {% block content %}
 
 <h1>Screens</h1>
-
+<h3>List by Signal</h3>
     <ul>
         <li><a href="/sdapp/screens/dbuy">Discretionary Buy</a></li>
         <li><a href="/sdapp/screens/wbuy">Buys on Price Weakness</a></li>
@@ -21,32 +21,53 @@
 
 
         </form> -->
-
-<div class="row">
+<h3>Search</h3>
+  <div class="container">
   <form method='get' action="{% url 'screens' %}" class="col-md-6">
-    <div for="id_q" class="input-group">
-      <input type="text" name="q" id="id_q" placeholder="Ticker" class="form-control">
-      <span class="input-group-btn">
-        <button type="submit" value="Submit" class="btn">Go!</button>
-      </span>
+    <!--<div class="panel panel-default">
+    
+    <div class="panel-heading">Signals:</div>
+    
+    <div class="panel-body">-->
+    <div class="btn-group btn-group-justified" data-toggle="buttons">
+      
+      <label {% if dbuyactive %} class="btn btn-info active" {% else %} class="btn btn-info" {% endif %}>
+        <input type="checkbox" autocomplete="off" name="discretionarybuy" 
+        {% if dbuyactive %} checked {% endif %}>Discretionary Buy</label>
+      <label {% if wbuyactive %} class="btn btn-info active" {% else %} class="btn btn-info" {% endif %}>
+        <input type="checkbox" autocomplete="off" name="buyonweakness"
+        {% if wbuyactive %} checked {% endif %}>Buy on Weakness</label>
+    <!--
+    </div>
+    </div>
+    -->
+    </div>
+    <div class="spacer10"></div>
+    
+      <input type="text" name="q" id="id_q" placeholder="Ticker (optional)" class="form-control">
+    <div class="spacer10"></div>
+    <div>
+    
+        <button type="submit" value="Submit" class="btn btn-success btn">Search</button>
+      
     </div>
     <!--<span>-->
+
+
+
+    </div>
+  </form>
+  <div class="spacer10"></div>
+  
+
+<!--
     <div class="btn-group" data-toggle="buttons">
       <label class="btn btn-info active">
         <input type="checkbox" autocomplete="off" name="discretionarybuy" checked>Discretionary Buy</label>
       <label class="btn btn-info active">
         <input type="checkbox" autocomplete="off" name="buyonweakness" checked>Buy on Weakness</label>
-</div>
-
-
-<!--    <label class="checkbox-inline"><input type="checkbox" name="discretionarybuy" value="">Discretionary Buy</label>
-    <label class="checkbox-inline"><input type="checkbox" name="buyonweakness" value="">Buy on Weakness</label>
-    </span>
-    
-    -->
     </div>
-  </form>
-
+-->
 
 
 {% if query_string %}    
@@ -64,7 +85,7 @@ You searched for "{{ query_string }}" and the results are listed below.
     {% endif %}
 
 {% endif %}
-
+</div>
 
 
 {% endblock %}
