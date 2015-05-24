@@ -64,25 +64,25 @@ WSGI_APPLICATION = 'hellodjango.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-#         'NAME': 'da29ata4en7cmb',
-#         'USER': 'ikgoypfxauimde',
-#         'PASSWORD': 'qGW1rvAFyqlsJvJvtCrM-YjXNi',
-#         'HOST': 'ec2-54-243-50-213.compute-1.amazonaws.com',
-#         'PORT': '5432',
-#     }
-# }
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'local sdapp',
-        'USER': 'postgres',
-        'PASSWORD': 'es33-69Cd',
-        'HOST': ''
+        'NAME': 'da29ata4en7cmb',
+        'USER': 'ikgoypfxauimde',
+        'PASSWORD': 'qGW1rvAFyqlsJvJvtCrM-YjXNi',
+        'HOST': 'ec2-54-243-50-213.compute-1.amazonaws.com',
+        'PORT': '5432',
     }
 }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
+#         'NAME': 'local sdapp',
+#         'USER': 'postgres',
+#         'PASSWORD': 'es33-69Cd',
+#         'HOST': ''
+#     }
+# }
 
 # Parse database configuration from $DATABASE_URL
 
