@@ -12,5 +12,59 @@
         <li>?</li>
     </ul>
 
+<!--<form method="get" action="{% url 'screens' %}">
+          
+
+<label for="id_q">Search:</label>
+           <input type="text" name="q" id="id_q"/>
+           <input type="submit" value="Submit"/>
+
+
+        </form> -->
+
+<div class="row">
+  <form method='get' action="{% url 'screens' %}" class="col-md-6">
+    <div for="id_q" class="input-group">
+      <input type="text" name="q" id="id_q" placeholder="Ticker" class="form-control">
+      <span class="input-group-btn">
+        <button type="submit" value="Submit" class="btn">Go!</button>
+      </span>
+    </div>
+    <!--<span>-->
+    <div class="btn-group" data-toggle="buttons">
+      <label class="btn btn-info active">
+        <input type="checkbox" autocomplete="off" name="discretionarybuy" checked>Discretionary Buy</label>
+      <label class="btn btn-info active">
+        <input type="checkbox" autocomplete="off" name="buyonweakness" checked>Buy on Weakness</label>
+</div>
+
+
+<!--    <label class="checkbox-inline"><input type="checkbox" name="discretionarybuy" value="">Discretionary Buy</label>
+    <label class="checkbox-inline"><input type="checkbox" name="buyonweakness" value="">Buy on Weakness</label>
+    </span>
+    
+    -->
+    </div>
+  </form>
+
+
+
+{% if query_string %}    
+
+You searched for "{{ query_string }}" and the results are listed below.
+
+    {% if found_entries.exists %}    
+    <ul>
+    {% for signal in found_entries %}
+        <li><a href="/sdapp/{{ signal.sph.ticker_sym }}/">{{ signal.signal_date }} - {{ signal.sph.ticker_sym }}: {{ signal.short_statement }}</a></li>
+    {% endfor %}
+    </ul>
+    {% else %}
+        <p>No search results.</p>
+    {% endif %}
+
+{% endif %}
+
+
 
 {% endblock %}

@@ -1,12 +1,13 @@
 from django.shortcuts import (render_to_response, get_object_or_404,
-                              RequestContext)
-from sdapp.models import (Security, Signal, IssuerCIK,
+                              RequestContext, HttpResponseRedirect)
+from sdapp.models import (Security, Signal, IssuerCIK, SecurityPriceHist,
                           Form345Entry, PersonHoldingView, SecurityView)
 from django.db.models import Q
 # from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.views.generic import ListView
 from django.utils.decorators import method_decorator
+# from django.core.context_processors import csrf
 # import datetime
 
 
@@ -18,6 +19,14 @@ from django.utils.decorators import method_decorator
 #             'Login required for access'
 #         messages.success(request, messagetext)
 #         return False
+
+
+def is_int(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
 
 
 @login_required()
@@ -45,24 +54,93 @@ def options(request, ticker):
 #                               {'pricelist': pricelist})
 
 
-class filterscreens(ListView):
+# class filterscreens(ListView):
 
-    template_name = 'sdapp/filterscreens.html'
-    context_object_name = 'screens'
+#     # c = {}
+#     # c.update(csrf(request))
 
-    @method_decorator(login_required)
-    def dispatch(self, *args, **kwargs):
-        return super(filterscreens, self).dispatch(*args, **kwargs)
+#     template_name = 'sdapp/filterscreens.html'
+#     context_object_name = 'screens'
 
-    def get_queryset(self):
-        print self
-        self.issuer = get_object_or_404(IssuerCIK, cik_num=self.args[0])
-        return Signal.objects.filter(issuer=self.issuer)
+#     @method_decorator(login_required)
+#     def dispatch(self, *args, **kwargs):
+#         return super(filterscreens, self).dispatch(*args, **kwargs)
+
+#     def get_queryset(self):
+#         print self
+#         self.issuer = get_object_or_404(IssuerCIK, cik_num=self.args[0])
+#         return Signal.objects.filter(issuer=self.issuer)
+
+
+# def search(request):
+#     query_string = ''
+#     found_entries = None
+#     if ('q' in request.GET) and request.GET['q'].strip():
+#         query_string = request.GET['q']
+        
+#         entry_query = get_query(query_string, ['title', 'body',])
+        
+#         found_entries = Entry.objects.filter(entry_query).order_by('-pub_date')
+
+#     return render_to_response('search/search_results.html',
+#                           { 'query_string': query_string, 'found_entries': found_entries },
+#                           context_instance=RequestContext(request))
+
+
+def filterintermed(request):
+    cik_num = request.POST.get('cik_num', '')
+    print cik_num
+    if cik_num is not '':
+        return HttpResponseRedirect('/sdapp/screens/' + cik_num + '/')
+    else:
+        return HttpResponseRedirect('/sdapp/screens/')
+# is_int(request.GET['q'].strip()) and\
 
 
 @login_required()
 def screens(request):
+    query_string = None
+    found_entries = None
+    signal_types = []
+    # print 'q', request.GET['q']
+    # print ('q' in request.GET)
+    # print request.GET['q'] == ''
+    # print 'dbuy', 'discretionarybuy' in request.GET
+    if 'discretionarybuy' in request.GET:
+        signal_types.append('Discretionary Buy')
+        # print 'discretionarybuy', request.GET['discretionarybuy'].strip()
+    if 'buyonweakness' in request.GET:
+        signal_types.append('Discretionary Buy after a Decline')
+        # print 'buyonweakness', request.GET['buyonweakness'].strip()
+
+    if ('q' in request.GET):
+        query_string = request.GET['q'].strip()
+
+    if ('q' in request.GET) and\
+            SecurityPriceHist.objects\
+            .filter(ticker_sym=request.GET['q'].strip().upper()).exists() and\
+            SecurityPriceHist.objects\
+            .filter(ticker_sym=request.GET['q'].strip().upper())[0]\
+            .issuer is not None:
+        issuer = SecurityPriceHist.objects\
+            .filter(ticker_sym=query_string.upper())[0].issuer
+        found_entries = \
+            Signal.objects.filter(signal_name__in=signal_types)\
+            .filter(issuer=issuer).order_by('-signal_date')
+    elif ('q' in request.GET) and\
+            request.GET['q'] == '':
+        query_string = ' '
+        # print 'here'
+        # print 'query_string', query_string, '.'
+        # print signal_types
+        found_entries = \
+            Signal.objects.filter(signal_name__in=signal_types)\
+            .order_by('-signal_date')
+        # print found_entries
+
     return render_to_response('sdapp/screens.html',
+                              {'found_entries': found_entries,
+                               'query_string': query_string},
                               context_instance=RequestContext(request),
                               )
 

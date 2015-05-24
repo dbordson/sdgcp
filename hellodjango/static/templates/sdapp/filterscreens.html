@@ -18,4 +18,19 @@
 {% endif %}
 
 
+  <form action="{% url 'filterintermed' %}" method='post' action='' class="col-md-4"> {% csrf_token %}
+    <div class="form-group">
+      <input type="text" name="cik_num" placeholder="CIK" class="form-control">
+    <span>
+    <label class="checkbox-inline"><input type="checkbox" name="discretionarybuy" value="">Discretionary Buy</label>
+    <label class="checkbox-inline"><input type="checkbox" name="buyonweakness" value="">Buy on Weakness</label>
+    </span>
+    </div>
+    <button type="submit" class="btn">Submit</button>
+  </form>
+
+
+
+
+
 {% endblock %}
