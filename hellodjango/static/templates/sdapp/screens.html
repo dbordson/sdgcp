@@ -21,6 +21,7 @@
 
 
         </form> -->
+
 <h3>Search</h3>
   <div class="container">
   <form method='get' action="{% url 'screens' %}" class="col-md-6">
@@ -44,7 +45,7 @@
     </div>
     </div>
     -->
-    </div>
+    
     <div>
     <label for="sel2">Signal select list (hold shift to select more than one):</label>
       <select multiple class="form-control" name="selectbox">
@@ -63,28 +64,43 @@
     <!--<span>-->
 
 
+    
 
-    </div>
   </form>
-  <div class="spacer10"></div>
-  
+  </div>
 
+  <div class="spacer10"></div>
+
+<div class="container">
+<div class="container">
 {% if query_string %}    
 
-You searched for "{{ query_string }}" and the results are listed below.
 
-    {% if found_entries.exists %}    
-    <ul>
+  {% if query_string == " " %}
+    <!--You searched all tickers.-->
+  {% else %}
+    You searched for "{{ query_string }}"
+  {% endif %}
+
+
+  {% if found_entries.exists %}    
+    <div class="panel panel-default">
+    <div class="panel-heading">Results</div>
+    <ul class="list-group">
     {% for signal in found_entries %}
-        <li><a href="/sdapp/{{ signal.sph.ticker_sym }}/">{{ signal.signal_date }} - {{ signal.sph.ticker_sym }}: {{ signal.short_statement }}</a></li>
+      <li class="list-group-item"><a href="/sdapp/{{ signal.sph.ticker_sym }}/">{{ signal.signal_date }} - {{ signal.sph.ticker_sym }}: {{ signal.short_statement }}</a></li>
     {% endfor %}
     </ul>
-    {% else %}
-        <p>No search results.</p>
-    {% endif %}
+    </div>
+  {% elif ticker %}
+    <p>Ticker matches {{ ticker }}, but no signals were found.</p>
+  {% else %}
+    No signals found.
+  {% endif %}
+
 
 {% endif %}
 </div>
-
+</div>
 
 {% endblock %}

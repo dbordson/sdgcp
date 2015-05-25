@@ -105,6 +105,8 @@ def screens(request):
     signal_types = []
     dbuyactive = True
     wbuyactive = True
+    ticker = None
+    num_of_records = None
     # print 'q', request.GET['q']
     # print ('q' in request.GET)
     # print request.GET['q'] == ''
@@ -145,13 +147,15 @@ def screens(request):
             SecurityPriceHist.objects\
             .filter(ticker_sym=request.GET['q'].strip().upper())[0]\
             .issuer is not None:
+        ticker = request.GET['q'].strip().upper()
         issuer = SecurityPriceHist.objects\
             .filter(ticker_sym=query_string.upper())[0].issuer
         found_entries = \
             Signal.objects.filter(signal_name__in=signal_types)\
             .filter(issuer=issuer).order_by('-signal_date')
+        num_of_records = found_entries.count()
     elif ('q' in request.GET) and\
-            request.GET['q'] == '':
+            request.GET['q'].strip() == '':
         query_string = ' '
         # print 'here'
         # print 'query_string', query_string, '.'
@@ -159,6 +163,7 @@ def screens(request):
         found_entries = \
             Signal.objects.filter(signal_name__in=signal_types)\
             .order_by('-signal_date')
+        num_of_records = found_entries.count()
         # print found_entries
 
     return render_to_response('sdapp/screens.html',
@@ -166,7 +171,8 @@ def screens(request):
                                'query_string': query_string,
                                'dbuyactive': dbuyactive,
                                'wbuyactive': wbuyactive,
-                               },
+                               'ticker': ticker,
+                               'num_of_records': num_of_records},
                               context_instance=RequestContext(request),
                               )
 
