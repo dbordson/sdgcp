@@ -99,6 +99,7 @@ def filterintermed(request):
 
 @login_required()
 def screens(request):
+    # print request
     query_string = None
     found_entries = None
     signal_types = []
@@ -113,14 +114,30 @@ def screens(request):
         dbuyactive = False
         wbuyactive = False
 
-    if 'discretionarybuy' in request.GET:
+    if 'selectbox' in request.GET\
+            and 'discretionarybuy' in request.GET.getlist('selectbox'):
+        print 'discretionarybuy'
+        print request.GET['selectbox']
         signal_types.append('Discretionary Buy')
         dbuyactive = True
-        # print 'discretionarybuy', request.GET['discretionarybuy'].strip()
-    if 'buyonweakness' in request.GET:
+
+    if 'selectbox' in request.GET\
+            and 'buyonweakness' in request.GET.getlist('selectbox'):
+        print 'buyonweakness'
+        print request.GET['selectbox']
         signal_types.append('Discretionary Buy after a Decline')
         wbuyactive = True
-        # print 'buyonweakness', request.GET['buyonweakness'].strip()
+
+    # THE BELOW COMMENTED CODE WOULD BE USED FOR THE TOGGLE BUTTON
+    # CHECKBOXES IN THE SCREENS.HTML TEMPLATE INSTEAD OF THE ABOVE
+    # if 'discretionarybuy' in request.GET:
+    #     signal_types.append('Discretionary Buy')
+    #     dbuyactive = True
+    #     # print 'discretionarybuy', request.GET['discretionarybuy'].strip()
+    # if 'buyonweakness' in request.GET:
+    #     signal_types.append('Discretionary Buy after a Decline')
+    #     wbuyactive = True
+    #     # print 'buyonweakness', request.GET['buyonweakness'].strip()
 
     if ('q' in request.GET) and\
             SecurityPriceHist.objects\

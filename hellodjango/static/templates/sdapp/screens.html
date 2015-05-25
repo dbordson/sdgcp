@@ -29,6 +29,7 @@
     <div class="panel-heading">Signals:</div>
     
     <div class="panel-body">-->
+    <!--
     <div class="btn-group btn-group-justified" data-toggle="buttons">
       
       <label {% if dbuyactive %} class="btn btn-info active" {% else %} class="btn btn-info" {% endif %}>
@@ -36,11 +37,20 @@
         {% if dbuyactive %} checked {% endif %}>Discretionary Buy</label>
       <label {% if wbuyactive %} class="btn btn-info active" {% else %} class="btn btn-info" {% endif %}>
         <input type="checkbox" autocomplete="off" name="buyonweakness"
-        {% if wbuyactive %} checked {% endif %}>Buy on Weakness</label>
+        {% if wbuyactive %} checked {% endif %}>Buy on Weakness</label> -->
+
+
     <!--
     </div>
     </div>
     -->
+    </div>
+    <div>
+    <label for="sel2">Signal select list (hold shift to select more than one):</label>
+      <select multiple class="form-control" name="selectbox">
+        <option value="discretionarybuy" {% if dbuyactive %} selected {% endif %}>Discretionary Buy</option>
+        <option value="buyonweakness" {% if wbuyactive %} selected {% endif %}>Buy on Weakness</option>
+      </select>
     </div>
     <div class="spacer10"></div>
     
@@ -49,7 +59,6 @@
     <div>
     
         <button type="submit" value="Submit" class="btn btn-success btn">Search</button>
-      
     </div>
     <!--<span>-->
 
@@ -59,16 +68,6 @@
   </form>
   <div class="spacer10"></div>
   
-
-<!--
-    <div class="btn-group" data-toggle="buttons">
-      <label class="btn btn-info active">
-        <input type="checkbox" autocomplete="off" name="discretionarybuy" checked>Discretionary Buy</label>
-      <label class="btn btn-info active">
-        <input type="checkbox" autocomplete="off" name="buyonweakness" checked>Buy on Weakness</label>
-    </div>
--->
-
 
 {% if query_string %}    
 
