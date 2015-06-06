@@ -50,6 +50,7 @@ def options(request, ticker):
     issuer = common_stock_security.issuer
     issuer_name = Form345Entry.objects.filter(issuer_cik=issuer)\
         .latest('filedatetime').issuer_name
+    # Pulls signals and highlight dates of each signal
     signals = Signal.objects.filter(issuer=issuer)\
         .order_by('-signal_date')
     signal_highlights = []
@@ -57,7 +58,7 @@ def options(request, ticker):
         signal_highlights.append(
             [js_readable_date(signal.signal_date),
              js_readable_date(signal.signal_date + datetime.timedelta(10))])
-    # print signal_highlights
+
     # Below grabs close prices
     SPH_objs = \
         SecurityPriceHist.objects.filter(issuer=issuer)\
