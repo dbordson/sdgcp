@@ -1,6 +1,8 @@
 from sdapp.bin import addissuers, formscraper, formparser,\
-    populateintermediate, supersedeinit, grabmarketdata,\
-    populateformadjustments, populateviews, populatesignals
+    populateintermediate, supersedeinit, adjsharesremaining,\
+    grabmarketdata,\
+    populateformadjustments, populateviews, populatesignals,\
+    populaterecommendations
 
 # This script calls the other executables in proper order to start with a
 # list of tickers and build out all the needed filings from an up to date

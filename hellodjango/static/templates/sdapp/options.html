@@ -1,29 +1,242 @@
 {% extends 'base.html' %}
 
+{% load humanize %}
 
 {% block content %}
+<script src="/../static/static/js/jquery.js"></script>
+<script type="text/javascript"
+  src="/../static/static/js/dygraph-combined-dev.js"></script>
+
+    <style type="text/css">
+    #div_g {
+      position: absolute;
+      left: 0px;
+      right: 20px;
+      top: 45px;
+      bottom: 25px;
+    }
+    </style>
+
 <h1>{{ issuer_name }} ({{ ticker }})</h1>
 
-<div class="panel panel-default">
-  <div class="panel-heading">
-    <h3 class="panel-title">Signals</h3>
-  </div>
-  
-  {% if signals.exists %}
-  <ul class="list-group">
-  {% for signal in signals %}
-    <li class="list-group-item">
-      <a href="/sdapp/{{ signal.sph.ticker_sym }}/">{{ signal.signal_date }} - {{ signal.long_statement }}</a>
-    </li>
-    {% endfor %}
-  </ul>
+<div class="col-md-6">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h3 class="panel-title">Sentiment</h3>
+    </div>
+    <div class="panel-body" style="height:200px; overflow-y: scroll;">
+    {% if rec != None %}
+      
+      <!-- Colors based on confidence -->
+      {% if rec.confidence = "Strong" %}
+      <h1 class="text-info" align="center">{{rec.confidence}}</h1>
+      {% elif rec.confidence = "Moderate" %}
+      <h1 class="text-default" align="center">{{rec.confidence}}</h1>
+      {% elif rec.confidence = "Weak" %}
+      <h1 class="text-muted" align="center">{{rec.confidence}}</h1>
+      {% else %}
 
-  {% else %}
-  <div class="panel-body">
-    <p>No signals are available.</p>
+      {% endif %}
+      <h3 align="center">and</h3>
+      
+      <!-- Colors based on sentiment -->
+      {% if rec.sentiment = "Bullish" %}
+      <h1 class="text-success" align="center">{{rec.sentiment}}</h1>
+      {% elif rec.sentiment = "Bearish" %}
+      <h1 class="text-danger" align="center">{{rec.sentiment}}</h1>
+      {% else %}
+      <h1 class="text-info" align="center">{{rec.sentiment}}</h1>
+      {% endif %}
+    {% else %}
+
+      No recommendation at this time.
+
+    {% endif %}
+
+    </div>
+  </div>  
+</div>
+
+
+
+<div class="col-md-6">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h3 class="panel-title">Stock Price Chart</h3>
+    </div>
+    <div class="panel-body" style="height:200px; overflow-y: scroll;">
+      
+      {% if price_csv != "Date,Temperature\n" %}
+      <div id="div_g"></div>
+        <script type="text/javascript">
+          var prices = {{ prices_json|safe }};
+          // document.write(prices);
+          var signal_highlights = {{ signal_highlights|safe }};
+          // document.write(signal_highlights);
+          var signal_highlights_len = signal_highlights.length;
+          
+          $(document).ready(function () 
+            {
+              new Dygraph(document.getElementById("div_g"),
+              prices,
+              {
+                labels: ['Date', 'Price'],
+                animatedZooms: true,
+                axes: 
+                  {
+                    x:
+                    {
+                    valueFormatter: Dygraph.dateString_,
+                    axisLabelFormatter: Dygraph.dateAxisFormatter,
+                    ticker: Dygraph.dateTicker
+                    }
+                  },
+                
+              // document.write(prices);
+              // var signal_highlights = {{ signal_highlights|safe }};
+              // document.write(signal_highlights);
+              underlayCallback: function(canvas, area, g) {
+              // var highlight_start = {{ sh_test|slice:"0:1"|safe }};
+              // var highlight_end = {{ sh_test|slice:"1:2"|safe }};
+              // var bottom_left = g.toDomCoords(highlight_start, -20);
+              // var top_right = g.toDomCoords(highlight_end, +20);
+
+              // var left = bottom_left[0];
+              // var right = top_right[0];
+
+              canvas.fillStyle = "rgba(192, 222, 237, 1.0)";
+              
+              
+              function highlight_period(x_start, x_end) {
+                var canvas_left_x = g.toDomXCoord(x_start);
+                var canvas_right_x = g.toDomXCoord(x_end);
+                var canvas_width = canvas_right_x - canvas_left_x;
+                canvas.fillRect(canvas_left_x, area.y, canvas_width, area.h);
+              }
+
+              var min_data_x = g.getValue(0,0);
+              var max_data_x = g.getValue(g.numRows()-1,0);
+
+
+              if (0 != signal_highlights_len){
+                for (var i = 0; i < signal_highlights_len; i++) {
+                  // document.write(signal_highlights[i][0]);
+                  var start_x_highlight = signal_highlights[i][0];
+                  var end_x_highlight = signal_highlights[i][1];
+                  // make sure we don't try to plot outside the graph
+                  if (start_x_highlight < min_data_x) {
+                    start_x_highlight = min_data_x;
+                  }
+                  if (end_x_highlight > max_data_x) {
+                    end_x_highlight = max_data_x;
+                  }
+                  highlight_period(start_x_highlight,end_x_highlight);                
+
+                }
+              }
+
+
+              // for (w < max_data_x) {
+              //   var start_x_highlight = w;
+              //   var end_x_highlight = w + 2*24*3600*1000;
+              //   // make sure we don't try to plot outside the graph
+              //   if (start_x_highlight < min_data_x) {
+              //     start_x_highlight = min_data_x;
+              //   }
+              //   if (end_x_highlight > max_data_x) {
+              //     end_x_highlight = max_data_x;
+              //   }
+              //   highlight_period(start_x_highlight,end_x_highlight);
+              //   // calculate start of highlight for next Saturday 
+              //   w += 7*24*3600*1000;
+              // }
+
+              // canvas.fillRect(left, area.y, right - left, area.h);
+            },
+                // width: 400,
+                // height: 170,
+                // rollPeriod: 100,
+                // showRoller: true,
+                // errorBars: true
+               });
+              });
+
+        </script>
+    </div>
+    {% else %}
+      <p>No price information available.</p>
+    {% endif %}
+  </div>  
+</div>
+<!-- Note that the below </div> tag is unmatched and closes a row opened in base.html.  The row following it is closed in the base.html file-->
+</div>
+<div class="row">
+
+<div class="col-md-6">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h3 class="panel-title">Company Info / Holdings</h3>
+    </div>
+
+    <div class="panel-body" style="height:200px; overflow-y: scroll;">
+    <p>[Some company info here?]</p>
+    {% if ann_affiliations.exists %}
+      
+      <table class="table table-striped table-condensed">
+        <thead>
+          <tr>
+            <th>Top Holders</th>
+            <th>Holding Value</th>
+          </tr>
+        </thead>  
+        <tbody>
+      {% for ann_affiliation in ann_affiliations %}
+          <tr>
+            <td>{{ ann_affiliation.person_name }}</td>
+            <td>${{ ann_affiliation.intrinsic_value|floatformat:0|intcomma }}</td>
+          </tr>
+      {% endfor %}
+        </tbody>
+      </table>
+
+      
+    {% else %}
+
+        <p>No holdings are available.</p>
+      
+    {% endif %}
+    </div>
+
+  </div>  
+</div>
+
+
+<div class="col-md-6">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h3 class="panel-title">Signals</h3>
+    </div>
+  
+    {% if signals.exists %}
+      <ul class="list-group" style="height:200px; overflow-y: scroll;">
+      {% for signal in signals %}
+        <li class="list-group-item">
+          <a href="/sdapp/{{ signal.sph.ticker_sym }}/">{{ signal.signal_date }} - {{ signal.long_statement }}</a>
+        </li>
+      {% endfor %}
+      </ul>
+
+    {% else %}
+      <div class="panel-body" style="height:200px; overflow-y: scroll;">
+        <p>No signals are available.</p>
+      </div>
+    {% endif %}
+    </div>  
   </div>
-  {% endif %}
-</div>  
+
+
+</div>
+<div class="row">
 
 <h3>Tabular Data</h3>
 
@@ -34,6 +247,7 @@
   <a href="/sdapp/{{ ticker }}/byperson" class="list-group-item">Holder Table</a>
   <a href="/sdapp/{{ ticker }}/holdingtable" class="list-group-item">Holding Table</a>
 </div>
+
 
 
 

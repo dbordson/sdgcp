@@ -185,6 +185,17 @@ class Signal(models.Model):
                                 str(self.signal_date))
 
 
+class Recommendation(models.Model):
+    issuer = models.ForeignKey(IssuerCIK)
+    sentiment = models.CharField(max_length=20, default='ERROR')
+    confidence = models.CharField(max_length=20, default='ERROR')
+
+    def __unicode__(self):
+        return u"%s, %s, %s" % (str(self.issuer),
+                                str(self.sentiment),
+                                str(self.confidence))
+
+
 class SecurityView(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
     security = models.ForeignKey(Security)

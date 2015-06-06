@@ -7,13 +7,14 @@ from django.contrib import admin
 import re
 
 
-
 admin.autodiscover()
 
 urlpatterns =\
     patterns('',
              url(r'^$', 'signups.views.home', name='home'),
              url(r'^thank-you/$', 'signups.views.thankyou', name='thankyou'),
+             url(r'^duplicate/$',
+                 'signups.views.duplicate_login', name='duplicate_login'),
              url(r'^about-us/$', 'signups.views.aboutus', name='aboutus'),
              # url(r'^blog/', include('blog.urls')),
              url(r'^sdapp/', include('sdapp.urls')),

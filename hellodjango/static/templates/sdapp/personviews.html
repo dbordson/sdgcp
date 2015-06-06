@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-
+{% load humanize %}
 
 {% block content %}
 
@@ -37,7 +37,7 @@
         <td style="text-align:center;">{{ entry.short_sec_title }}</td>
         <td style="text-align:center;">{{ entry.ticker }}</td>
         <td style="text-align:center;">{{ entry.last_close_price }}</td>
-        <td style="text-align:center;">{{ entry.units_held }}</td>
+        <td style="text-align:center;">{{ entry.units_held|floatformat:0|intcomma }}</td>
         <td style="text-align:center;">{{ entry.deriv_or_nonderiv }}</td>
         <td style="text-align:center;">{{ entry.first_expiration_date }}</td>
         <td style="text-align:center;">{{ entry.last_expiration_date }}</td>
@@ -48,7 +48,7 @@
         <td style="text-align:center;">{{ entry.underlying_ticker }}</td>
         <td style="text-align:center;">{{ entry.underlying_shares_total }}</td>
         <td style="text-align:center;">{{ entry.underlying_close_price }}</td>
-        <td style="text-align:center;">${{ entry.intrinsic_value }}</td>
+        <td style="text-align:center;">${{ entry.intrinsic_value|floatformat:0|intcomma }}</td>
         <td style="text-align:center;">{{ entry.first_xn }}</td>
         <td style="text-align:center;">{{ entry.most_recent_xn }}</td>
     </tr>

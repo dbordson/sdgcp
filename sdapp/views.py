@@ -1,16 +1,24 @@
-from django.shortcuts import (render_to_response, get_object_or_404,
+from django.shortcuts import (render_to_response,
                               RequestContext, HttpResponseRedirect)
-from sdapp.models import (Security, Signal, IssuerCIK, SecurityPriceHist,
-                          Form345Entry, PersonHoldingView, SecurityView)
-from django.db.models import Q
+from sdapp.models import (Security, Signal, SecurityPriceHist,
+                          Form345Entry, PersonHoldingView, SecurityView,
+                          Affiliation, Recommendation,
+                          ClosePrice)
+from django.db.models import Q, Sum
+
+
 # from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.views.generic import ListView
+
 from django.utils.decorators import method_decorator
 # from django.core.context_processors import csrf
-# import datetime
+import datetime
 
 
+import time
+
+import json
+from django.core.serializers.json import DjangoJSONEncoder
 # def check_auth(request):
 #     if request.user.is_authenticated():
 #         return True
@@ -29,6 +37,12 @@ def is_int(s):
         return False
 
 
+def js_readable_date(some_datetime_object):
+    timetuple = some_datetime_object.timetuple()
+    timestamp = time.mktime(timetuple)
+    return timestamp * 1000.0
+
+
 @login_required()
 def options(request, ticker):
     common_stock_security = \
@@ -38,10 +52,50 @@ def options(request, ticker):
         .latest('filedatetime').issuer_name
     signals = Signal.objects.filter(issuer=issuer)\
         .order_by('-signal_date')
+    signal_highlights = []
+    for signal in signals:
+        signal_highlights.append(
+            [js_readable_date(signal.signal_date),
+             js_readable_date(signal.signal_date + datetime.timedelta(10))])
+    # print signal_highlights
+    # Below grabs close prices
+    SPH_objs = \
+        SecurityPriceHist.objects.filter(issuer=issuer)\
+        .filter(ticker_sym=ticker)
+    if SPH_objs.exists():
+        SPH_obj = SPH_objs[0]
+    else:
+        SPH_obj = None
+    pricelist = ClosePrice.objects.filter(securitypricehist=SPH_obj)\
+        .order_by('close_date')\
+        .values_list('close_date', 'adj_close_price')
+    # This builds the JSON price list
+    pl = []
+    for close_date, adj_close_price in pricelist:
+        pl.append([js_readable_date(close_date), adj_close_price])
+
+    prices_json = json.dumps(list(pl)[-270:], cls=DjangoJSONEncoder)
+
+    recset = Recommendation.objects.filter(issuer=issuer)
+    if recset.exists():
+        rec = recset[0]
+    else:
+        rec = None
+
+    issuer_affiliations = Affiliation.objects.filter(issuer=issuer)
+    ann_affiliations = issuer_affiliations\
+        .annotate(intrinsic_value=Sum('personholdingview__intrinsic_value'))\
+        .exclude(intrinsic_value=None).order_by('-intrinsic_value')[:3]
+
     return render_to_response('sdapp/options.html',
-                              {'ticker': ticker,
+                              {'ann_affiliations': ann_affiliations,
                                'issuer_name': issuer_name,
-                               'signals': signals},
+                               'prices_json': prices_json,
+                               'rec': rec,
+                               'signal_highlights': signal_highlights,
+                               'signals': signals,
+                               'ticker': ticker,
+                               },
                               context_instance=RequestContext(request),
                               )
 
@@ -77,13 +131,15 @@ def options(request, ticker):
 #     found_entries = None
 #     if ('q' in request.GET) and request.GET['q'].strip():
 #         query_string = request.GET['q']
-        
+#
 #         entry_query = get_query(query_string, ['title', 'body',])
-        
-#         found_entries = Entry.objects.filter(entry_query).order_by('-pub_date')
-
+#
+#         found_entries = Entry.objects.filter(entry_query)\
+#             .order_by('-pub_date')
+#
 #     return render_to_response('search/search_results.html',
-#                           { 'query_string': query_string, 'found_entries': found_entries },
+#                           { 'query_string': query_string,
+#                             'found_entries': found_entries },
 #                           context_instance=RequestContext(request))
 
 

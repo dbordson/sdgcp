@@ -4,6 +4,7 @@ import datetime
 from decimal import Decimal
 import django.db
 
+
 def convert_date_to_datetimestring(date):
     c = str(date)
     return c[:10] + " 23:59:59Z"
