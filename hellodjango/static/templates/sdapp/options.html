@@ -18,7 +18,6 @@
     </style>
 
 <h1>{{ issuer_name }} ({{ ticker }})</h1>
-
 <div class="col-md-6">
   <div class="panel panel-default">
     <div class="panel-heading">
@@ -76,91 +75,62 @@
           var signal_highlights_len = signal_highlights.length;
           
           $(document).ready(function () 
+          {
+            new Dygraph(document.getElementById("div_g"),
+            prices,
             {
-              new Dygraph(document.getElementById("div_g"),
-              prices,
-              {
-                labels: ['Date', 'Price'],
-                animatedZooms: true,
-                axes: 
+              labels: ['Date', 'Price'],
+              animatedZooms: true,
+              // axisLabelColor: "rgba(0,0,0, 0.2)",
+              // axisLineColor: "rgba(0,0,0, 0.2)",
+              // color: "rgba(0,0,0, 0.2)",
+              errorBars: true,
+              sigma: 1.0,
+              axes: 
+                {
+                  x:
                   {
-                    x:
+                  valueFormatter: Dygraph.dateString_,
+                  axisLabelFormatter: Dygraph.dateAxisFormatter,
+                  ticker: Dygraph.dateTicker
+                  }
+                },
+              underlayCallback: function(canvas, area, g) 
+              {
+                canvas.fillStyle = "rgba(192, 222, 237, 1.0)";
+                function highlight_period(x_start, x_end) 
+                {
+                  var canvas_left_x = g.toDomXCoord(x_start);
+                  var canvas_right_x = g.toDomXCoord(x_end);
+                  var canvas_width = canvas_right_x - canvas_left_x;
+                  canvas.fillRect(canvas_left_x, area.y, canvas_width, area.h);
+                }
+
+                var min_data_x = g.getValue(0,0);
+                var max_data_x = g.getValue(g.numRows()-1,0);
+                if (0 != signal_highlights_len)
+                {
+                  for (var i = 0; i < signal_highlights_len; i++)
+                  {
+                    var start_x_highlight = signal_highlights[i][0];
+                    var end_x_highlight = signal_highlights[i][1];
+                    // make sure we don't try to plot outside the graph
+                    if (start_x_highlight < min_data_x)
                     {
-                    valueFormatter: Dygraph.dateString_,
-                    axisLabelFormatter: Dygraph.dateAxisFormatter,
-                    ticker: Dygraph.dateTicker
+                      start_x_highlight = min_data_x;
                     }
-                  },
-                
-              // document.write(prices);
-              // var signal_highlights = {{ signal_highlights|safe }};
-              // document.write(signal_highlights);
-              underlayCallback: function(canvas, area, g) {
-              // var highlight_start = {{ sh_test|slice:"0:1"|safe }};
-              // var highlight_end = {{ sh_test|slice:"1:2"|safe }};
-              // var bottom_left = g.toDomCoords(highlight_start, -20);
-              // var top_right = g.toDomCoords(highlight_end, +20);
+                    
+                    if (end_x_highlight > max_data_x)
+                    {
+                      end_x_highlight = max_data_x;
+                    }
+                    highlight_period(start_x_highlight,end_x_highlight);                
 
-              // var left = bottom_left[0];
-              // var right = top_right[0];
-
-              canvas.fillStyle = "rgba(192, 222, 237, 1.0)";
-              
-              
-              function highlight_period(x_start, x_end) {
-                var canvas_left_x = g.toDomXCoord(x_start);
-                var canvas_right_x = g.toDomXCoord(x_end);
-                var canvas_width = canvas_right_x - canvas_left_x;
-                canvas.fillRect(canvas_left_x, area.y, canvas_width, area.h);
-              }
-
-              var min_data_x = g.getValue(0,0);
-              var max_data_x = g.getValue(g.numRows()-1,0);
-
-
-              if (0 != signal_highlights_len){
-                for (var i = 0; i < signal_highlights_len; i++) {
-                  // document.write(signal_highlights[i][0]);
-                  var start_x_highlight = signal_highlights[i][0];
-                  var end_x_highlight = signal_highlights[i][1];
-                  // make sure we don't try to plot outside the graph
-                  if (start_x_highlight < min_data_x) {
-                    start_x_highlight = min_data_x;
                   }
-                  if (end_x_highlight > max_data_x) {
-                    end_x_highlight = max_data_x;
-                  }
-                  highlight_period(start_x_highlight,end_x_highlight);                
-
                 }
               }
-
-
-              // for (w < max_data_x) {
-              //   var start_x_highlight = w;
-              //   var end_x_highlight = w + 2*24*3600*1000;
-              //   // make sure we don't try to plot outside the graph
-              //   if (start_x_highlight < min_data_x) {
-              //     start_x_highlight = min_data_x;
-              //   }
-              //   if (end_x_highlight > max_data_x) {
-              //     end_x_highlight = max_data_x;
-              //   }
-              //   highlight_period(start_x_highlight,end_x_highlight);
-              //   // calculate start of highlight for next Saturday 
-              //   w += 7*24*3600*1000;
-              // }
-
-              // canvas.fillRect(left, area.y, right - left, area.h);
-            },
-                // width: 400,
-                // height: 170,
-                // rollPeriod: 100,
-                // showRoller: true,
-                // errorBars: true
-               });
-              });
-
+            });
+          });
         </script>
     </div>
     {% else %}

@@ -4,21 +4,23 @@ from sdapp.models import (Security, Signal, SecurityPriceHist,
                           Form345Entry, PersonHoldingView, SecurityView,
                           Affiliation, Recommendation,
                           ClosePrice)
-from django.db.models import Q, Sum
+
 
 
 # from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-
+from django.core.serializers.json import DjangoJSONEncoder
+from django.db.models import Q, Sum
 from django.utils.decorators import method_decorator
 # from django.core.context_processors import csrf
 import datetime
-
-
+from decimal import Decimal
+import json
+from math import sqrt
 import time
 
-import json
-from django.core.serializers.json import DjangoJSONEncoder
+
+
 # def check_auth(request):
 #     if request.user.is_authenticated():
 #         return True
@@ -35,6 +37,23 @@ def is_int(s):
         return True
     except ValueError:
         return False
+
+
+def mean(lst):
+    # """calculates mean"""
+    lstsum = Decimal(0)
+    for i in range(len(lst)):
+        lstsum += lst[i]
+    return (lstsum / len(lst))
+
+
+def stddev(lst):
+    # """calculates standard deviation"""
+    lstsum = Decimal(0)
+    mn = mean(lst)
+    for entry in lst:
+        lstsum += pow((entry - mn), 2)
+    return sqrt(lstsum / Decimal(len(lst) - 1))
 
 
 def js_readable_date(some_datetime_object):
@@ -70,13 +89,20 @@ def options(request, ticker):
     pricelist = ClosePrice.objects.filter(securitypricehist=SPH_obj)\
         .order_by('close_date')\
         .values_list('close_date', 'adj_close_price')
+    # standard deviation calculator, can only round to 0 decimals
+    stddevlist = list(ClosePrice.objects.filter(securitypricehist=SPH_obj)
+                      .order_by('close_date')
+                      .values_list('adj_close_price', flat=True))[-270:]
+    standard_dev = round(float(stddev(stddevlist)), 0)
+    # print standard_dev
     # This builds the JSON price list
     pl = []
     for close_date, adj_close_price in pricelist:
-        pl.append([js_readable_date(close_date), adj_close_price])
+        pl.append([js_readable_date(close_date),
+                   [adj_close_price, standard_dev]])
 
     prices_json = json.dumps(list(pl)[-270:], cls=DjangoJSONEncoder)
-
+    # print prices_json
     recset = Recommendation.objects.filter(issuer=issuer)
     if recset.exists():
         rec = recset[0]
