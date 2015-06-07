@@ -3,17 +3,26 @@
 
 {% block content %}
 
-<h1>Management Monitor</h1>
-<p><a href="/sdapp/screens/">Screens</p>
-{% if ticker_avail %}
-    <ul>
-    {% for SecurityPriceHist in ticker_avail %}
-        <li><a href="/sdapp/{{ SecurityPriceHist.ticker }}/">{{ SecurityPriceHist.ticker }}</a></li>
-    {% endfor %}
-    </ul>
-{% else %}
-    <p>No tickers are available.</p>
-{% endif %}
+<h1>Tickers</h1>
+<p><a href='{% url "screens" %}'>Back to Screens</p>
 
+<div class="col-md-6">
+<div class="list-group">
+{% if sphset.exists %}
+  {% for SecurityPriceHist in sphset %}
+
+    <a href="/sdapp/{{ SecurityPriceHist.ticker_sym }}/" class="list-group-item">{{ SecurityPriceHist.ticker_sym }} - {{ SecurityPriceHist.name }}</a>
+  {% endfor %}
+{% else %}
+  <a class="list-group-item">No tickers are available.</a>
+{% endif %}
+  </div>
+
+
+
+</div>
+<!-- Note that the below </div> tag is unmatched and closes a row opened in base.html.  The row following it is closed in the base.html file-->
+</div>
+<div class="row">
 
 {% endblock %}

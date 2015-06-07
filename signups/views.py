@@ -1,10 +1,7 @@
 from django.shortcuts import (render_to_response, RequestContext,
                               HttpResponseRedirect)
-# confirm listening
-# Hardcoded link
 from django.contrib.auth.models import User
 from django.contrib import messages
-# Create your views here.
 from .forms import SignUpForm
 
 # def home(request):

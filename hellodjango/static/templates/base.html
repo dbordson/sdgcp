@@ -49,7 +49,11 @@
 
             {% for message in messages %}
             <div class="spacer10"></div>
-            <p {% if message.tags == "success" %} class="alert alert-success"{% endif %}>{{ message }}</p>
+            <p 
+            {% if message.tags == "success" %} class="alert alert-success"{% endif %}
+            {% if message.tags == "warning" %} class="alert alert-warning"{% endif %}
+            {% if message.tags == "info" %} class="alert alert-info"
+            {% endif %}>{{ message }}</p>
             
             {% endfor %}
           

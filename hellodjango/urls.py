@@ -4,7 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from django.contrib import admin
-import re
+# import re
 
 
 admin.autodiscover()
@@ -17,6 +17,9 @@ urlpatterns =\
                  'signups.views.duplicate_login', name='duplicate_login'),
              url(r'^about-us/$', 'signups.views.aboutus', name='aboutus'),
              # url(r'^blog/', include('blog.urls')),
+             url(r'^accountinfo/$', 'hellodjango.views.accountinfo'),
+             url(r'^changepw/$', 'hellodjango.views.changepw'),
+             url(r'^changepw/auth/$', 'hellodjango.views.changepwauth'),
              url(r'^sdapp/', include('sdapp.urls')),
              url(r'^admin/', include(admin.site.urls)),
 

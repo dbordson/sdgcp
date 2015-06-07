@@ -3,26 +3,29 @@ from django.views.generic import ListView
 from sdapp.models import Security
 from sdapp.views import options, formentrydetail, screens,\
     holdingdetail, byperson, holdingtable, personholdingtable,\
-    discretionarybuy, weaknessbuy, filterintermed  # filterscreens
+    discretionarybuy, weaknessbuy, filterintermed, watchtoggle,\
+    index
 
 
 urlpatterns = \
     patterns(
         '',
-        url(r'^$',
-            ListView.as_view(
-                queryset=Security.objects.exclude(ticker=None)
-                .order_by('-ticker'),
-                context_object_name='ticker_avail',
-                template_name='sdapp/index.html'),
-            name='sdapp'),
+        # url(r'^$',
+        #     ListView.as_view(
+        #         queryset=Security.objects.exclude(ticker=None)
+        #         .order_by('-ticker'),
+        #         context_object_name='ticker_avail',
+        #         template_name='sdapp/index.html'),
+        #     name='sdapp'),
+        url(r'^$', screens, name='screens'),
+        url(r'^index', index, name='index'),
         url(r'^filter-intermed/$', filterintermed, name='filterintermed'),
-        url(r'^screens/$', screens, name='screens'),
         # url(r'^screens/([\w-]+)/$',
         #     filterscreens.as_view(context_object_name='screenlist')),
         url(r'^screens/dbuy', discretionarybuy, name='discretionarybuy'),
         url(r'^screens/wbuy', weaknessbuy, name='weaknessbuy'),
         url(r'^(?P<ticker>\w+)/$', options, name='options'),
+        url(r'^(?P<ticker>\w+)/watchtoggle$', watchtoggle, name='watchtoggle'),
         url(r'^(?P<ticker>\w+)/formentries$', formentrydetail,
             name='formentrydetail'),
         url(r'^(?P<ticker>\w+)/holdings$', holdingdetail,

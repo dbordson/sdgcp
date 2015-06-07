@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+        <div class="spacer10"></div>
+        <div class="spacer10"></div>
+        <div class="col-md-3">
+          <p>Welcome {{ username }}. </p>
+          
+        </div>
+
+        <div class="spacer10"></div>
+
+<!-- Note that the below </div> tag is unmatched and closes a row opened in base.html.  The row following it is closed in the base.html file-->
+</div>
+<div class="row">
+
+<div class="list-group">
+      <a class="list-group-item active">
+        <h4 class="list-group-item-heading">Account Options</h4>
+      </a>
+      <a href="#" class="list-group-item">
+        <h4 class="list-group-item-heading">Watchlist</h4>
+        <p class="list-group-item-text">Manage your watchlist here. [DOES NOT WORK YET]</p>
+      </a>
+      <a href="/changepw/" class="list-group-item">
+        <h4 class="list-group-item-heading">Password</h4>
+        <p class="list-group-item-text">Click here to change your password.</p>
+      </a>
+    </div>
+{% endblock %}

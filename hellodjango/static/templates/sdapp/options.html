@@ -17,7 +17,30 @@
     }
     </style>
 
-<h1>{{ issuer_name }} ({{ ticker }})</h1>
+
+<div class="col-md-9">
+  <h1>{{ issuer_name }} ({{ ticker }})</h1>
+</div>
+<div class="col-md-3">
+  <div class="spacer20"></div>
+  <div class="pull-right">
+  
+  {% if watchedname.exists %}
+  <a class="btn btn-default" href="watchtoggle" role="button">
+    <span class="glyphicon glyphicon-star" aria-hidden="true"></span> Receiving Alerts</a>
+  {% else %}
+  <a class="btn btn-default" href="watchtoggle" role="button">
+    <span class="glyphicon glyphicon-star-empty" aria-hidden="true"></span> Not Receiving Alerts</a>
+  {% endif %}
+  
+  </div>
+</div>
+<!-- Note that the below </div> tag is unmatched and closes a row opened in base.html.  The row following it is closed in the base.html file-->
+</div>
+<div class="row">
+
+
+
 <div class="col-md-6">
   <div class="panel panel-default">
     <div class="panel-heading">
@@ -156,14 +179,14 @@
         <thead>
           <tr>
             <th>Top Holders</th>
-            <th>Holding Value</th>
+            <th style="text-align:right">Holding Value</th>
           </tr>
         </thead>  
         <tbody>
       {% for ann_affiliation in ann_affiliations %}
           <tr>
             <td>{{ ann_affiliation.person_name }}</td>
-            <td>${{ ann_affiliation.intrinsic_value|floatformat:0|intcomma }}</td>
+            <td align="right">${{ ann_affiliation.intrinsic_value|floatformat:0|intcomma }}</td>
           </tr>
       {% endfor %}
         </tbody>

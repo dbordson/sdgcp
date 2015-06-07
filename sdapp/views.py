@@ -3,11 +3,10 @@ from django.shortcuts import (render_to_response,
 from sdapp.models import (Security, Signal, SecurityPriceHist,
                           Form345Entry, PersonHoldingView, SecurityView,
                           Affiliation, Recommendation,
-                          ClosePrice)
+                          ClosePrice, WatchedName)
 
 
-
-# from django.contrib import messages
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Q, Sum
@@ -18,8 +17,7 @@ from decimal import Decimal
 import json
 from math import sqrt
 import time
-
-
+from django.db.models import Count, Max
 
 # def check_auth(request):
 #     if request.user.is_authenticated():
@@ -62,13 +60,30 @@ def js_readable_date(some_datetime_object):
     return timestamp * 1000.0
 
 
+def index(request):
+    sphset = SecurityPriceHist.objects.exclude(issuer=None)\
+        .order_by('ticker_sym')
+    for sph in sphset:
+        sph.name = sph.issuer.name
+    print sphset
+    print sphset[0].name
+    return render_to_response('sdapp/index.html',
+                              {'sphset': sphset,
+                               },
+                              context_instance=RequestContext(request),
+                              )
+
+
 @login_required()
 def options(request, ticker):
     common_stock_security = \
         Security.objects.get(ticker=ticker)
     issuer = common_stock_security.issuer
-    issuer_name = Form345Entry.objects.filter(issuer_cik=issuer)\
-        .latest('filedatetime').issuer_name
+    issuer_name = issuer.name
+    # Pulls whether this stock is on the user's watch list
+    watchedname = WatchedName.objects.filter(issuer=issuer)\
+        .filter(user__username=request.user.username)
+
     # Pulls signals and highlight dates of each signal
     signals = Signal.objects.filter(issuer=issuer)\
         .order_by('-signal_date')
@@ -86,8 +101,9 @@ def options(request, ticker):
         SPH_obj = SPH_objs[0]
     else:
         SPH_obj = None
-    pricelist = ClosePrice.objects.filter(securitypricehist=SPH_obj)\
-        .order_by('close_date')\
+    pricelist_qs = ClosePrice.objects.filter(securitypricehist=SPH_obj)\
+        .order_by('close_date')
+    pricelist = pricelist_qs\
         .values_list('close_date', 'adj_close_price')
     # standard deviation calculator, can only round to 0 decimals
     stddevlist = list(ClosePrice.objects.filter(securitypricehist=SPH_obj)
@@ -99,7 +115,7 @@ def options(request, ticker):
     pl = []
     for close_date, adj_close_price in pricelist:
         pl.append([js_readable_date(close_date),
-                   [adj_close_price, standard_dev]])
+                   [float(adj_close_price), float(standard_dev)]])
 
     prices_json = json.dumps(list(pl)[-270:], cls=DjangoJSONEncoder)
     # print prices_json
@@ -122,10 +138,61 @@ def options(request, ticker):
                                'signal_highlights': signal_highlights,
                                'signals': signals,
                                'ticker': ticker,
+                               'watchedname': watchedname,
                                },
                               context_instance=RequestContext(request),
                               )
 
+
+@login_required()
+def watchtoggle(request, ticker):
+    common_stock_security = \
+        Security.objects.get(ticker=ticker)
+    issuer = common_stock_security.issuer
+    watchedname = WatchedName.objects.filter(issuer=issuer)\
+        .filter(user__username=request.user.username)
+    if watchedname.exists():
+        watchedname.delete()
+        messagetext = \
+            'Removed from watchlist'
+        messages.info(request, messagetext)
+        return HttpResponseRedirect('/sdapp/' + str(ticker))
+    else:
+        sph = SecurityPriceHist.objects.filter(ticker_sym=ticker)[0]
+        WatchedName(user=request.user,
+                    issuer=issuer,
+                    securitypricehist=sph,
+                    ticker_sym=ticker).save()
+        messagetext = \
+            'Added to watchlist'
+        messages.info(request, messagetext)
+        return HttpResponseRedirect('/sdapp/' + str(ticker))
+
+    # username = request.user.username
+    # password = request.POST.get('oldpassword', '')
+    # newpassword = request.POST.get('newpassword', '')
+    # confirmnewpassword = request.POST.get('confirmnewpassword', '')
+    # userauth = auth.authenticate(username=username, password=password)
+    # if userauth is not None and newpassword == confirmnewpassword:
+    #     user = \
+    #         User.objects.get(username=username)
+    #     user.set_password(newpassword)
+    #     user.save()
+    #     messagetext = \
+    #         'New Password Saved'
+    #     messages.success(request, messagetext)
+    #     return HttpResponseRedirect('/accountinfo/')
+    # if userauth is None:
+    #     messagetext = \
+    #         'Incorrect Password Entered'
+    #     messages.warning(request, messagetext)
+    #     return HttpResponseRedirect('/changepw/')
+
+    # if newpassword != confirmnewpassword:
+    #     messagetext = \
+    #         'The new and confirmed blanks do not match'
+    #     messages.warning(request, messagetext)
+    #     return HttpResponseRedirect('/changepw/')
 
 # def pricedetail(request, ticker):
 #     SPH_obj = SecurityPriceHist.objects.filter(ticker_sym=ticker)[0]

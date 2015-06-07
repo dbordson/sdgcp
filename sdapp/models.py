@@ -1,11 +1,13 @@
 from django.db import models
 from decimal import Decimal
+from django.contrib.auth.models import User
 # class StockHistories(models.Model):
 #
 
 
 class IssuerCIK(models.Model):
     cik_num = models.IntegerField(primary_key=True)
+    name = models.CharField(max_length=80, null=True)
     # Adapt this for companies with more than one public stock (GOOG)
     # to do this, we will need to update the ticker finder script
 
@@ -104,6 +106,20 @@ class TransactionEvent(models.Model):
         return u"%s, %s, %s" % (str(self.issuer),
                                 str(self.period_start),
                                 str(self.period_end))
+
+
+class WatchedName(models.Model):
+    user = models.ForeignKey(User)
+    issuer = models.ForeignKey(IssuerCIK)
+    securitypricehist = models.ForeignKey(SecurityPriceHist)
+    ticker_sym = models.CharField(max_length=10)
+    last_signal_sent = models.DateTimeField(null=True)
+
+    def __unicode__(self):
+        return u"%s, %s, %s" % (str(self.user),
+                                str(self.issuer),
+                                str(self.ticker_sym),
+                                )
 
 
 class ReportingPersonAtts(models.Model):
