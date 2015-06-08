@@ -3,28 +3,11 @@
 
 {% block content %}
 
-<h1>Screens</h1>
-<h3>List by Signal</h3>
-    <ul>
-        <li><a href="/sdapp/screens/dbuy">Discretionary Buy</a></li>
-        <li><a href="/sdapp/screens/wbuy">Buys on Price Weakness</a></li>
-        <li>?</li>
-        <li>?</li>
-    </ul>
+<h1>Search</h1>
 
-<!--<form method="get" action="{% url 'screens' %}">
-          
-
-<label for="id_q">Search:</label>
-           <input type="text" name="q" id="id_q"/>
-           <input type="submit" value="Submit"/>
-
-
-        </form> -->
-
-<h3>Search</h3>
-  <div class="container">
-  <form method='get' action="{% url 'screens' %}" class="col-md-6">
+<div class="col-md-6">
+<h3>Custom Screen</h3>
+  <form method='get' action="{% url 'screens' %}" >
     <!--<div class="panel panel-default">
     
     <div class="panel-heading">Signals:</div>
@@ -62,12 +45,8 @@
         <button type="submit" value="Submit" class="btn btn-success btn">Search</button>
     </div>
     <!--<span>-->
-
-
-    
-
   </form>
-  </div>
+  
 
   <div class="spacer10"></div>
 
@@ -102,12 +81,39 @@
 {% endif %}
 </div>
 </div>
+</div>
+<!-- Note that the below </div> tag is unmatched and closes a row opened in base.html.  The row following it is closed in the base.html file-->
+</div>
+<div class="row">
 
+<div class="col-md-6">
+<h3>List by Signal</h3>
+  <div class="list-group">
+        <a href="/sdapp/screens/dbuy" class="list-group-item">Discretionary Buy</a>
+        <a href="/sdapp/screens/wbuy" class="list-group-item">Buys on Price Weakness</a>
+        <a href="#" class="list-group-item">?</a>
+        <a href="#" class="list-group-item">?</a>
+  </div>
+</div>
+<!--<form method="get" action="{% url 'screens' %}">
+          
+
+<label for="id_q">Search:</label>
+           <input type="text" name="q" id="id_q"/>
+           <input type="submit" value="Submit"/>
+
+
+        </form> -->
+
+<!-- Note that the below </div> tag is unmatched and closes a row opened in base.html.  The row following it is closed in the base.html file-->
+</div>
+<div class="row">
+<div class="col-md-6">
 <h3>Browse Tickers</h3>
 
 <div class="list-group">
 
-  <a href="index" class="list-group-item">All Tickers</a>
+  <a href='{% url "index" %}' class="list-group-item">All Tickers</a>
 </div>
-
+</div>
 {% endblock %}

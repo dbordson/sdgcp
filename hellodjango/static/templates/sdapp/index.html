@@ -4,10 +4,11 @@
 {% block content %}
 
 <h1>Tickers</h1>
-<p><a href='{% url "screens" %}'>Back to Screens</p>
+<p><a href='{% url "screens" %}'>Back to Screens</a></p>
 
 <div class="col-md-6">
 <div class="list-group">
+
 {% if sphset.exists %}
   {% for SecurityPriceHist in sphset %}
 

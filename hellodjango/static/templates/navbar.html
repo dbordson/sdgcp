@@ -61,7 +61,12 @@
             <li><a href="/accountinfo/">Account</a></li>
           </ul>
 
-
+          <form method='get' action="{% url 'tickersearch' %}" class="navbar-form navbar-right"> {% csrf_token %}
+            <div class="form-group">
+              <input type="text" name="ticker" placeholder="Go to Ticker" class="form-control">
+            </div>
+            <button type="submit" value="tickersearch" class="btn btn-info">Go</button>
+          </form>
           
         </div><!--/.navbar-collapse -->
       </div>

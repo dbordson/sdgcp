@@ -10,14 +10,13 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Q, Sum
-from django.utils.decorators import method_decorator
 # from django.core.context_processors import csrf
 import datetime
 from decimal import Decimal
 import json
 from math import sqrt
 import time
-from django.db.models import Count, Max
+# from django.db.models import Count
 
 # def check_auth(request):
 #     if request.user.is_authenticated():
@@ -105,11 +104,11 @@ def options(request, ticker):
         .order_by('close_date')
     pricelist = pricelist_qs\
         .values_list('close_date', 'adj_close_price')
-    # standard deviation calculator, can only round to 0 decimals
+    # standard deviation calculator, shows as shadding around line.
     stddevlist = list(ClosePrice.objects.filter(securitypricehist=SPH_obj)
                       .order_by('close_date')
                       .values_list('adj_close_price', flat=True))[-270:]
-    standard_dev = round(float(stddev(stddevlist)), 0)
+    standard_dev = round(float(stddev(stddevlist)), 2)
     # print standard_dev
     # This builds the JSON price list
     pl = []
@@ -168,39 +167,6 @@ def watchtoggle(request, ticker):
         messages.info(request, messagetext)
         return HttpResponseRedirect('/sdapp/' + str(ticker))
 
-    # username = request.user.username
-    # password = request.POST.get('oldpassword', '')
-    # newpassword = request.POST.get('newpassword', '')
-    # confirmnewpassword = request.POST.get('confirmnewpassword', '')
-    # userauth = auth.authenticate(username=username, password=password)
-    # if userauth is not None and newpassword == confirmnewpassword:
-    #     user = \
-    #         User.objects.get(username=username)
-    #     user.set_password(newpassword)
-    #     user.save()
-    #     messagetext = \
-    #         'New Password Saved'
-    #     messages.success(request, messagetext)
-    #     return HttpResponseRedirect('/accountinfo/')
-    # if userauth is None:
-    #     messagetext = \
-    #         'Incorrect Password Entered'
-    #     messages.warning(request, messagetext)
-    #     return HttpResponseRedirect('/changepw/')
-
-    # if newpassword != confirmnewpassword:
-    #     messagetext = \
-    #         'The new and confirmed blanks do not match'
-    #     messages.warning(request, messagetext)
-    #     return HttpResponseRedirect('/changepw/')
-
-# def pricedetail(request, ticker):
-#     SPH_obj = SecurityPriceHist.objects.filter(ticker_sym=ticker)[0]
-
-#     pricelist = ClosePrice.objects.filter(SecurityPriceHist=SPH_obj)
-#     return render_to_response('sdapp/pricedetail.html',
-#                               {'pricelist': pricelist})
-
 
 # class filterscreens(ListView):
 
@@ -244,7 +210,32 @@ def filterintermed(request):
         return HttpResponseRedirect('/sdapp/screens/' + cik_num + '/')
     else:
         return HttpResponseRedirect('/sdapp/screens/')
-# is_int(request.GET['q'].strip()) and\
+
+
+def tickersearch(request):
+
+    if 'ticker' in request.GET\
+            and 'HTTP_REFERER' in request.META\
+            and request.GET['ticker'].strip() == '':
+        messagetext = \
+            'Please enter a ticker.'
+        messages.success(request, messagetext)
+        return HttpResponseRedirect(request.META['HTTP_REFERER'])
+
+    if ('ticker' in request.GET)\
+            and SecurityPriceHist.objects\
+            .filter(ticker_sym=request.GET['ticker'].strip().upper()).exists()\
+            and SecurityPriceHist.objects\
+            .filter(ticker_sym=request.GET['ticker'].strip().upper())[0]\
+            .issuer is not None:
+        ticker = request.GET['ticker'].strip().upper()
+        return HttpResponseRedirect('/sdapp/' + str(ticker))
+
+    else:
+        messagetext = \
+            'Ticker Not Found'
+        messages.success(request, messagetext)
+        return HttpResponseRedirect('/sdapp/')
 
 
 @login_required()

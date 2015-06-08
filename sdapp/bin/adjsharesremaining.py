@@ -88,7 +88,7 @@ for affiliation, short_sec_title, scrubbed_underlying_title,\
     # script works, but be careful to update the below if this changes.
     if adjusted_entries_of_this_type.exists():
         starting_shares =\
-            adjusted_entries_of_this_type[0].shares_following_xn_is_adjusted
+            adjusted_entries_of_this_type[0].shares_following_xn
         starting_adjustment_factor =\
             adjusted_entries_of_this_type[0].adjustment_factor
     else:
@@ -97,8 +97,7 @@ for affiliation, short_sec_title, scrubbed_underlying_title,\
 
     shares_held = starting_shares
     for sec_path in sec_paths_with_unadjusted_indirect_entries:
-        formentries = entries_of_this_type.filter(sec_path=sec_path)\
-            .exclude(transaction_shares=None)
+        formentries = entries_of_this_type.filter(sec_path=sec_path)
         starting_shares = shares_held
         # Below adds up the transactions on the forms and rolls forward the
         # shares held for this form.

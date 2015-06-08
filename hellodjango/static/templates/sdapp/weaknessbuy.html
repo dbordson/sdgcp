@@ -6,14 +6,18 @@
 <h1>Buys after Stock Drops</h1>
 
 <p>Buys by executives after stock price declines foreshadow outperformance [X]% of the time</p>
-{% if signals.exists %}
-    <ul>
-    {% for signal in signals %}
-        <li><a href="/sdapp/{{ signal.sph.ticker_sym }}/">{{ signal.signal_date }} - {{ signal.sph.ticker_sym }}: {{ signal.short_statement }}</a></li>
-    {% endfor %}
-    </ul>
-{% else %}
-    <p>No signals are available.</p>
-{% endif %}
 
+
+<div class="list-group">
+
+{% if signals.exists %}
+    
+    {% for signal in signals %}
+        <a href="/sdapp/{{ signal.sph.ticker_sym }}/" class="list-group-item">{{ signal.signal_date }} - {{ signal.sph.ticker_sym }}: {{ signal.short_statement }}</a>
+    {% endfor %}
+    
+{% else %}
+    <a class="list-group-item">No signals are available.</a>
+{% endif %}
+</div>
 {% endblock %}

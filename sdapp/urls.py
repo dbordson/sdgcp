@@ -1,10 +1,10 @@
 from django.conf.urls import patterns, url
-from django.views.generic import ListView
-from sdapp.models import Security
+# from django.views.generic import ListView
+# from sdapp.models import Security
 from sdapp.views import options, formentrydetail, screens,\
     holdingdetail, byperson, holdingtable, personholdingtable,\
     discretionarybuy, weaknessbuy, filterintermed, watchtoggle,\
-    index
+    index, tickersearch
 
 
 urlpatterns = \
@@ -19,6 +19,7 @@ urlpatterns = \
         #     name='sdapp'),
         url(r'^$', screens, name='screens'),
         url(r'^index', index, name='index'),
+        url(r'^tickersearch/', tickersearch, name='tickersearch'),
         url(r'^filter-intermed/$', filterintermed, name='filterintermed'),
         # url(r'^screens/([\w-]+)/$',
         #     filterscreens.as_view(context_object_name='screenlist')),
