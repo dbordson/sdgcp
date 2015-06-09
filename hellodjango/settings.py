@@ -13,10 +13,15 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # for gmail or google apps
+try:
+    from emailpw import SD_EMAIL_PW
+except:
+    SD_EMAIL_PW = os.environ['SD_EMAIL_PW']
+
 EMAIL_USE_TLS = True
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_HOST_USER = 'sadaalpha@gmail.com'
-EMAIL_HOST_PASSWORD = ''
+EMAIL_HOST_PASSWORD = SD_EMAIL_PW
 EMAIL_PORT = 587
 
 LOGIN_URL = '/accounts/login/'
