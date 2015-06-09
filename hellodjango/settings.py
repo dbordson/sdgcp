@@ -12,6 +12,13 @@ https://docs.djangoproject.com/en/1.6/ref/settings/
 import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# for gmail or google apps
+EMAIL_USE_TLS = True
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST_USER = 'sadaalpha@gmail.com'
+EMAIL_HOST_PASSWORD = ''
+EMAIL_PORT = 587
+
 LOGIN_URL = '/accounts/login/'
 
 
