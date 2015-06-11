@@ -64,8 +64,7 @@ def index(request):
         .order_by('ticker_sym')
     for sph in sphset:
         sph.name = sph.issuer.name
-    print sphset
-    print sphset[0].name
+
     return render_to_response('sdapp/index.html',
                               {'sphset': sphset,
                                },
@@ -109,7 +108,6 @@ def options(request, ticker):
                       .order_by('close_date')
                       .values_list('adj_close_price', flat=True))[-270:]
     standard_dev = round(float(stddev(stddevlist)), 2)
-    # print standard_dev
     # This builds the JSON price list
     pl = []
     for close_date, adj_close_price in pricelist:
@@ -117,7 +115,6 @@ def options(request, ticker):
                    [float(adj_close_price), float(standard_dev)]])
 
     prices_json = json.dumps(list(pl)[-270:], cls=DjangoJSONEncoder)
-    # print prices_json
     recset = Recommendation.objects.filter(issuer=issuer)
     if recset.exists():
         rec = recset[0]
@@ -150,6 +147,7 @@ def watchtoggle(request, ticker):
     issuer = common_stock_security.issuer
     watchedname = WatchedName.objects.filter(issuer=issuer)\
         .filter(user__username=request.user.username)
+
     if watchedname.exists():
         watchedname.delete()
         messagetext = \
@@ -158,10 +156,16 @@ def watchtoggle(request, ticker):
         return HttpResponseRedirect('/sdapp/' + str(ticker))
     else:
         sph = SecurityPriceHist.objects.filter(ticker_sym=ticker)[0]
+        signals = Signal.objects.filter(issuer=issuer)
+        if signals.exists():
+            last_signal_sent = signals.latest('signal_date').signal_date
+        else:
+            last_signal_sent = None
         WatchedName(user=request.user,
                     issuer=issuer,
                     securitypricehist=sph,
-                    ticker_sym=ticker).save()
+                    ticker_sym=ticker,
+                    last_signal_sent=last_signal_sent).save()
         messagetext = \
             'Added to watchlist'
         messages.info(request, messagetext)
@@ -205,7 +209,6 @@ def watchtoggle(request, ticker):
 
 def filterintermed(request):
     cik_num = request.POST.get('cik_num', '')
-    print cik_num
     if cik_num is not '':
         return HttpResponseRedirect('/sdapp/screens/' + cik_num + '/')
     else:
@@ -240,7 +243,6 @@ def tickersearch(request):
 
 @login_required()
 def screens(request):
-    # print request
     query_string = None
     found_entries = None
     signal_types = []
@@ -248,10 +250,9 @@ def screens(request):
     wbuyactive = True
     ticker = None
     num_of_records = None
-    # print 'q', request.GET['q']
-    # print ('q' in request.GET)
-    # print request.GET['q'] == ''
-    # print 'dbuy', 'discretionarybuy' in request.GET
+    watchlist = WatchedName.objects.filter(user=request.user)
+    #
+    # Search results (if there was a search)
     if ('q' in request.GET):
         query_string = request.GET['q'].strip()
         dbuyactive = False
@@ -259,15 +260,11 @@ def screens(request):
 
     if 'selectbox' in request.GET\
             and 'discretionarybuy' in request.GET.getlist('selectbox'):
-        print 'discretionarybuy'
-        print request.GET['selectbox']
         signal_types.append('Discretionary Buy')
         dbuyactive = True
 
     if 'selectbox' in request.GET\
             and 'buyonweakness' in request.GET.getlist('selectbox'):
-        print 'buyonweakness'
-        print request.GET['selectbox']
         signal_types.append('Discretionary Buy after a Decline')
         wbuyactive = True
 
@@ -298,22 +295,20 @@ def screens(request):
     elif ('q' in request.GET) and\
             request.GET['q'].strip() == '':
         query_string = ' '
-        # print 'here'
-        # print 'query_string', query_string, '.'
-        # print signal_types
         found_entries = \
             Signal.objects.filter(signal_name__in=signal_types)\
             .order_by('-signal_date')
         num_of_records = found_entries.count()
-        # print found_entries
 
     return render_to_response('sdapp/screens.html',
-                              {'found_entries': found_entries,
+                              {'dbuyactive': dbuyactive,
+                               'found_entries': found_entries,
+                               'num_of_records': num_of_records,
                                'query_string': query_string,
-                               'dbuyactive': dbuyactive,
-                               'wbuyactive': wbuyactive,
                                'ticker': ticker,
-                               'num_of_records': num_of_records},
+                               'watchlist': watchlist,
+                               'wbuyactive': wbuyactive,
+                               },
                               context_instance=RequestContext(request),
                               )
 

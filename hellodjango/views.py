@@ -1,9 +1,11 @@
 from django.shortcuts import render_to_response, RequestContext
 from django.http import HttpResponseRedirect
+from django.conf import settings
 from django.contrib import auth, messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.context_processors import csrf
+from django.core.mail import send_mail
 
 
 def login(request):
@@ -69,6 +71,37 @@ def changepw(request):
                               {'username': request.user.username},
                               context_instance=RequestContext(request),
                               )
+
+
+@login_required()
+def pwreminder(request):
+    subject = 'Temporary [PRODUCT NAME] Password'
+    new_pw = User.objects.make_random_password()
+
+    message =\
+        'We received your password reset request for [PRODUCT NAME].\n'\
+        + 'Your new password is %s and we suggest that you reset this to '\
+        % new_pw\
+        + 'something easier to remember. If you did not request a '\
+        + 'password reset, please contact us at [SUPPORT EMAIL ADDRESS].\n'\
+        + 'If you have any questions, feel free to reply to this email.\n\n'\
+        + 'Regards,\n'\
+        + '[COMPANY NAME] Support'
+    from_email = settings.EMAIL_HOST_USER
+    request.user.email
+    to_list = [request.user.email]
+
+    u = User.objects.get(username__exact=request.user.username)
+    u.set_password(new_pw)
+    u.save()
+    send_mail(subject, message, from_email, to_list, fail_silently=True)
+    print message
+    request.user.email
+
+    messagetext = \
+        'You should receive a new temporary password shortly.'
+    messages.warning(request, messagetext)
+    return HttpResponseRedirect('/changepw/')
 
 
 @login_required()

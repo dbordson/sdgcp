@@ -3,91 +3,62 @@
 
 {% block content %}
 
-<h1>Search</h1>
+
+<!-- Note that the below </div> tag is unmatched and closes a row opened in base.html.  The row following it is closed in the base.html file-->
 
 <div class="col-md-6">
-<h3>Custom Screen</h3>
-  <form method='get' action="{% url 'screens' %}" >
-    <!--<div class="panel panel-default">
-    
-    <div class="panel-heading">Signals:</div>
-    
-    <div class="panel-body">-->
-    <!--
-    <div class="btn-group btn-group-justified" data-toggle="buttons">
-      
-      <label {% if dbuyactive %} class="btn btn-info active" {% else %} class="btn btn-info" {% endif %}>
-        <input type="checkbox" autocomplete="off" name="discretionarybuy" 
-        {% if dbuyactive %} checked {% endif %}>Discretionary Buy</label>
-      <label {% if wbuyactive %} class="btn btn-info active" {% else %} class="btn btn-info" {% endif %}>
-        <input type="checkbox" autocomplete="off" name="buyonweakness"
-        {% if wbuyactive %} checked {% endif %}>Buy on Weakness</label> -->
+<h1>Watchlist</h1>
 
 
-    <!--
-    </div>
-    </div>
-    -->
-    
-    <div>
-    <label for="sel2">Signal select list (hold shift to select more than one):</label>
-      <select multiple class="form-control" name="selectbox">
-        <option value="discretionarybuy" {% if dbuyactive %} selected {% endif %}>Discretionary Buy</option>
-        <option value="buyonweakness" {% if wbuyactive %} selected {% endif %}>Buy on Weakness</option>
-      </select>
-    </div>
-    <div class="spacer10"></div>
-    
-      <input type="text" name="q" id="id_q" placeholder="Ticker (optional)" class="form-control">
-    <div class="spacer10"></div>
-    <div>
-    
-        <button type="submit" value="Submit" class="btn btn-success btn">Search</button>
-    </div>
-    <!--<span>-->
-  </form>
+
+
+
+{% if watchlist.exists %}    
+
+
   
-
-  <div class="spacer10"></div>
-
-<div class="container">
-<div class="container">
-{% if query_string %}    
-
-
-  {% if query_string == " " %}
-    <!--You searched all tickers.-->
-  {% else %}
-    You searched for "{{ query_string }}"
-  {% endif %}
-
-
-  {% if found_entries.exists %}    
     <div class="panel panel-default">
-    <div class="panel-heading">Results</div>
+    <div class="panel-heading">Names</div>
     <ul class="list-group">
-    {% for signal in found_entries %}
-      <li class="list-group-item"><a href="/sdapp/{{ signal.sph.ticker_sym }}/">{{ signal.signal_date }} - {{ signal.sph.ticker_sym }}: {{ signal.short_statement }}</a></li>
+    {% for name in watchlist %}
+      {% if name.last_signal_sent != None %}
+      <li class="list-group-item"><a href="/sdapp/{{ name.securitypricehist.ticker_sym }}/">{{ name.securitypricehist.ticker_sym }} - last signal {{ name.last_signal_sent.date }}</a></li>
+
+      {% else %}
+      <li class="list-group-item"><a href="/sdapp/{{ name.securitypricehist.ticker_sym }}/">{{ name.securitypricehist.ticker_sym }} - No signals</a></li>      
+      {% endif %}
     {% endfor %}
     </ul>
     </div>
-  {% elif ticker %}
-    <p>Ticker matches {{ ticker }}, but no signals were found.</p>
-  {% else %}
-    No signals found.
-  {% endif %}
+{% else %}
+  No names followed.
+
 
 
 {% endif %}
-</div>
-</div>
+
 </div>
 <!-- Note that the below </div> tag is unmatched and closes a row opened in base.html.  The row following it is closed in the base.html file-->
 </div>
 <div class="row">
+{% include 'locatetickers.html' %}
+
+<!-- Note that the below </div> tag is unmatched and closes a row opened in base.html.  The row following it is closed in the base.html file-->
+</div>
+<div class="row">
+
 
 <div class="col-md-6">
-<h3>List by Signal</h3>
+<h1>Browse Tickers</h1>
+
+<div class="list-group">
+
+  <a href='{% url "index" %}' class="list-group-item">All Tickers</a>
+</div>
+</div>
+
+<div class="col-md-6">
+<h1>List by Signal</h1>
   <div class="list-group">
         <a href="/sdapp/screens/dbuy" class="list-group-item">Discretionary Buy</a>
         <a href="/sdapp/screens/wbuy" class="list-group-item">Buys on Price Weakness</a>
@@ -105,15 +76,5 @@
 
         </form> -->
 
-<!-- Note that the below </div> tag is unmatched and closes a row opened in base.html.  The row following it is closed in the base.html file-->
-</div>
-<div class="row">
-<div class="col-md-6">
-<h3>Browse Tickers</h3>
 
-<div class="list-group">
-
-  <a href='{% url "index" %}' class="list-group-item">All Tickers</a>
-</div>
-</div>
 {% endblock %}

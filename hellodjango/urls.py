@@ -20,6 +20,7 @@ urlpatterns =\
              url(r'^accountinfo/$', 'hellodjango.views.accountinfo'),
              url(r'^changepw/$', 'hellodjango.views.changepw'),
              url(r'^changepw/auth/$', 'hellodjango.views.changepwauth'),
+             url(r'^pwreminder/$', 'hellodjango.views.pwreminder'),
              url(r'^sdapp/', include('sdapp.urls')),
              url(r'^admin/', include(admin.site.urls)),
 
