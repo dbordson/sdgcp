@@ -64,12 +64,13 @@ def add_new_issuer_names():
         IssuerCIK.objects.filter(name=None)
 
     for issuer in issuer_object_set_to_update:
-        name = Form345Entry.objects.filter(issuer_cik=issuer)\
-            .latest('filedatetime').issuer_name
-        issuer.name = name
-        issuer.save()
+        forms = Form345Entry.objects.filter(issuer_cik=issuer)
+        if forms.exists():
+            name = Form345Entry.objects.filter(issuer_cik=issuer)\
+                .latest('filedatetime').issuer_name
+            issuer.name = name
+            issuer.save()
     print 'Done.'
-
 
 
 def update_reportingpersons():

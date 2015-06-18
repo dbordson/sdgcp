@@ -194,6 +194,8 @@ class Signal(models.Model):
                                           null=True)
     short_statement = models.CharField(max_length=200, default='ERROR')
     long_statement = models.CharField(max_length=200, default='ERROR')
+    signal_id_code = models.CharField(max_length=80)
+    signal_is_new = models.BooleanField()
 
     def __unicode__(self):
         return u"%s, %s, %s" % (str(self.reporting_person),
