@@ -250,7 +250,8 @@ def screens(request):
     wbuyactive = True
     ticker = None
     num_of_records = None
-    watchlist = WatchedName.objects.filter(user=request.user)
+    watchlist = \
+        WatchedName.objects.filter(user=request.user).order_by('ticker_sym')
     #
     # Search results (if there was a search)
     if ('q' in request.GET):

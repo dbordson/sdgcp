@@ -113,7 +113,7 @@ class WatchedName(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
     securitypricehist = models.ForeignKey(SecurityPriceHist)
     ticker_sym = models.CharField(max_length=10)
-    last_signal_sent = models.DateTimeField(null=True)
+    last_signal_sent = models.DateField(null=True)
 
     def __unicode__(self):
         return u"%s, %s, %s" % (str(self.user),

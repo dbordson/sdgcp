@@ -22,7 +22,7 @@
     <ul class="list-group">
     {% for name in watchlist %}
       {% if name.last_signal_sent != None %}
-      <a class="list-group-item" href="/sdapp/{{ name.securitypricehist.ticker_sym }}/">{{ name.securitypricehist.ticker_sym }} - last signal {{ name.last_signal_sent.date }}</a>
+      <a class="list-group-item" href="/sdapp/{{ name.securitypricehist.ticker_sym }}/">{{ name.securitypricehist.ticker_sym }} - last signal {{ name.last_signal_sent }}</a>
 
       {% else %}
       <a class="list-group-item" href="/sdapp/{{ name.securitypricehist.ticker_sym }}/">{{ name.securitypricehist.ticker_sym }} - No signals</a>   

@@ -1,4 +1,5 @@
 from sdapp.models import Signal, Form345Entry, SecurityPriceHist, ClosePrice
+from sdapp.models import WatchedName
 import datetime
 from django.db.models import F, Q
 import pytz
@@ -88,6 +89,16 @@ def buy_signal_type(entry, sph, declinethreshhold, sig_name_db, sig_name_wb):
     return signal_name, statement, significance
 
 
+def updatewatchednames():
+    new_sigs = \
+        Signal.objects.filter(signal_is_new=True).order_by('signal_date')
+    for signal in new_sigs:
+        issuer = signal.issuer
+        sig_watchnames = WatchedName.objects.filter(issuer=issuer)
+        if sig_watchnames.exists():
+            sig_watchnames.update(last_signal_sent=signal.signal_date)
+    return
+
 print 'Populating signals...'
 
 today = datetime.datetime.now(pytz.utc)
@@ -127,13 +138,13 @@ for entry in a:
         sph = sph_set[0]
     else:
         pass
-    signalmatch =\
-        Signal.objects.filter(signal_date=entry.filedatetime.date())\
-        .filter(issuer=entry.issuer_cik)\
-        .filter(security=entry.security)\
-        .filter(reporting_person=entry.reporting_owner_cik)\
-        .filter(Q(signal_name=signal_name_db) |
-                Q(signal_name=signal_name_wb))
+    # signalmatch =\
+    #     Signal.objects.filter(signal_date=entry.filedatetime.date())\
+    #     .filter(issuer=entry.issuer_cik)\
+    #     .filter(security=entry.security)\
+    #     .filter(reporting_person=entry.reporting_owner_cik)\
+    #     .filter(Q(signal_name=signal_name_db) |
+    #             Q(signal_name=signal_name_wb))
     # print signalmatch.exists()
     # print signalmatch
     transactions = 1
@@ -141,24 +152,25 @@ for entry in a:
     # The below script checks to see if the signal here has already been
     # found and if so, extracts important information and deletes the old
     # in preparation of creating a new, updated signal.
-    if signalmatch.exists():
-        signal = signalmatch[0]
-        # print signal.signal_value
-        # print entry.xn_price_per_share *\
-        #     entry.transaction_shares
-        entry.transaction_shares += signal.security_units
-        value += signal.signal_value
-        transactions += signal.transactions
-        signal.delete()
+    # if signalmatch.exists():
+    #     signal = signalmatch[0]
+    #     # print signal.signal_value
+    #     # print entry.xn_price_per_share *\
+    #     #     entry.transaction_shares
+    #     entry.transaction_shares += signal.security_units
+    #     value += signal.signal_value
+    #     transactions += signal.transactions
+    #     signal.delete()
+
     dec = Decimal(.1)
     # assigns discretionary buy signal type
     signal_name, statement, significance =\
         buy_signal_type(entry, sph, dec, signal_name_db, signal_name_wb)
     if signal_name is not None:
         if (entry.entry_internal_id, signal_name) in old_signal_id_codes:
-            signal_is_new = True
-        else:
             signal_is_new = False
+        else:
+            signal_is_new = True
         new_signal = \
             Signal(issuer=entry.issuer_cik,
                    security=entry.security,
@@ -183,4 +195,7 @@ print '...deleting old signals...'
 Signal.objects.all().delete()
 print '...saving new signals...'
 Signal.objects.bulk_create(new_signals)
+print '...updating WatchedName objects'
+
+updatewatchednames()
 print '...Done'

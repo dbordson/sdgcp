@@ -79,16 +79,16 @@ def pwreminder(request):
     new_pw = User.objects.make_random_password()
 
     message =\
-        'We received your password reset request for [PRODUCT NAME].\n'\
+        'We received your password reset request for [PRODUCT NAME].\n\n'\
         + 'Your new password is %s and we suggest that you reset this to '\
         % new_pw\
         + 'something easier to remember. If you did not request a '\
-        + 'password reset, please contact us at [SUPPORT EMAIL ADDRESS].\n'\
+        + 'password reset, please contact us at [SUPPORT EMAIL ADDRESS].\n\n'\
         + 'If you have any questions, feel free to reply to this email.\n\n'\
         + 'Regards,\n'\
         + '[COMPANY NAME] Support'
     from_email = settings.EMAIL_HOST_USER
-    request.user.email
+    # request.user.email
     to_list = [request.user.email]
 
     u = User.objects.get(username__exact=request.user.username)
