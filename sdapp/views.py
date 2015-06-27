@@ -1,21 +1,24 @@
-from django.shortcuts import (render_to_response,
-                              RequestContext, HttpResponseRedirect)
-from sdapp.models import (Security, Signal, SecurityPriceHist,
-                          Form345Entry, PersonHoldingView, SecurityView,
-                          Affiliation, Recommendation,
-                          ClosePrice, WatchedName)
-
-
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.core.serializers.json import DjangoJSONEncoder
-from django.db.models import Q, Sum
-# from django.core.context_processors import csrf
 import datetime
 from decimal import Decimal
 import json
 from math import sqrt
 import time
+
+from django.shortcuts import (render_to_response,
+                              RequestContext, HttpResponseRedirect)
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.serializers.json import DjangoJSONEncoder
+from django.db.models import Q, Sum
+
+from sdapp.models import (Security, Signal, SecurityPriceHist,
+                          Form345Entry, PersonHoldingView, SecurityView,
+                          Affiliation, Recommendation,
+                          ClosePrice, WatchedName)
+from sdapp import holdingbuild 
+
+# from django.core.context_processors import csrf
 # from django.db.models import Count
 
 # def check_auth(request):
@@ -53,10 +56,23 @@ def stddev(lst):
     return sqrt(lstsum / Decimal(len(lst) - 1))
 
 
+def dotproduct(four_column_table):
+    dotprod = sum(Decimal(r) * Decimal(s) for p, q, r, s in four_column_table)
+    return dotprod
+
+
 def js_readable_date(some_datetime_object):
     timetuple = some_datetime_object.timetuple()
     timestamp = time.mktime(timetuple)
     return timestamp * 1000.0
+
+
+# converts date to datetime, but ignores None
+def nd(dt):
+    try:
+        return dt.date()
+    except:
+        return dt
 
 
 def index(request):
@@ -82,39 +98,60 @@ def options(request, ticker):
     watchedname = WatchedName.objects.filter(issuer=issuer)\
         .filter(user__username=request.user.username)
 
-    # Pulls signals and highlight dates of each signal
+    prices_json, titles_json, ymax =\
+        holdingbuild.buildgraph(issuer, ticker)
+
+    # print prices_json, titles_json
+
     signals = Signal.objects.filter(issuer=issuer)\
         .order_by('-signal_date')
+
     signal_highlights = []
     for signal in signals:
         signal_highlights.append(
-            [js_readable_date(signal.signal_date),
-             js_readable_date(signal.signal_date + datetime.timedelta(10))])
+            [js_readable_date(signal.signal_date + datetime.timedelta(-5)),
+             js_readable_date(signal.signal_date + datetime.timedelta(5))])
 
-    # Below grabs close prices
-    SPH_objs = \
-        SecurityPriceHist.objects.filter(issuer=issuer)\
-        .filter(ticker_sym=ticker)
-    if SPH_objs.exists():
-        SPH_obj = SPH_objs[0]
-    else:
-        SPH_obj = None
-    pricelist_qs = ClosePrice.objects.filter(securitypricehist=SPH_obj)\
-        .order_by('close_date')
-    pricelist = pricelist_qs\
-        .values_list('close_date', 'adj_close_price')
-    # standard deviation calculator, shows as shadding around line.
-    stddevlist = list(ClosePrice.objects.filter(securitypricehist=SPH_obj)
-                      .order_by('close_date')
-                      .values_list('adj_close_price', flat=True))[-270:]
-    standard_dev = round(float(stddev(stddevlist)), 2)
-    # This builds the JSON price list
-    pl = []
-    for close_date, adj_close_price in pricelist:
-        pl.append([js_readable_date(close_date),
-                   [float(adj_close_price), float(standard_dev)]])
 
-    prices_json = json.dumps(list(pl)[-270:], cls=DjangoJSONEncoder)
+    # Pulls signals and highlight dates of each signal
+    # signals = Signal.objects.filter(issuer=issuer)\
+    #     .order_by('-signal_date')
+    # signal_highlights = []
+    # for signal in signals:
+    #     signal_highlights.append(
+    #         [js_readable_date(signal.signal_date + datetime.timedelta(-5)),
+    #          js_readable_date(signal.signal_date + datetime.timedelta(5))])
+
+    # # Below grabs close prices
+    # SPH_objs = \
+    #     SecurityPriceHist.objects.filter(issuer=issuer)\
+    #     .filter(ticker_sym=ticker)
+    # if SPH_objs.exists():
+    #     SPH_obj = SPH_objs[0]
+    # else:
+    #     SPH_obj = None
+    # startdate = datetime.date.today() - datetime.timedelta(270)
+    # pricelist_qs = ClosePrice.objects.filter(securitypricehist=SPH_obj)\
+    #     .filter(close_date__gte=startdate)\
+    #     .order_by('close_date')
+    # pricelist = pricelist_qs\
+    #     .values_list('close_date', 'adj_close_price')
+    # # standard deviation calculator, shows as shadding around line.
+    # stddevlist = list(pricelist_qs
+    #                   .values_list('adj_close_price', flat=True))
+    # standard_dev = round(float(stddev(stddevlist)), 2)
+    # # This builds the JSON price list
+    # pl = []
+    # for close_date, adj_close_price in pricelist:
+    #     pl.append([js_readable_date(close_date),
+    #                [float(adj_close_price), float(standard_dev)]])
+
+    # prices_json = json.dumps(list(pl), cls=DjangoJSONEncoder)
+
+
+
+
+
     recset = Recommendation.objects.filter(issuer=issuer)
     if recset.exists():
         rec = recset[0]
@@ -133,8 +170,10 @@ def options(request, ticker):
                                'rec': rec,
                                'signal_highlights': signal_highlights,
                                'signals': signals,
+                               'titles_json': titles_json,
                                'ticker': ticker,
                                'watchedname': watchedname,
+                               'ymax': ymax,
                                },
                               context_instance=RequestContext(request),
                               )

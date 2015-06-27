@@ -15,6 +15,9 @@
       top: 45px;
       bottom: 25px;
     }
+    .many .dygraph-legend > span { display: none; }
+
+    .many .dygraph-legend > span.highlight { display: inline; }
     </style>
 
 
@@ -89,9 +92,15 @@
     <div class="panel-body" style="height:200px; overflow-y: scroll;">
       
       {% if price_csv != "Date,Temperature\n" %}
-      <div id="div_g"></div>
+      <div id="div_g" ></div>
         <script type="text/javascript">
+          var titles = {{ titles_json|safe }};
+          var div = document.getElementById("div_g")
+          div.className = "many";
+          div.style.display = 'inline-block';
           var prices = {{ prices_json|safe }};
+          var ymax = {{ ymax|safe }};
+          // console.log(prices);
           // document.write(prices);
           var signal_highlights = {{ signal_highlights|safe }};
           // document.write(signal_highlights);
@@ -99,25 +108,47 @@
           
           $(document).ready(function () 
           {
-            new Dygraph(document.getElementById("div_g"),
+            new Dygraph(div,
             prices,
             {
-              labels: ['Date', 'Price'],
+              labels: titles,
+              connectSeparatedPoints: true,
+              // drawPoints: true,
               animatedZooms: true,
+              highlightSeriesOpts: {
+                strokeWidth: 2,
+                strokeBorderWidth: 1,
+                highlightCircleSize: 2,
+              },
               // axisLabelColor: "rgba(0,0,0, 0.2)",
               // axisLineColor: "rgba(0,0,0, 0.2)",
               // color: "rgba(0,0,0, 0.2)",
-              errorBars: true,
-              sigma: 1.0,
+              // errorBars: true,
+              // sigma: 1.0,
+              series: {
+                'Close Price': {
+                  axis: 'y2'
+                },
+              },
+
               axes: 
                 {
                   x:
                   {
-                  valueFormatter: Dygraph.dateString_,
-                  axisLabelFormatter: Dygraph.dateAxisFormatter,
-                  ticker: Dygraph.dateTicker
+                    valueFormatter: Dygraph.dateString_,
+                    axisLabelFormatter: Dygraph.dateAxisFormatter,
+                    ticker: Dygraph.dateTicker
+                  },
+                  y:
+                  {
+                    labelsKMB: true,
+                    // axisLabelWidth: 60,
+                    valueRange: [0, ymax],
                   }
                 },
+              // ylabel: 'Primary y-axis',
+              // y2label: 'Secondary y-axis',
+              
               underlayCallback: function(canvas, area, g) 
               {
                 canvas.fillStyle = "rgba(192, 222, 237, 1.0)";
@@ -130,7 +161,7 @@
                 }
 
                 var min_data_x = g.getValue(0,0);
-                var max_data_x = g.getValue(g.numRows()-1,0);
+                var max_data_x = g.xAxisRange()[1];
                 if (0 != signal_highlights_len)
                 {
                   for (var i = 0; i < signal_highlights_len; i++)

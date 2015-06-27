@@ -120,8 +120,9 @@ a =\
     .filter(is_officer=True)\
     .exclude(transaction_date=None)\
     .filter(xn_acq_disp_code='A')\
-    .filter(Q(transaction_code='P') |  # Open mkt / private purch
-            Q(transaction_code='I'))  # Discretionary 16b-3 Xn
+    .filter(transaction_code='P')  # Open mkt / private purch
+# .filter(Q(transaction_code='P') |  # Open mkt / private purch
+# Q(transaction_code='I'))  # Discretionary 16b-3 Xn
 
 old_signal_id_codes =\
     Signal.objects.all().values_list('signal_id_code', 'signal_name')
