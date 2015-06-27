@@ -105,86 +105,126 @@
           var signal_highlights = {{ signal_highlights|safe }};
           // document.write(signal_highlights);
           var signal_highlights_len = signal_highlights.length;
-          
-          $(document).ready(function () 
+          // The below if / else draws a more complex chart is signals are present.  
+          if (0 != signal_highlights_len) 
           {
-            new Dygraph(div,
-            prices,
+
+            $(document).ready(function () 
             {
-              labels: titles,
-              connectSeparatedPoints: true,
-              // drawPoints: true,
-              animatedZooms: true,
-              highlightSeriesOpts: {
-                strokeWidth: 2,
-                strokeBorderWidth: 1,
-                highlightCircleSize: 2,
-              },
-              // axisLabelColor: "rgba(0,0,0, 0.2)",
-              // axisLineColor: "rgba(0,0,0, 0.2)",
-              // color: "rgba(0,0,0, 0.2)",
-              // errorBars: true,
-              // sigma: 1.0,
-              series: {
-                'Close Price': {
-                  axis: 'y2'
-                },
-              },
-
-              axes: 
-                {
-                  x:
-                  {
-                    valueFormatter: Dygraph.dateString_,
-                    axisLabelFormatter: Dygraph.dateAxisFormatter,
-                    ticker: Dygraph.dateTicker
-                  },
-                  y:
-                  {
-                    labelsKMB: true,
-                    // axisLabelWidth: 60,
-                    valueRange: [0, ymax],
-                  }
-                },
-              // ylabel: 'Primary y-axis',
-              // y2label: 'Secondary y-axis',
-              
-              underlayCallback: function(canvas, area, g) 
+              new Dygraph(div,
+              prices,
               {
-                canvas.fillStyle = "rgba(192, 222, 237, 1.0)";
-                function highlight_period(x_start, x_end) 
-                {
-                  var canvas_left_x = g.toDomXCoord(x_start);
-                  var canvas_right_x = g.toDomXCoord(x_end);
-                  var canvas_width = canvas_right_x - canvas_left_x;
-                  canvas.fillRect(canvas_left_x, area.y, canvas_width, area.h);
-                }
+                labels: titles,
+                connectSeparatedPoints: true,
+                // drawPoints: true,
+                animatedZooms: true,
+                highlightSeriesOpts: {
+                  strokeWidth: 2,
+                  strokeBorderWidth: 1,
+                  highlightCircleSize: 2,
+                },
+                // axisLabelColor: "rgba(0,0,0, 0.2)",
+                // axisLineColor: "rgba(0,0,0, 0.2)",
+                // color: "rgba(0,0,0, 0.2)",
+                // errorBars: true,
+                // sigma: 1.0,
+                series: {
+                  'Close Price': {
+                    axis: 'y2'
+                  },
+                },
 
-                var min_data_x = g.getValue(0,0);
-                var max_data_x = g.xAxisRange()[1];
-                if (0 != signal_highlights_len)
-                {
-                  for (var i = 0; i < signal_highlights_len; i++)
+                axes: 
                   {
-                    var start_x_highlight = signal_highlights[i][0];
-                    var end_x_highlight = signal_highlights[i][1];
-                    // make sure we don't try to plot outside the graph
-                    if (start_x_highlight < min_data_x)
+                    x:
                     {
-                      start_x_highlight = min_data_x;
-                    }
-                    
-                    if (end_x_highlight > max_data_x)
+                      valueFormatter: Dygraph.dateString_,
+                      axisLabelFormatter: Dygraph.dateAxisFormatter,
+                      ticker: Dygraph.dateTicker
+                    },
+                    y:
                     {
-                      end_x_highlight = max_data_x;
+                      labelsKMB: true,
+                      // axisLabelWidth: 60,
+                      valueRange: [0, ymax],
                     }
-                    highlight_period(start_x_highlight,end_x_highlight);                
+                  },
+                // ylabel: 'Primary y-axis',
+                // y2label: 'Secondary y-axis',
+                
+                underlayCallback: function(canvas, area, g) 
+                {
+                  canvas.fillStyle = "rgba(192, 222, 237, 1.0)";
+                  function highlight_period(x_start, x_end) 
+                  {
+                    var canvas_left_x = g.toDomXCoord(x_start);
+                    var canvas_right_x = g.toDomXCoord(x_end);
+                    var canvas_width = canvas_right_x - canvas_left_x;
+                    canvas.fillRect(canvas_left_x, area.y, canvas_width, area.h);
+                  }
 
+                  var min_data_x = g.getValue(0,0);
+                  var max_data_x = g.xAxisRange()[1];
+                  if (0 != signal_highlights_len)
+                  {
+                    for (var i = 0; i < signal_highlights_len; i++)
+                    {
+                      var start_x_highlight = signal_highlights[i][0];
+                      var end_x_highlight = signal_highlights[i][1];
+                      // make sure we don't try to plot outside the graph
+                      if (start_x_highlight < min_data_x)
+                      {
+                        start_x_highlight = min_data_x;
+                      }
+                      
+                      if (end_x_highlight > max_data_x)
+                      {
+                        end_x_highlight = max_data_x;
+                      }
+                      highlight_period(start_x_highlight,end_x_highlight);                
+
+                    }
                   }
                 }
-              }
+              });
             });
-          });
+          } else 
+          {
+            $(document).ready(function () 
+            {
+              new Dygraph(div,
+              prices,
+              {
+                labels: titles,
+                animatedZooms: true,
+                highlightSeriesOpts: {
+                  strokeWidth: 2,
+                  strokeBorderWidth: 1,
+                  highlightCircleSize: 2,
+                },
+                // axisLabelColor: "rgba(0,0,0, 0.2)",
+                // axisLineColor: "rgba(0,0,0, 0.2)",
+                // color: "rgba(0,0,0, 0.2)",
+                // errorBars: true,
+                // sigma: 1.0,
+                axes: 
+                  {
+                    x:
+                    {
+                      valueFormatter: Dygraph.dateString_,
+                      axisLabelFormatter: Dygraph.dateAxisFormatter,
+                      ticker: Dygraph.dateTicker
+                    },
+                    y:
+                    {
+                      // axisLabelWidth: 60,
+                      // valueRange: [0, ymax],
+                    }
+                  },
+                
+              });
+            });
+          }
         </script>
     </div>
     {% else %}
