@@ -4,7 +4,7 @@ from django.conf.urls import patterns, url
 from sdapp.views import options, formentrydetail, screens,\
     holdingdetail, byperson, holdingtable, personholdingtable,\
     discretionarybuy, weaknessbuy, filterintermed, watchtoggle,\
-    index, tickersearch
+    index, tickersearch, drilldown
 
 
 urlpatterns = \
@@ -26,6 +26,7 @@ urlpatterns = \
         url(r'^screens/dbuy', discretionarybuy, name='discretionarybuy'),
         url(r'^screens/wbuy', weaknessbuy, name='weaknessbuy'),
         url(r'^(?P<ticker>\w+)/$', options, name='options'),
+        url(r'^(?P<ticker>\w+)/drilldown$', drilldown, name='drilldown'),
         url(r'^(?P<ticker>\w+)/watchtoggle$', watchtoggle, name='watchtoggle'),
         url(r'^(?P<ticker>\w+)/formentries$', formentrydetail,
             name='formentrydetail'),

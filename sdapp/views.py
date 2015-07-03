@@ -1,7 +1,8 @@
+from collections import defaultdict
 import datetime
 from decimal import Decimal
-import json
 from math import sqrt
+import pytz
 import time
 
 from django.shortcuts import (render_to_response,
@@ -11,12 +12,14 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Q, Sum
+from django.template.defaulttags import register
 
 from sdapp.models import (Security, Signal, SecurityPriceHist,
                           Form345Entry, PersonHoldingView, SecurityView,
                           Affiliation, Recommendation,
                           ClosePrice, WatchedName)
-from sdapp import holdingbuild 
+from sdapp.misc.filingcodes import filingcodes, acq_disp_codes
+from sdapp import holdingbuild
 
 # from django.core.context_processors import csrf
 # from django.db.models import Count
@@ -29,6 +32,11 @@ from sdapp import holdingbuild
 #             'Login required for access'
 #         messages.success(request, messagetext)
 #         return False
+
+
+@register.filter
+def get_item(dictionary, key):
+    return dictionary.get(key)
 
 
 def is_int(s):
@@ -98,59 +106,23 @@ def options(request, ticker):
     watchedname = WatchedName.objects.filter(issuer=issuer)\
         .filter(user__username=request.user.username)
 
-    prices_json, titles_json, ymax =\
-        holdingbuild.buildgraph(issuer, ticker)
+    signals = Signal.objects.filter(issuer=issuer)\
+        .order_by('-signal_date')
+    persons_data = \
+        signals.exclude(reporting_person=None)\
+        .values_list('reporting_person', 'reporting_person_name')
+    graph_data_json, titles_json, ymax =\
+        holdingbuild.buildgraphdata(issuer, ticker, persons_data)
 
     # print prices_json, titles_json
 
     signals = Signal.objects.filter(issuer=issuer)\
         .order_by('-signal_date')
-
-    signal_highlights = []
+    sig_highlights = []
     for signal in signals:
-        signal_highlights.append(
+        sig_highlights.append(
             [js_readable_date(signal.signal_date + datetime.timedelta(-5)),
              js_readable_date(signal.signal_date + datetime.timedelta(5))])
-
-
-    # Pulls signals and highlight dates of each signal
-    # signals = Signal.objects.filter(issuer=issuer)\
-    #     .order_by('-signal_date')
-    # signal_highlights = []
-    # for signal in signals:
-    #     signal_highlights.append(
-    #         [js_readable_date(signal.signal_date + datetime.timedelta(-5)),
-    #          js_readable_date(signal.signal_date + datetime.timedelta(5))])
-
-    # # Below grabs close prices
-    # SPH_objs = \
-    #     SecurityPriceHist.objects.filter(issuer=issuer)\
-    #     .filter(ticker_sym=ticker)
-    # if SPH_objs.exists():
-    #     SPH_obj = SPH_objs[0]
-    # else:
-    #     SPH_obj = None
-    # startdate = datetime.date.today() - datetime.timedelta(270)
-    # pricelist_qs = ClosePrice.objects.filter(securitypricehist=SPH_obj)\
-    #     .filter(close_date__gte=startdate)\
-    #     .order_by('close_date')
-    # pricelist = pricelist_qs\
-    #     .values_list('close_date', 'adj_close_price')
-    # # standard deviation calculator, shows as shadding around line.
-    # stddevlist = list(pricelist_qs
-    #                   .values_list('adj_close_price', flat=True))
-    # standard_dev = round(float(stddev(stddevlist)), 2)
-    # # This builds the JSON price list
-    # pl = []
-    # for close_date, adj_close_price in pricelist:
-    #     pl.append([js_readable_date(close_date),
-    #                [float(adj_close_price), float(standard_dev)]])
-
-    # prices_json = json.dumps(list(pl), cls=DjangoJSONEncoder)
-
-
-
-
 
     recset = Recommendation.objects.filter(issuer=issuer)
     if recset.exists():
@@ -166,9 +138,90 @@ def options(request, ticker):
     return render_to_response('sdapp/options.html',
                               {'ann_affiliations': ann_affiliations,
                                'issuer_name': issuer_name,
-                               'prices_json': prices_json,
+                               'graph_data_json': graph_data_json,
                                'rec': rec,
-                               'signal_highlights': signal_highlights,
+                               'sig_highlights': sig_highlights,
+                               'signals': signals,
+                               'titles_json': titles_json,
+                               'ticker': ticker,
+                               'watchedname': watchedname,
+                               'ymax': ymax,
+                               },
+                              context_instance=RequestContext(request),
+                              )
+
+
+@login_required()
+def drilldown(request, ticker):
+    common_stock_security = \
+        Security.objects.get(ticker=ticker)
+    issuer = common_stock_security.issuer
+    issuer_name = issuer.name
+    # Pulls whether this stock is on the user's watch list
+    watchedname = WatchedName.objects.filter(issuer=issuer)\
+        .filter(user__username=request.user.username)
+
+    signals = Signal.objects.filter(issuer=issuer)\
+        .order_by('-signal_date')
+
+    now = datetime.datetime.now(pytz.UTC)
+    startdate = now - datetime.timedelta(270)
+    # Builds transaction queryset
+    recententries_qs =\
+        Form345Entry.objects.filter(issuer_cik=issuer)\
+        .filter(filedatetime__gte=startdate)
+    persons_for_radio =\
+        recententries_qs\
+        .values('reporting_owner_name', 'reporting_owner_cik')\
+        .order_by('reporting_owner_name').distinct()
+    # Creates variable to be used to filter by person
+    if 'person_cik' in request.GET:
+        selected_person = int(request.GET['person_cik'])
+        recententries_qs =\
+            recententries_qs.filter(reporting_owner_cik=selected_person)
+    else:
+        selected_person = None
+    recententries =\
+        recententries_qs\
+        .order_by('-filedatetime', 'transaction_number')\
+        .values('filedatetime', 'transaction_number', 'transaction_date',
+                'reporting_owner_cik', 'reporting_owner_name',
+                'transaction_code', 'xn_acq_disp_code',
+                'transaction_shares', 'security_title',
+                'xn_price_per_share', 'conversion_price', 'sec_path',
+                'form_type', 'reported_shares_following_xn',
+                'is_director', 'is_officer', 'is_ten_percent')
+    # Creates variable to filter graph by person
+    if selected_person is None:
+        persons_data =\
+            Affiliation.objects.filter(issuer=issuer)\
+            .values_list('reporting_owner', 'person_name')
+    else:
+        persons_data =\
+            Affiliation.objects.filter(issuer=issuer)\
+            .filter(reporting_owner=selected_person)\
+            .values_list('reporting_owner', 'person_name')
+    persons_with_data = len(persons_data)
+    # builds graph data -- see housingbuild.py for logic
+    graph_data_json, titles_json, ymax =\
+        holdingbuild.buildgraphdata(issuer, ticker, persons_data)
+
+    sig_highlights = []
+    for signal in signals:
+        sig_highlights.append(
+            [js_readable_date(signal.signal_date + datetime.timedelta(-5)),
+             js_readable_date(signal.signal_date + datetime.timedelta(5))])
+
+    return render_to_response('sdapp/drilldown.html',
+                              {'acq_disp_codes': acq_disp_codes,
+                               'recententries': recententries,
+                               'filingcodes': filingcodes,
+                               'graph_data_json': graph_data_json,
+                               'issuer_name': issuer_name,
+                               'persons_for_radio': persons_for_radio,
+                               'persons_with_data': persons_with_data,
+                               'selected_person': selected_person,
+                               'sig_highlights': sig_highlights,
                                'signals': signals,
                                'titles_json': titles_json,
                                'ticker': ticker,

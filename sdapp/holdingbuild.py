@@ -7,7 +7,7 @@ import time
 
 from django.core.serializers.json import DjangoJSONEncoder
 
-from sdapp.models import (SecurityPriceHist, Signal, ClosePrice,
+from sdapp.models import (SecurityPriceHist, ClosePrice,
                           Form345Entry)
 
 
@@ -47,17 +47,18 @@ def nd(dt):
         return dt
 
 
-def pull_person_holdings(ticker, issuer, signal, firstpricedate):
+def pull_person_holdings(ticker, issuer, person_cik, person_name,
+                         firstpricedate):
     now = datetime.datetime.now(pytz.UTC)
     today = now.date()
     startdate = today - datetime.timedelta(270)
-
+    startdt = now - datetime.timedelta(270)
     ticker_security =\
         SecurityPriceHist.objects.get(ticker_sym=ticker).security
     person_forms =\
         Form345Entry.objects.filter(issuer_cik=issuer)\
-        .exclude(supersededdt__lte=startdate)\
-        .filter(reporting_owner_cik=signal.reporting_person)
+        .exclude(supersededdt__lte=startdt)\
+        .filter(reporting_owner_cik=person_cik)
     # The below pull is grabbing ticker holdings and derivatives
     # convertible directly into the ticker.
     # current_stock_holdings = person_forms.filter(supersededdt=None)\
@@ -118,40 +119,41 @@ def pull_person_holdings(ticker, issuer, signal, firstpricedate):
         currentshares = Decimal(-1) * xn_dict.pop(None, None)
     else:
         currentshares = Decimal(0)
-    signal_data = []
-    signal_data = [[js_readable_date(datetime.date.today()), currentshares]]
+    person_data = []
+    person_data = [[js_readable_date(datetime.date.today()), currentshares]]
     # print sorted(xn_dict.iteritems())
     for key, value in sorted(xn_dict.iteritems(), reverse=True):
         # print 'old', key, value
         if key >= startdate:
-            signal_data.append([js_readable_date(key), currentshares])
+            person_data.append([js_readable_date(key), currentshares])
             currentshares -= xn_dict[key]
-            signal_data.append([js_readable_date(key), currentshares])
+            person_data.append([js_readable_date(key), currentshares])
     # The below line appends the initial holdings at the startdate
     # for the closeprice graph
-    signal_data.append([js_readable_date(firstpricedate), signal_data[-1][1]])
-    signal_data = list(reversed(signal_data))
-    return signal_data, signal.reporting_person_name
+    person_data.append([js_readable_date(firstpricedate), person_data[-1][1]])
+    person_data = list(reversed(person_data))
+    return person_data, person_name
 
 
-def addholdingstograph(pl, ticker, issuer, signals, firstpricedate):
+def addholdingstograph(pl, ticker, issuer, persons_data, firstpricedate):
     graph = pl
     title_row = ['Date', 'Close Price']
     maxholding = 0
-    for signal in signals:
+    for person_cik, person_name in persons_data:
         # Builds adds empty row to right of price_json
         graph = [row + [None] for row in graph]
         # prices_json = map(list, zip(zip(*prices_json), rightemptylist))
         # calculates datelist, holdinglist for signal
-        signal_data, signal_person_name = \
-            pull_person_holdings(ticker, issuer, signal, firstpricedate)
+        holding_data, person_name = \
+            pull_person_holdings(ticker, issuer,
+                                 person_cik, person_name, firstpricedate)
         # builds 'spacer' array of None entries to for new signal value column
         # spacer_length = len(datelist)
-        title_row.append(signal_person_name + ' Fully Diluted Shares')
+        title_row.append(person_name + ' Fully Diluted Shares')
         spacer_width = len(graph[0]) - 2
         # spacer = [None] * len(prices_json[0]) - 2
         spaced_data = []
-        for date, holding in signal_data:
+        for date, holding in holding_data:
             # print date
             a = [None] * spacer_width
             a.insert(0, date)
@@ -163,12 +165,7 @@ def addholdingstograph(pl, ticker, issuer, signals, firstpricedate):
     return graph, title_row, maxholding
 
 
-def buildgraph(issuer, ticker):
-
-    # Pulls signals and highlight dates of each signal
-    signals = Signal.objects.filter(issuer=issuer)\
-        .exclude(reporting_person=None)\
-        .order_by('-signal_date')
+def buildgraphdata(issuer, ticker, persons_data):
 
     # Below grabs close prices
     SPH_objs = \
@@ -203,7 +200,7 @@ def buildgraph(issuer, ticker):
                    float(adj_close_price)])
 
     graph, title_row, maxholding =\
-        addholdingstograph(pl, ticker, issuer, signals, firstpricedate)
+        addholdingstograph(pl, ticker, issuer, persons_data, firstpricedate)
     graph_json = json.dumps(list(graph), cls=DjangoJSONEncoder)
     titles_json = json.dumps(list(title_row), cls=DjangoJSONEncoder)
     ymax = Decimal(maxholding) * Decimal(1.20)

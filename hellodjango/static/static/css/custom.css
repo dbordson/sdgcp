@@ -23,3 +23,11 @@
 .spacer20 { 
     height: 20px; width: 100%; font-size: 0; margin: 0; padding: 0; border: 0; display: block; 
 }
+
+.anchor{
+    padding-top: 90px; margin-top: -90px;"
+}
+
+.borderless tbody tr td, .borderless tbody tr th, .borderless thead tr th {
+    border: none;
+}

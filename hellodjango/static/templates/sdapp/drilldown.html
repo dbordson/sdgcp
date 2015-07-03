@@ -1,0 +1,279 @@
+{% extends 'base.html' %}
+
+{% load humanize %}
+
+{% block content %}
+<script src="/../static/static/js/jquery.js"></script>
+<script type="text/javascript"
+  src="/../static/static/js/dygraph-combined-dev.js"></script>
+
+    <style type="text/css">
+    #div_g {
+      position: absolute;
+      left: 0px;
+      right: 20px;
+      top: 45px;
+      bottom: 25px;
+    }
+    .many .dygraph-legend > span { display: none; }
+
+    .many .dygraph-legend > span.highlight { display: inline; }
+    </style>
+
+
+<script type="text/javascript">
+// function detectHash() {
+//   function maybeScrollToHash() {
+//     if (window.location.hash && $(window.location.hash).length) {
+//       var newTop = $(window.location.hash).offset().top - $('.topbar').height();
+//       $(window).scrollTop(newTop);
+//     }
+//   }
+
+//   $(window).bind('hashchange', function() {
+//     maybeScrollToHash();
+//   });
+
+//   maybeScrollToHash();
+// }
+
+
+
+
+// $(document).ready(function(){
+//   $('a[href^="#"]').bind('click.smoothscroll',function (e) {
+//       e.preventDefault();
+   
+//       var target = this.hash,
+//       $target = $(target);
+   
+//       $('html, body').stop().animate({
+//           'scrollTop': $target.offset().top-50
+//       }, 900, 'swing', function () {
+//           window.location.hash = target;
+//       });
+//   });
+// });
+
+// window.addEventListener("hashchange", function() { scrollBy(0, -50) })
+
+
+</script>
+
+
+<div class="col-md-9">
+  <h1>{{ issuer_name }} ({{ ticker }})</h1>
+</div>
+<div class="col-md-3">
+  <div class="spacer20"></div>
+  <div class="pull-right">
+  
+  {% if watchedname.exists %}
+  <a class="btn btn-default" href="watchtoggle" role="button">
+    <span class="glyphicon glyphicon-star" aria-hidden="true"></span> Receiving Alerts</a>
+  {% else %}
+  <a class="btn btn-default" href="watchtoggle" role="button">
+    <span class="glyphicon glyphicon-star-empty" aria-hidden="true"></span> Not Receiving Alerts</a>
+  {% endif %}
+  
+  </div>
+</div>
+<!-- Note that the below </div> tag is unmatched and closes a row opened in base.html.  The row following it is closed in the base.html file-->
+</div>
+<div class="row">
+
+
+<div class="col-md-12">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h3 class="panel-title">Stock Price Chart <a href="/sdapp/{{ ticker }}">(Return to Overview)</a></h3>
+    </div>
+    <div class="panel-body" style="height:350px; overflow-y: scroll;">
+      
+      {% if graph_data_json != "????" %} <!-- We should set up an inequality that works to disable the graph when it would be empty, if it is the case that it could throw an error (not sure) -->
+      {% include 'drilldowngraphjs.html' %}
+    </div>
+    {% else %}
+      <p>No price information available.</p>
+    {% endif %}
+  </div>  
+</div>
+<!-- Note that the below </div> tag is unmatched and closes a row opened in base.html.  The row following it is closed in the base.html file-->
+</div>
+<div class="row">
+
+
+<div class="col-md-12">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h3 class="panel-title">Signals</h3>
+    </div>
+  
+    {% if signals.exists %}
+      <ul class="list-group">
+      {% for signal in signals %}
+        <li class="list-group-item">
+          <a href="/sdapp/{{ signal.sph.ticker_sym }}/">{{ signal.signal_date }} - {{ signal.long_statement }}</a>
+        </li>
+      {% endfor %}
+      </ul>
+
+    {% else %}
+      <div class="panel-body">
+        <p>No signals are available.</p>
+      </div>
+    {% endif %}
+    </div>  
+  </div>
+
+
+
+
+<div class="col-md-9">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <!-- The below anchor code should be tested:
+      <a name="filter"><h3 class="anchor"></h3></a>
+      It is something of an html workaround, but I don't know a better way of dealing with the issue of preventing the button below that jumps to filter from covering up the top of the panel, because of the offset for the navbar. -->
+      <h3 class="panel-title">Recent Events<a name="filter"><h3 class="anchor"></h3></a></h3>
+    </div>
+    <div class="panel-body">
+      <table class="table borderless">
+        <thead>
+          <tr>
+            <th>Filing Date</th>
+            <th>Reporting Owner</th>
+            <th>Transaction Date</th>
+            <th>Action</th>
+            <th>Security</th>
+            <th>Number</th>
+            <th>Acq. / Disp.</th>
+            <th>Price</th>
+            <th>Conv. Price</th>
+          </tr>
+        </thead>
+        <tbody>
+    {% for e in recententries %}
+          {% ifchanged e.sec_path %} <tr><td colspan = "9"></td></tr> {% endifchanged %}
+          {% if e.form_type|truncatechars:1 == '3' %}
+          <tr class="info">
+            <td>{% ifchanged e.sec_path %} {{ e.filedatetime|date:"m/d/y" }} {% endifchanged %}</td>
+            <td>
+            {% ifchanged e.sec_path %} 
+              {{ e.reporting_owner_name }}
+            {% endifchanged %}</td>
+            <td colspan = "2">{% ifchanged e.sec_path %}Initiated reporting:{% endifchanged %}</td>
+            <td>{{ e.security_title }}</td>
+            <td style="text-align:right">{{ e.reported_shares_following_xn|floatformat:0|intcomma }}</td>
+            <td colspan="3">
+            {% ifchanged e.sec_path %}Reason:
+              {% if e.is_ten_percent %}10% holder
+              {% elif e.is_officer %}Officer
+              {% elif e.is_director %}Director
+              {% endif %}
+            {% endifchanged %}</td>
+          </tr>
+          {% elif e.xn_acq_disp_code != None %}
+
+          <tr class="active">
+            <td>{% ifchanged e.sec_path %} {{ e.filedatetime|date:"m/d/y" }} {% endifchanged %}</td>
+            <td>
+            {% ifchanged e.sec_path %} 
+              <!--<form method="get" action="/sdapp/{{ ticker }}/drilldown">
+              <button type="submit" class="btn btn-default" name="person_cik" value="{{ e.reporting_owner_cik }}" type="submit">
+              {{ e.reporting_owner_name }}
+              </button>
+              </form>-->
+              {{ e.reporting_owner_name }}
+            {% endifchanged %}</td>
+            <td>{{ e.transaction_date|date:"m/d/y" }}</td>
+            <td><abbr title="{{ filingcodes|get_item:e.transaction_code }}">{{ e.transaction_code }}</abbr></td>
+            <td>{{ e.security_title }}</td>
+            <td style="text-align:right">{{ e.transaction_shares|floatformat:0|intcomma }}</td>
+            <td><abbr title="{{ acq_disp_codes|get_item:e.xn_acq_disp_code }}">{{ e.xn_acq_disp_code }}</abbr></td>
+            <td  style="text-align:right">{{ e.xn_price_per_share|floatformat:2|intcomma }}</td>
+            <td  style="text-align:right">{{ e.conversion_price|floatformat:2|intcomma }}</td>
+          </tr>
+
+          {% endif %}
+
+
+<!--      <li class="list-group-item">
+        <a href="/sdapp/{{ signal.sph.ticker_sym }}/">{{ signal.signal_date }} - {{ signal.long_statement }}</a>
+      </li>
+-->
+
+    {% empty %}
+          <tr>
+            <p>No transactions available.</p>
+          </tr>
+      
+
+    {% endfor %}
+      </tbody>
+      </table>
+    </div>
+
+    </div>  
+  </div>
+
+
+
+
+
+
+
+<div class="col-md-3">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h3 class="panel-title">Filter by a Person</h3>
+    </div>
+    <div class="panel-body">
+      <form method="get">
+        <div class="btn-group-vertical " role="group" aria-label="...">
+          <button type="submit" class="btn btn-default 
+          {% ifequal selected_person None %}active{% endifequal %}" name="persons" value="clear" href="#filter">
+          All
+          </button>
+        
+      {# <div class="btn-group" role="group" aria-label="..."> #}
+      
+      
+    {% for person in persons_for_radio %}
+        
+          <button type="submit" class="btn btn-default {% ifequal selected_person person.reporting_owner_cik %}active{% endifequal %}" name="person_cik" type="submit" value="{{ person.reporting_owner_cik }}" onclick="window.location.hash = 'filter';">{{ person.reporting_owner_name }}</button>
+      
+      
+    {% empty %}
+          
+            <p>Nobody available.</p>
+
+    {% endfor %}
+        </div>
+      </form>
+      {# </div> #}
+    </div>
+
+    </div>  
+  </div>
+
+
+
+</div>
+<div class="row">
+
+<div class="col-md-6">
+  <h3>Tabular Data [THIS SECTION WILL BE REMOVED]</h3>
+
+  <div class="list-group">
+
+    <a href="/sdapp/{{ ticker }}/formentries" class="list-group-item">Form Entries</a>
+    <a href="/sdapp/{{ ticker }}/holdings" class="list-group-item">Current Holdings</a>
+    <a href="/sdapp/{{ ticker }}/byperson" class="list-group-item">Holder Table</a>
+    <a href="/sdapp/{{ ticker }}/holdingtable" class="list-group-item">Holding Table</a>
+  </div>
+</div>
+
+
+
+{% endblock %}

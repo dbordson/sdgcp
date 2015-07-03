@@ -87,145 +87,12 @@
 <div class="col-md-6">
   <div class="panel panel-default">
     <div class="panel-heading">
-      <h3 class="panel-title">Stock Price Chart</h3>
+      <h3 class="panel-title">Stock Price Chart <a href="/sdapp/{{ ticker }}/drilldown">(Click for more detail)</a></h3>
     </div>
     <div class="panel-body" style="height:200px; overflow-y: scroll;">
       
-      {% if price_csv != "Date,Temperature\n" %}
-      <div id="div_g" ></div>
-        <script type="text/javascript">
-          var titles = {{ titles_json|safe }};
-          var div = document.getElementById("div_g")
-          div.className = "many";
-          div.style.display = 'inline-block';
-          var prices = {{ prices_json|safe }};
-          var ymax = {{ ymax|safe }};
-          // console.log(prices);
-          // document.write(prices);
-          var signal_highlights = {{ signal_highlights|safe }};
-          // document.write(signal_highlights);
-          var signal_highlights_len = signal_highlights.length;
-          // The below if / else draws a more complex chart is signals are present.  
-          if (0 != signal_highlights_len) 
-          {
-
-            $(document).ready(function () 
-            {
-              new Dygraph(div,
-              prices,
-              {
-                labels: titles,
-                connectSeparatedPoints: true,
-                // drawPoints: true,
-                animatedZooms: true,
-                highlightSeriesOpts: {
-                  strokeWidth: 2,
-                  strokeBorderWidth: 1,
-                  highlightCircleSize: 2,
-                },
-                // axisLabelColor: "rgba(0,0,0, 0.2)",
-                // axisLineColor: "rgba(0,0,0, 0.2)",
-                // color: "rgba(0,0,0, 0.2)",
-                // errorBars: true,
-                // sigma: 1.0,
-                series: {
-                  'Close Price': {
-                    axis: 'y2'
-                  },
-                },
-
-                axes: 
-                  {
-                    x:
-                    {
-                      valueFormatter: Dygraph.dateString_,
-                      axisLabelFormatter: Dygraph.dateAxisFormatter,
-                      ticker: Dygraph.dateTicker
-                    },
-                    y:
-                    {
-                      labelsKMB: true,
-                      // axisLabelWidth: 60,
-                      valueRange: [0, ymax],
-                    }
-                  },
-                // ylabel: 'Primary y-axis',
-                // y2label: 'Secondary y-axis',
-                
-                underlayCallback: function(canvas, area, g) 
-                {
-                  canvas.fillStyle = "rgba(192, 222, 237, 1.0)";
-                  function highlight_period(x_start, x_end) 
-                  {
-                    var canvas_left_x = g.toDomXCoord(x_start);
-                    var canvas_right_x = g.toDomXCoord(x_end);
-                    var canvas_width = canvas_right_x - canvas_left_x;
-                    canvas.fillRect(canvas_left_x, area.y, canvas_width, area.h);
-                  }
-
-                  var min_data_x = g.getValue(0,0);
-                  var max_data_x = g.xAxisRange()[1];
-                  if (0 != signal_highlights_len)
-                  {
-                    for (var i = 0; i < signal_highlights_len; i++)
-                    {
-                      var start_x_highlight = signal_highlights[i][0];
-                      var end_x_highlight = signal_highlights[i][1];
-                      // make sure we don't try to plot outside the graph
-                      if (start_x_highlight < min_data_x)
-                      {
-                        start_x_highlight = min_data_x;
-                      }
-                      
-                      if (end_x_highlight > max_data_x)
-                      {
-                        end_x_highlight = max_data_x;
-                      }
-                      highlight_period(start_x_highlight,end_x_highlight);                
-
-                    }
-                  }
-                }
-              });
-            });
-          } else 
-          {
-            $(document).ready(function () 
-            {
-              new Dygraph(div,
-              prices,
-              {
-                labels: titles,
-                animatedZooms: true,
-                highlightSeriesOpts: {
-                  strokeWidth: 2,
-                  strokeBorderWidth: 1,
-                  highlightCircleSize: 2,
-                },
-                // axisLabelColor: "rgba(0,0,0, 0.2)",
-                // axisLineColor: "rgba(0,0,0, 0.2)",
-                // color: "rgba(0,0,0, 0.2)",
-                // errorBars: true,
-                // sigma: 1.0,
-                axes: 
-                  {
-                    x:
-                    {
-                      valueFormatter: Dygraph.dateString_,
-                      axisLabelFormatter: Dygraph.dateAxisFormatter,
-                      ticker: Dygraph.dateTicker
-                    },
-                    y:
-                    {
-                      // axisLabelWidth: 60,
-                      // valueRange: [0, ymax],
-                    }
-                  },
-                
-              });
-            });
-          }
-        </script>
+      {% if graph_data_json != "????" %} <!-- We should set up an inequality that works to disable the graph when it would be empty, if it is the case that it could throw an error (not sure) -->
+      {% include 'optionsgraphjs.html' %}
     </div>
     {% else %}
       <p>No price information available.</p>
@@ -302,14 +169,16 @@
 </div>
 <div class="row">
 
-<h3>Tabular Data</h3>
+<div class="col-md-6">
+  <h3>Tabular Data</h3>
 
-<div class="list-group">
+  <div class="list-group">
 
-  <a href="/sdapp/{{ ticker }}/formentries" class="list-group-item">Form Entries</a>
-  <a href="/sdapp/{{ ticker }}/holdings" class="list-group-item">Current Holdings</a>
-  <a href="/sdapp/{{ ticker }}/byperson" class="list-group-item">Holder Table</a>
-  <a href="/sdapp/{{ ticker }}/holdingtable" class="list-group-item">Holding Table</a>
+    <a href="/sdapp/{{ ticker }}/formentries" class="list-group-item">Form Entries</a>
+    <a href="/sdapp/{{ ticker }}/holdings" class="list-group-item">Current Holdings</a>
+    <a href="/sdapp/{{ ticker }}/byperson" class="list-group-item">Holder Table</a>
+    <a href="/sdapp/{{ ticker }}/holdingtable" class="list-group-item">Holding Table</a>
+  </div>
 </div>
 
 
