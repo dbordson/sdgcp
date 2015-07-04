@@ -245,6 +245,8 @@ def watchtoggle(request, ticker):
         messagetext = \
             'Removed from watchlist'
         messages.info(request, messagetext)
+        if 'HTTP_REFERER' in request.META:
+            return HttpResponseRedirect(request.META['HTTP_REFERER'])
         return HttpResponseRedirect('/sdapp/' + str(ticker))
     else:
         sph = SecurityPriceHist.objects.filter(ticker_sym=ticker)[0]
@@ -261,6 +263,8 @@ def watchtoggle(request, ticker):
         messagetext = \
             'Added to watchlist'
         messages.info(request, messagetext)
+        if 'HTTP_REFERER' in request.META:
+            return HttpResponseRedirect(request.META['HTTP_REFERER'])
         return HttpResponseRedirect('/sdapp/' + str(ticker))
 
 
@@ -443,12 +447,15 @@ def formentrydetail(request, ticker):
     issuer_pk = security_obj.issuer.pk
     entrylist = Form345Entry.objects.filter(issuer_cik_id=issuer_pk)\
         .order_by('reporting_owner_cik', 'security', '-filedatetime')
+    watchedname = WatchedName.objects.filter(issuer=issuer)\
+        .filter(user__username=request.user.username)
     return render_to_response('sdapp/formentrydetail.html',
                               {'headtitle': headtitle,
                                'entrylist': entrylist,
                                'ticker': ticker,
                                'issuer': issuer,
-                               'issuer_pk': issuer_pk},
+                               'issuer_pk': issuer_pk,
+                               'watchedname': watchedname, },
                               context_instance=RequestContext(request),)
 
 
@@ -463,12 +470,15 @@ def holdingdetail(request, ticker):
         .filter(issuer_cik_id=issuer_pk)\
         .filter(supersededdt=None)\
         .order_by('reporting_owner_cik', 'security', '-filedatetime')
+    watchedname = WatchedName.objects.filter(issuer=issuer)\
+        .filter(user__username=request.user.username)
     return render_to_response('sdapp/formentrydetail.html',
                               {'headtitle': headtitle,
                                'entrylist': entrylist,
                                'ticker': ticker,
                                'issuer': issuer,
-                               'issuer_pk': issuer_pk},
+                               'issuer_pk': issuer_pk,
+                               'watchedname': watchedname, },
                               context_instance=RequestContext(request),)
 
 
@@ -478,10 +488,13 @@ def byperson(request, ticker):
         Security.objects.get(ticker=ticker).issuer
     personviews = PersonHoldingView.objects.filter(issuer=issuer)\
         .order_by('person_name', '-intrinsic_value')
+    watchedname = WatchedName.objects.filter(issuer=issuer)\
+        .filter(user__username=request.user.username)
     return render_to_response('sdapp/personviews.html',
                               {'ticker': ticker,
                                'issuer_pk': issuer.pk,
-                               'personviews': personviews},
+                               'personviews': personviews,
+                               'watchedname': watchedname, },
                               context_instance=RequestContext(request),)
 
 
@@ -507,6 +520,8 @@ def holdingtable(request, ticker):
     common_stock_security = \
         Security.objects.get(ticker=ticker)
     issuer = common_stock_security.issuer
+    watchedname = WatchedName.objects.filter(issuer=issuer)\
+        .filter(user__username=request.user.username)
     issuer_name = Form345Entry.objects.filter(issuer_cik=issuer)\
         .latest('filedatetime').issuer_name
 
@@ -523,7 +538,8 @@ def holdingtable(request, ticker):
                               {'ticker': ticker,
                                'issuer_name': issuer_name,
                                'non_deriv_table': non_deriv_table,
-                               'deriv_table': deriv_table},
+                               'deriv_table': deriv_table,
+                               'watchedname': watchedname, },
                               context_instance=RequestContext(request),
                               )
 

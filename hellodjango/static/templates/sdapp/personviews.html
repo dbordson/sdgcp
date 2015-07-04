@@ -4,8 +4,30 @@
 {% block content %}
 
 
-<h1>{{ ticker }} Positions by Holder ({{ issuer_pk }}) </h1>
-<table border="1" cellspacing="0" cellpadding="1" style="width:200px">
+
+<div class="col-md-10">
+  <h1>{{ ticker }} Positions by Holder (CIK: {{ issuer_pk }})</h1>
+  <a href="/sdapp/{{ ticker }}">(Go to smart view)</a>
+  <div class="spacer10"></div>
+</div>
+<div class="col-md-2">
+  <div class="spacer20"></div>
+  <div class="pull-right">
+  
+  {% if watchedname.exists %}
+  <a class="btn btn-default" href="watchtoggle" role="button">
+    <span class="glyphicon glyphicon-star" aria-hidden="true"></span> Receiving Alerts</a>
+  {% else %}
+  <a class="btn btn-default" href="watchtoggle" role="button">
+    <span class="glyphicon glyphicon-star-empty" aria-hidden="true"></span> Not Receiving Alerts</a>
+  {% endif %}
+  <div class="spacer20"></div>
+  </div>
+</div>
+
+<div class="col-md-12 table-responsive">
+
+<table class="table">
     <thead>
         <th>person_name</th>
         <th>person_title</th>
@@ -54,6 +76,6 @@
     </tr>
     {% endfor %}
 </table>
-
+</div>
 
 {% endblock %}

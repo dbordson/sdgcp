@@ -3,14 +3,34 @@
 
 {% block content %}
 
-<h1>{{ issuer_name }} Holding Table ({{ ticker }})</h1>
-<table border="1" cellspacing="0" cellpadding="1" style="width:200px">
-<thead>
-    <th style="text-align:left;" border="0"; colspan="5">Non-Derivative Holdings</th>
-</thead>
-{% for sectitle, holdings, total in non_deriv_table %}
+
+<div class="col-md-10">
+  <h1>{{ issuer_name }} Holding Table ({{ ticker }})</h1>
+  <a href="/sdapp/{{ ticker }}">(Go to smart view)</a>
+  <div class="spacer10"></div>
+</div>
+<div class="col-md-2">
+  <div class="spacer20"></div>
+  <div class="pull-right">
+  
+  {% if watchedname.exists %}
+  <a class="btn btn-default" href="watchtoggle" role="button">
+    <span class="glyphicon glyphicon-star" aria-hidden="true"></span> Receiving Alerts</a>
+  {% else %}
+  <a class="btn btn-default" href="watchtoggle" role="button">
+    <span class="glyphicon glyphicon-star-empty" aria-hidden="true"></span> Not Receiving Alerts</a>
+  {% endif %}
+  <div class="spacer20"></div>
+  </div>
+</div>
+
+<div class="col-md-12 table-responsive">
+
+<table class="table">
     <thead>
-        <th border="0"; colspan="5"> </th>
+        <th colspan="5">Non-Derivative Holdings</th>
+    </thead>
+{% for sectitle, holdings, total in non_deriv_table %}
     <thead>
         <th colspan="5">{{ sectitle }} Holdings (Ticker: {{ total.ticker }})</th>
     </thead>
@@ -38,15 +58,16 @@
         <td style="text-align:center;">{{ total.intrinsic_value }}</td>
     </tr>
 {% endfor %}
+</table>
+</div>
 
+<div class="col-md-12 table-responsive">
 
-<table border="1" cellspacing="0" cellpadding="1" style="width:200px">
-<thead>
-    <th style="text-align:left;" colspan="9">Derivative Holdings</th>
-</thead>
-{% for sectitle, holdings, total in deriv_table %}
+<table class="table">
     <thead>
-        <th border="0"; colspan="9"></th>
+        <th colspan="9">Derivative Holdings</th>
+    </thead>
+{% for sectitle, holdings, total in deriv_table %}
     <thead>
         <th colspan="9">{{ sectitle }} Holdings (Underlying Ticker: {{ total.underlying_ticker }})</th>
     </thead>
@@ -67,7 +88,7 @@
         <td style="text-align:center;">{{ holding.person_title }}</td>
         <td style="text-align:right;">{{ holding.units_held }}</td>
         <td style="text-align:center;">{{ holding.wavg_expiration_date }}</td>
-        <th style="text-align:center;">{{ holding.wavg_conversion }}</td>
+        <td style="text-align:center;">{{ holding.wavg_conversion }}</td>
         <td style="text-align:center;">{{ holding.scrubbed_underlying_title }}</td>
         <td style="text-align:center;">{{ holding.underlying_shares_total }}</td>
         <td style="text-align:center;">{{ holding.most_recent_xn }}</td>
@@ -79,14 +100,15 @@
         <td style="text-align:center;"></td>
         <td style="text-align:right;">{{ total.units_held }}</td>
         <td style="text-align:center;">{{ total.wavg_expiration_date }}</td>
-        <th style="text-align:center;">{{ total.wavg_conversion }}</td>
+        <td style="text-align:center;">{{ total.wavg_conversion }}</td>
         <td style="text-align:center;">{{ total.scrubbed_underlying_title }}</td>
         <td style="text-align:center;">{{ total.underlying_shares_total }}</td>
         <td style="text-align:center;">{{ total.most_recent_xn }}</td>
         <td style="text-align:center;">{{ total.intrinsic_value }}</td>
     </tr>
 {% endfor %}
-
+</table>
+</div>
 
 {% endblock %}
 

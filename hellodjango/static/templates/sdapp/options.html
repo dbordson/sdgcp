@@ -21,10 +21,14 @@
     </style>
 
 
-<div class="col-md-9">
+<div class="col-md-10">
   <h1>{{ issuer_name }} ({{ ticker }})</h1>
+  <a href="/sdapp/{{ ticker }}/drilldown">(Click for transaction detail)</a>
+  <div class="spacer10"></div>
+
+  <!--<a href="/sdapp/{{ ticker }}/drilldown" style="float:left;position:absolute;bottom:7px" >(Transaction Detail View)</a>-->
 </div>
-<div class="col-md-3">
+<div class="col-md-2">
   <div class="spacer20"></div>
   <div class="pull-right">
   
@@ -35,7 +39,7 @@
   <a class="btn btn-default" href="watchtoggle" role="button">
     <span class="glyphicon glyphicon-star-empty" aria-hidden="true"></span> Not Receiving Alerts</a>
   {% endif %}
-  
+  <div class="spacer20"></div>
   </div>
 </div>
 <!-- Note that the below </div> tag is unmatched and closes a row opened in base.html.  The row following it is closed in the base.html file-->
@@ -56,9 +60,9 @@
       {% if rec.confidence = "Strong" %}
       <h1 class="text-info" align="center">{{rec.confidence}}</h1>
       {% elif rec.confidence = "Moderate" %}
-      <h1 class="text-default" align="center">{{rec.confidence}}</h1>
+      <h2 class="text-default" align="center">{{rec.confidence}}</h2>
       {% elif rec.confidence = "Weak" %}
-      <h1 class="text-muted" align="center">{{rec.confidence}}</h1>
+      <h2 class="text-muted" align="center">{{rec.confidence}}</h2>
       {% else %}
 
       {% endif %}
@@ -66,11 +70,11 @@
       
       <!-- Colors based on sentiment -->
       {% if rec.sentiment = "Bullish" %}
-      <h1 class="text-success" align="center">{{rec.sentiment}}</h1>
+      <h2 class="text-success" align="center">{{rec.sentiment}}</h2>
       {% elif rec.sentiment = "Bearish" %}
-      <h1 class="text-danger" align="center">{{rec.sentiment}}</h1>
+      <h2 class="text-danger" align="center">{{rec.sentiment}}</h2>
       {% else %}
-      <h1 class="text-info" align="center">{{rec.sentiment}}</h1>
+      <h2 class="text-info" align="center">{{rec.sentiment}}</h2>
       {% endif %}
     {% else %}
 
@@ -87,7 +91,7 @@
 <div class="col-md-6">
   <div class="panel panel-default">
     <div class="panel-heading">
-      <h3 class="panel-title">Stock Price Chart <a href="/sdapp/{{ ticker }}/drilldown">(Click for more detail)</a></h3>
+      <h3 class="panel-title">Stock Price Chart</h3>
     </div>
     <div class="panel-body" style="height:200px; overflow-y: scroll;">
       
@@ -106,11 +110,11 @@
 <div class="col-md-6">
   <div class="panel panel-default">
     <div class="panel-heading">
-      <h3 class="panel-title">Company Info / Holdings</h3>
+      <h3 class="panel-title">Top Holdings</h3>
     </div>
 
     <div class="panel-body" style="height:200px; overflow-y: scroll;">
-    <p>[Some company info here?]</p>
+    <!-- <p>[Some company info here?]</p> -->
     {% if ann_affiliations.exists %}
       
       <table class="table table-striped table-condensed">
