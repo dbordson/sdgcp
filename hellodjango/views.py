@@ -1,11 +1,13 @@
-from django.shortcuts import render_to_response, RequestContext
-from django.http import HttpResponseRedirect
 from django.conf import settings
 from django.contrib import auth, messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.context_processors import csrf
 from django.core.mail import send_mail
+from django.http import HttpResponseRedirect
+from django.shortcuts import render_to_response, RequestContext
+
+from sdapp.models import SecurityPriceHist, Signal, WatchedName
 
 
 def login(request):
@@ -69,6 +71,61 @@ def changepw(request):
 
     return render_to_response('changepw.html',
                               {'username': request.user.username},
+                              context_instance=RequestContext(request),
+                              )
+
+
+@login_required()
+def managewatchlist(request):
+    watchlist = \
+        WatchedName.objects.filter(user=request.user).order_by('ticker_sym')
+    found_sph = None
+    ticker_query = None
+    already_exists = False
+    found_ticker = None
+    search = False
+    if ('q' in request.GET):
+        ticker_query = request.GET['q'].strip()
+        search = True
+    if ('q' in request.GET)\
+            and SecurityPriceHist.objects\
+            .filter(ticker_sym=request.GET['q'].strip().upper()).exists()\
+            and SecurityPriceHist.objects\
+            .filter(ticker_sym=request.GET['q'].strip().upper())[0]\
+            .issuer is not None:
+        found_ticker = request.GET['q'].strip().upper()
+        found_sph = SecurityPriceHist.objects\
+            .filter(ticker_sym=found_ticker)[0]
+        # Note that the issuer could be None if the sph hasn't been linked.
+        issuer = found_sph.issuer
+        signals = Signal.objects.filter(issuer=issuer)
+        if signals.exists():
+            last_signal_sent = signals.latest('signal_date').signal_date
+        else:
+            last_signal_sent = None
+        if issuer is None:
+            messagetext = \
+                'Ticker could not be added! Contact customer support for help.'
+            messages.info(request, messagetext)
+            found_sph = None
+        elif WatchedName.objects.filter(user=request.user)\
+                .filter(issuer=issuer)\
+                .filter(securitypricehist=found_sph).exists():
+            already_exists = True
+        else:
+            WatchedName(user=request.user,
+                        issuer=issuer,
+                        securitypricehist=found_sph,
+                        ticker_sym=found_sph.ticker_sym,
+                        last_signal_sent=last_signal_sent).save()
+    return render_to_response('managewatchlist.html',
+                              {'username': request.user.username,
+                               'already_exists': already_exists,
+                               'found_ticker': found_ticker,
+                               'search': search,
+                               'ticker_query': ticker_query,
+                               'watchlist': watchlist,
+                               },
                               context_instance=RequestContext(request),
                               )
 

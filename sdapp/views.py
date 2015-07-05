@@ -4,8 +4,9 @@ from decimal import Decimal
 from math import sqrt
 import pytz
 import time
+import urllib
 
-from django.shortcuts import (render_to_response,
+from django.shortcuts import (render_to_response, redirect,
                               RequestContext, HttpResponseRedirect)
 
 from django.contrib import messages
@@ -239,14 +240,18 @@ def watchtoggle(request, ticker):
     issuer = common_stock_security.issuer
     watchedname = WatchedName.objects.filter(issuer=issuer)\
         .filter(user__username=request.user.username)
-
+    print 'watchedname', watchedname
+    print 'watchedname.exists()', watchedname.exists()
     if watchedname.exists():
         watchedname.delete()
         messagetext = \
             'Removed from watchlist'
         messages.info(request, messagetext)
         if 'HTTP_REFERER' in request.META:
-            return HttpResponseRedirect(request.META['HTTP_REFERER'])
+            url = request.META['HTTP_REFERER']
+            if url.find('/?') != -1:
+                url = url[:url.find('/?')]
+            return redirect(url)
         return HttpResponseRedirect('/sdapp/' + str(ticker))
     else:
         sph = SecurityPriceHist.objects.filter(ticker_sym=ticker)[0]
@@ -264,7 +269,7 @@ def watchtoggle(request, ticker):
             'Added to watchlist'
         messages.info(request, messagetext)
         if 'HTTP_REFERER' in request.META:
-            return HttpResponseRedirect(request.META['HTTP_REFERER'])
+            return redirect(request.META['HTTP_REFERER'])
         return HttpResponseRedirect('/sdapp/' + str(ticker))
 
 

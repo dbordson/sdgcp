@@ -1,54 +1,30 @@
 <div class="col-md-6">
-<h1>Search</h1>
 
 
-
-  <form method='get' action="{% url 'screens' %}" >
-    <!--<div class="panel panel-default">
-    
-    <div class="panel-heading">Signals:</div>
-    
-    <div class="panel-body">-->
-    <!--
-    <div class="btn-group btn-group-justified" data-toggle="buttons">
+<div class="panel panel-default">
+  <div class="panel-heading"><h4>Search</h4></div>
+    <div class="panel-body">
+    <form method='get' action="{% url 'screens' %}" >
       
-      <label {% if dbuyactive %} class="btn btn-info active" {% else %} class="btn btn-info" {% endif %}>
-        <input type="checkbox" autocomplete="off" name="discretionarybuy" 
-        {% if dbuyactive %} checked {% endif %}>Discretionary Buy</label>
-      <label {% if wbuyactive %} class="btn btn-info active" {% else %} class="btn btn-info" {% endif %}>
-        <input type="checkbox" autocomplete="off" name="buyonweakness"
-        {% if wbuyactive %} checked {% endif %}>Buy on Weakness</label> -->
-
-
-    <!--
-    </div>
-    </div>
-    -->
+      <div>
+      <label for="sel2">Signal select list (hold shift to select more than one):</label>
+        <select multiple class="form-control" name="selectbox">
+          <option value="discretionarybuy" {% if dbuyactive %} selected {% endif %}>Discretionary Buy</option>
+          <option value="buyonweakness" {% if wbuyactive %} selected {% endif %}>Buy on Weakness</option>
+        </select>
+      </div>
+      <div class="spacer10"></div>
+      
+        <input type="text" name="q" id="id_q" placeholder="Ticker (optional)" class="form-control">
+      <div class="spacer10"></div>
+      <div>
+      
+          <button type="submit" value="Submit" class="btn btn-success btn">Search</button>
+      </div>
+      <!--<span>-->
+    </form>
     
-    <div>
-    <label for="sel2">Signal select list (hold shift to select more than one):</label>
-      <select multiple class="form-control" name="selectbox">
-        <option value="discretionarybuy" {% if dbuyactive %} selected {% endif %}>Discretionary Buy</option>
-        <option value="buyonweakness" {% if wbuyactive %} selected {% endif %}>Buy on Weakness</option>
-      </select>
-    </div>
-    <div class="spacer10"></div>
-    
-      <input type="text" name="q" id="id_q" placeholder="Ticker (optional)" class="form-control">
-    <div class="spacer10"></div>
-    <div>
-    
-        <button type="submit" value="Submit" class="btn btn-success btn">Search</button>
-    </div>
-    <!--<span>-->
-  </form>
-  
-
-
-
   <div class="spacer10"></div>
-
-<div class="container">
 
 {% if query_string %}    
 
@@ -59,25 +35,27 @@
     You searched for "{{ query_string }}"
   {% endif %}
 
-
-  {% if found_entries.exists %}    
-    <div class="panel panel-default">
+  <div class="panel panel-default">
     <div class="panel-heading">Results</div>
     <ul class="list-group">
+
+  {% if found_entries.exists %}    
+    
     {% for signal in found_entries %}
       <a class="list-group-item" href="/sdapp/{{ signal.sph.ticker_sym }}/">{{ signal.signal_date }} - {{ signal.sph.ticker_sym }}: {{ signal.short_statement }}</a>
     {% endfor %}
+
+  {% elif ticker %}
+    <a class="list-group-item" href="/sdapp/{{ ticker }}/">Ticker matches {{ ticker }}, but no signals were found.</a>
+  {% else %}
+    <a class="list-group-item disabled">No signals found.</a>
+    
+  {% endif %}
     </ul>
     </div>
-  {% elif ticker %}
-    <p>Ticker matches {{ ticker }}, but no signals were found.</p>
-  {% else %}
-    No signals found.
-  {% endif %}
-
 
 {% endif %}
-
+  </div>
 </div>
 </div>
 

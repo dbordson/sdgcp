@@ -2,6 +2,11 @@
 
 }
 
+.panel > .panel-heading {
+    background-image: none;
+    background-color: #94B8B8;
+
+}
 
 .success {
     background: grey;
