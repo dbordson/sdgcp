@@ -7,28 +7,26 @@
 <script type="text/javascript"
   src="/../static/static/js/dygraph-combined-dev.js"></script>
 
+<style type="text/css">
+#div_g {
+  position: absolute;
+  left: 0px;
+  right: 20px;
+  top: 45px;
+  bottom: 25px;
+}
+.many .dygraph-legend > span { display: none; }
 
-    <style type="text/css">
-    #div_g {
-      position: absolute;
-      left: 0px;
-      right: 20px;
-      top: 45px;
-      bottom: 25px;
-    }
-    .many .dygraph-legend > span { display: none; }
-
-    .many .dygraph-legend > span.highlight { display: inline; }
-    </style>
+.many .dygraph-legend > span.highlight { display: inline; }
+</style>
 
 
 <div class="col-md-10">
-  <h1>{{ issuer_name }} ({{ ticker }})</h1>
+    <h1>{{ issuer_name }} ({{ ticker }})</h1>
   <a href="/sdapp/{{ ticker }}/drilldown">(Click for transaction detail)</a>
   <div class="spacer10"></div>
-
-  <!--<a href="/sdapp/{{ ticker }}/drilldown" style="float:left;position:absolute;bottom:7px" >(Transaction Detail View)</a>-->
 </div>
+
 <div class="col-md-2">
   <div class="spacer20"></div>
   <div class="pull-right">
@@ -40,13 +38,13 @@
   <a class="btn btn-default" href="watchtoggle" role="button">
     <span class="glyphicon glyphicon-star-empty" aria-hidden="true"></span> Not Receiving Alerts</a>
   {% endif %}
+
   <div class="spacer20"></div>
   </div>
 </div>
 <!-- Note that the below </div> tag is unmatched and closes a row opened in base.html.  The row following it is closed in the base.html file-->
 </div>
 <div class="row">
-
 
 
 <div class="col-md-6">
@@ -64,11 +62,9 @@
       <h2 class="text-default" align="center">{{rec.confidence}}</h2>
       {% elif rec.confidence = "Weak" %}
       <h2 class="text-muted" align="center">{{rec.confidence}}</h2>
-      {% else %}
-
       {% endif %}
+
       <h3 align="center">and</h3>
-      
       <!-- Colors based on sentiment -->
       {% if rec.sentiment = "Bullish" %}
       <h2 class="text-success" align="center">{{rec.sentiment}}</h2>
@@ -77,8 +73,8 @@
       {% else %}
       <h2 class="text-info" align="center">{{rec.sentiment}}</h2>
       {% endif %}
-    {% else %}
 
+    {% else %}
       <p>No recommendation at this time.</p>
 
     {% endif %}
@@ -87,8 +83,6 @@
   </div>  
 </div>
 
-
-
 <div class="col-md-6">
   <div class="panel panel-default">
     <div class="panel-heading">
@@ -96,17 +90,20 @@
     </div>
     <div class="panel-body" style="height:200px; overflow-y: scroll;">
       
-      {% if graph_data_json != "????" %} <!-- We should set up an inequality that works to disable the graph when it would be empty, if it is the case that it could throw an error (not sure) -->
+      {% if graph_data_json != "????" %} <!-- We could set up an inequality that works to disable the graph when it would be empty, not sure if an empty graph would throw an error, but it might -->
       {% include 'optionsgraphjs.html' %}
-    </div>
-    {% else %}
-      <p>No price information available.</p>
-    {% endif %}
+
+      {% else %}
+        <p>No price information available.</p>
+      {% endif %}
+
+    </div>  
   </div>  
 </div>
 <!-- Note that the below </div> tag is unmatched and closes a row opened in base.html.  The row following it is closed in the base.html file-->
 </div>
 <div class="row">
+
 
 <div class="col-md-6">
   <div class="panel panel-default">
@@ -115,9 +112,8 @@
     </div>
 
     <div class="panel-body" style="height:200px; overflow-y: scroll;">
-    <!-- <p>[Some company info here?]</p> -->
+
     {% if ann_affiliations.exists %}
-      
       <table class="table table-striped table-condensed">
         <thead>
           <tr>
@@ -126,23 +122,23 @@
           </tr>
         </thead>  
         <tbody>
+
       {% for ann_affiliation in ann_affiliations %}
           <tr>
             <td>{{ ann_affiliation.person_name }}</td>
             <td align="right">${{ ann_affiliation.intrinsic_value|floatformat:0|intcomma }}</td>
           </tr>
       {% endfor %}
+
         </tbody>
       </table>
-
       
     {% else %}
-
         <p>No holdings are available.</p>
       
     {% endif %}
-    </div>
 
+    </div>
   </div>  
 </div>
 
@@ -153,22 +149,26 @@
       <h3 class="panel-title">Signals</h3>
     </div>
   
-    {% if signals.exists %}
-      <ul class="list-group" style="height:200px; overflow-y: scroll;">
-      {% for signal in signals %}
-        <li class="list-group-item">
-          <a href="/sdapp/{{ signal.sph.ticker_sym }}/">{{ signal.signal_date }} - {{ signal.long_statement }}</a>
-        </li>
-      {% endfor %}
-      </ul>
+  {% if signals.exists %}
+    <ul class="list-group" style="height:200px; overflow-y: scroll;">
 
-    {% else %}
-      <div class="panel-body" style="height:200px; overflow-y: scroll;">
-        <p>No signals are available.</p>
-      </div>
-    {% endif %}
-    </div>  
-  </div>
+    {% for signal in signals %}
+      <li class="list-group-item">
+        <a href="/sdapp/{{ signal.sph.ticker_sym }}/">{{ signal.signal_date }} - {{ signal.long_statement }}</a>
+      </li>
+    {% endfor %}
+
+    </ul>
+
+  {% else %}
+    <div class="panel-body" style="height:200px; overflow-y: scroll;">
+      <p>No signals are available.</p>
+    </div>
+
+  {% endif %}
+
+  </div>  
+</div>
 
 
 </div>
@@ -178,18 +178,11 @@
   <h3>Tabular Data</h3>
 
   <div class="list-group">
-
     <a href="/sdapp/{{ ticker }}/formentries" class="list-group-item">Form Entries</a>
     <a href="/sdapp/{{ ticker }}/holdings" class="list-group-item">Current Holdings</a>
     <a href="/sdapp/{{ ticker }}/byperson" class="list-group-item">Holder Table</a>
     <a href="/sdapp/{{ ticker }}/holdingtable" class="list-group-item">Holding Table</a>
   </div>
 </div>
-
-
-
-
-
-
 
 {% endblock %}

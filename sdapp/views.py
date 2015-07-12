@@ -1,39 +1,22 @@
-from collections import defaultdict
 import datetime
 from decimal import Decimal
 from math import sqrt
 import pytz
 import time
-import urllib
-
-from django.shortcuts import (render_to_response, redirect,
-                              RequestContext, HttpResponseRedirect)
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.context_processors import csrf
-from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Q, Sum
+from django.shortcuts import (render_to_response, redirect,
+                              RequestContext, HttpResponseRedirect)
 from django.template.defaulttags import register
 
 from sdapp.models import (Security, Signal, SecurityPriceHist,
                           Form345Entry, PersonHoldingView, SecurityView,
-                          Affiliation, Recommendation,
-                          ClosePrice, WatchedName)
+                          Affiliation, Recommendation, WatchedName)
 from sdapp.misc.filingcodes import filingcodes, acq_disp_codes
 from sdapp import holdingbuild
-
-# from django.core.context_processors import csrf
-# from django.db.models import Count
-
-# def check_auth(request):
-#     if request.user.is_authenticated():
-#         return True
-#     else:
-#         messagetext = \
-#             'Login required for access'
-#         messages.success(request, messagetext)
-#         return False
 
 
 @register.filter
@@ -274,41 +257,6 @@ def watchtoggle(request, ticker):
         return HttpResponseRedirect('/sdapp/' + str(ticker))
 
 
-# class filterscreens(ListView):
-
-#     # c = {}
-#     # c.update(csrf(request))
-
-#     template_name = 'sdapp/filterscreens.html'
-#     context_object_name = 'screens'
-
-#     @method_decorator(login_required)
-#     def dispatch(self, *args, **kwargs):
-#         return super(filterscreens, self).dispatch(*args, **kwargs)
-
-#     def get_queryset(self):
-#         print self
-#         self.issuer = get_object_or_404(IssuerCIK, cik_num=self.args[0])
-#         return Signal.objects.filter(issuer=self.issuer)
-
-
-# def search(request):
-#     query_string = ''
-#     found_entries = None
-#     if ('q' in request.GET) and request.GET['q'].strip():
-#         query_string = request.GET['q']
-#
-#         entry_query = get_query(query_string, ['title', 'body',])
-#
-#         found_entries = Entry.objects.filter(entry_query)\
-#             .order_by('-pub_date')
-#
-#     return render_to_response('search/search_results.html',
-#                           { 'query_string': query_string,
-#                             'found_entries': found_entries },
-#                           context_instance=RequestContext(request))
-
-
 def filterintermed(request):
     cik_num = request.POST.get('cik_num', '')
     if cik_num is not '':
@@ -345,72 +293,9 @@ def tickersearch(request):
 
 @login_required()
 def screens(request):
-    query_string = None
-    found_entries = None
-    signal_types = []
-    dbuyactive = True
-    wbuyactive = True
-    ticker = None
-    num_of_records = None
     watchlist = \
         WatchedName.objects.filter(user=request.user).order_by('ticker_sym')
-    #
-    # Search results (if there was a search)
-    if ('q' in request.GET):
-        query_string = request.GET['q'].strip()
-        dbuyactive = False
-        wbuyactive = False
-
-    if 'selectbox' in request.GET\
-            and 'discretionarybuy' in request.GET.getlist('selectbox'):
-        signal_types.append('Discretionary Buy')
-        dbuyactive = True
-
-    if 'selectbox' in request.GET\
-            and 'buyonweakness' in request.GET.getlist('selectbox'):
-        signal_types.append('Discretionary Buy after a Decline')
-        wbuyactive = True
-
-    # THE BELOW COMMENTED CODE WOULD BE USED FOR THE TOGGLE BUTTON
-    # CHECKBOXES IN THE SCREENS.HTML TEMPLATE INSTEAD OF THE ABOVE
-    # if 'discretionarybuy' in request.GET:
-    #     signal_types.append('Discretionary Buy')
-    #     dbuyactive = True
-    #     # print 'discretionarybuy', request.GET['discretionarybuy'].strip()
-    # if 'buyonweakness' in request.GET:
-    #     signal_types.append('Discretionary Buy after a Decline')
-    #     wbuyactive = True
-    #     # print 'buyonweakness', request.GET['buyonweakness'].strip()
-
-    if ('q' in request.GET) and\
-            SecurityPriceHist.objects\
-            .filter(ticker_sym=request.GET['q'].strip().upper()).exists() and\
-            SecurityPriceHist.objects\
-            .filter(ticker_sym=request.GET['q'].strip().upper())[0]\
-            .issuer is not None:
-        ticker = request.GET['q'].strip().upper()
-        issuer = SecurityPriceHist.objects\
-            .filter(ticker_sym=query_string.upper())[0].issuer
-        found_entries = \
-            Signal.objects.filter(signal_name__in=signal_types)\
-            .filter(issuer=issuer).order_by('-signal_date')
-        num_of_records = found_entries.count()
-    elif ('q' in request.GET) and\
-            request.GET['q'].strip() == '':
-        query_string = ' '
-        found_entries = \
-            Signal.objects.filter(signal_name__in=signal_types)\
-            .order_by('-signal_date')
-        num_of_records = found_entries.count()
-
-    c = {'dbuyactive': dbuyactive,
-         # 'found_entries': found_entries,
-         'num_of_records': num_of_records,
-         'query_string': query_string,
-         'ticker': ticker,
-         'watchlist': watchlist,
-         'wbuyactive': wbuyactive,
-         }
+    c = {'watchlist': watchlist}
     c.update(csrf(request))
     return render_to_response('sdapp/screens.html',
                               c,
@@ -420,23 +305,15 @@ def screens(request):
 
 @login_required()
 def searchsignals(request):
-    # pass search results while in the screens view
-    print 'searchsignals'
-
-    print request.POST
     if request.method == "POST":
         search_text = request.POST['search_text'].strip()
-        # dbuyactive = False
-        # wbuyactive = False
     else:
         search_text = ''
 
-    # print search_text
     found_entries = None
     signal_types = []
     ticker = None
-    num_of_records = None
-    #
+    num_of_records = 0
 
     if 'selectbox' in request.POST\
             and 'discretionarybuy' in request.POST.getlist('selectbox'):
@@ -446,7 +323,6 @@ def searchsignals(request):
             and 'buyonweakness' in request.POST.getlist('selectbox'):
         signal_types.append('Discretionary Buy after a Decline')
 
-    print signal_types
     if ('search_text' in request.POST) and\
             SecurityPriceHist.objects\
             .filter(ticker_sym=search_text.upper()).exists() and\
@@ -609,62 +485,6 @@ def holdingtable(request, ticker):
                               context_instance=RequestContext(request),
                               )
 
-
-# def holdingtable(request, ticker):
-#     issuer = \
-#         IssuerCIK.objects.filter(SecurityPriceHist__ticker_sym=ticker_sym)[0]
-#     lookbackdays = 365 * 100
-#     startdate = datetime.date.today() - datetime.timedelta(lookbackdays)
-#     affiliationset = Affiliation.objects.filter(issuer=issuer)\
-#         .filter(most_recent_filing__gte=startdate)
-#     holdingset = HoldingType.objects.filter(issuer=issuer)\
-#         .filter(affiliation__in=affiliationset).order_by('owner')\
-#         .exclude(units_held=0.0).exclude(units_held=None)
-#     stockholdingset = holdingset.filter(deriv_or_nonderiv='N')
-#     stockholdingtitles = list(set(stockholdingset
-#                               .values_list('security_title', flat=True)
-#                               .distinct()))
-#     totalset = AggHoldingType.objects.filter(issuer=issuer)\
-#         .exclude(units_held=None)
-#     stocktotals = totalset.filter(deriv_or_nonderiv='N')
-#     stockholdinglists = []
-#     for title in stockholdingtitles:
-#         stockholdinglist = []
-#         stockholdinglist.append(title)
-#         titleholdings = stockholdingset.filter(security_title=title)\
-#             .order_by('-units_held')[:5]
-#         # print titleholdings.values_list('owner', flat=True)
-#         stockholdinglist.append(titleholdings)
-
-#         total = stocktotals.filter(security_title=title)[0]
-#         stockholdinglist.append(total)
-#         stockholdinglists.append(stockholdinglist)
-#         # print title
-#         # print stockholdinglist
-
-#     derivholdingset = holdingset.filter(deriv_or_nonderiv='D')
-#     derivholdingtitles = list(set(derivholdingset
-#                               .values_list('security_title', flat=True)
-#                               .distinct()))
-#     derivtotals = totalset.filter(deriv_or_nonderiv='D')
-#     derivholdinglists = []
-#     for title in derivholdingtitles:
-#         derivholdinglist = []
-#         derivholdinglist.append(title)
-#         titleholdings = derivholdingset.filter(security_title=title)\
-#             .order_by('-units_held')[:5]
-#         derivholdinglist.append(titleholdings)
-#         total = derivtotals.filter(security_title=title)[0]
-#         derivholdinglist.append(total)
-#         derivholdinglists.append(derivholdinglist)
-#     # print stockholdinglists
-#     return render_to_response('sdapp/holdingtable.html',
-#                               {'ticker_sym': ticker_sym,
-#                                'startdate': startdate,
-#                                'stockholdingtitles': stockholdingtitles,
-#                                'affiliationset': affiliationset,
-#                                'stockholdinglists': stockholdinglists,
-#                                'derivholdinglists': derivholdinglists})
 
 @login_required()
 def personholdingtable(request, ticker, owner):

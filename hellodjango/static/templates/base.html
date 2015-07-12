@@ -4,8 +4,9 @@
     <!-- Bootstrap core JavaScript
     ================================================== -->
     <!-- If not needed earlier, may be placed at the end of the document so the pages load faster -->
-    <!--<script src="/../static/static/js/jquery.min.js"></script>-->
-    <script src="/../static/static/js/jquery.js"></script>
+    <!-- note that jquery.js is commented out.  Switch jquery.min.js if you need to debug because the .min.js version is not readable-->
+    <script src="/../static/static/js/jquery.min.js"></script>
+    <!--<script src="/../static/static/js/jquery.js"></script>-->
     <!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>-->
     <script src="/../static/static/js/bootstrap.min.js"></script>
     <script src="/../static/static/js/ajax.js"></script>
@@ -24,16 +25,10 @@
 
     <!-- Bootstrap core CSS -->
     <link href="/../static/static/css/bootstrap.css" rel="stylesheet">
-
     <!-- Custom styles for this template -->
     <link href="/../static/static/css/jumbotron.css" rel="stylesheet">
-    
     <!-- Custom CSS -->
     <link href="/../static/static/css/custom.css" rel="stylesheet">
-
-    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
-    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
-    <!--<script src="/../static/static/js/ie-emulation-modes-warning.js"></script>-->
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -50,8 +45,6 @@
 
     {% endblock %}
 
-
-
     <div class="container">
       {% if messages %}
       <div class='row'>
@@ -61,9 +54,9 @@
             {% for message in messages %}
             <div class="spacer10"></div>
             <p 
-            {% if message.tags == "success" %} class="alert alert-success"{% endif %}
-            {% if message.tags == "warning" %} class="alert alert-warning"{% endif %}
-            {% if message.tags == "info" %} class="alert alert-info"
+            {% if message.tags == "success" %} class="alert alert-success fade in"{% endif %}
+            {% if message.tags == "warning" %} class="alert alert-warning fade in"{% endif %}
+            {% if message.tags == "info" %} class="alert alert-info fade in"
             {% endif %}>
             <button type="button" class="close" data-dismiss="alert" aria-hidden="true">
             &times;</button>{{ message }}</p>

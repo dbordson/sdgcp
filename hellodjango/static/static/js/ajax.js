@@ -36,9 +36,6 @@ $(function(){
 
 function searchSuccess(data, textStatus, jqXHR)
 {
-    // document.write($('#search-results').html(data));
-    // document.write(data);
     $('#search-results').html(data);
     $('#resultsmodal').modal('show');
-    
 }
