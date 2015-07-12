@@ -8,9 +8,23 @@
 
 }
 
-.success {
-    background: grey;
+/*.success {
+    background: green;
     text-align: center;
+}*/
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Ubuntu', Georgia, Times, serif;
+}
+table, p, div {
+    font-family: 'Vollkorn', Helvetica, Arial, sans-serif;
+}
+
+h1 { 
+    text-shadow: 1px 1px 1px #ccc;
+}
+.navbar { 
+    box-shadow: 0 0 .5em .5em #ccc;
 }
 
 .spacer10 { 

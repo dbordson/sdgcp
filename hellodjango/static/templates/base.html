@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- If not needed earlier, may be placed at the end of the document so the pages load faster -->
+    <!--<script src="/../static/static/js/jquery.min.js"></script>-->
+    <script src="/../static/static/js/jquery.js"></script>
+    <!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>-->
+    <script src="/../static/static/js/bootstrap.min.js"></script>
+    <script src="/../static/static/js/ajax.js"></script>
+    <link href="http://fonts.googleapis.com/css?family=Ubuntu:bold" rel="stylesheet" type="text/css">
+    <link href="http://fonts.googleapis.com/css?family=Vollkorn" rel="stylesheet" type="text/css">
+
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -53,7 +64,9 @@
             {% if message.tags == "success" %} class="alert alert-success"{% endif %}
             {% if message.tags == "warning" %} class="alert alert-warning"{% endif %}
             {% if message.tags == "info" %} class="alert alert-info"
-            {% endif %}>{{ message }}</p>
+            {% endif %}>
+            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">
+            &times;</button>{{ message }}</p>
             
             {% endfor %}
           
@@ -73,16 +86,11 @@
 
 
       <footer>
-        <p>&copy; SD 2014</p>
+        <p>&copy; 2015 SD</p>
       </footer>
     </div> <!-- /container -->
 
 
-    <!-- Bootstrap core JavaScript
-    ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    <script src="/../static/static/js/jquery.min.js"></script>
-    <script src="/../static/static/js/bootstrap.min.js"></script>
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug
     <script src="/../static/static/assets/js/ie10-viewport-bug-workaround.js"></script> -->
   </body>

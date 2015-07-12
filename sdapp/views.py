@@ -11,6 +11,7 @@ from django.shortcuts import (render_to_response, redirect,
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.context_processors import csrf
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Q, Sum
 from django.template.defaulttags import register
@@ -402,16 +403,76 @@ def screens(request):
             .order_by('-signal_date')
         num_of_records = found_entries.count()
 
+    c = {'dbuyactive': dbuyactive,
+         # 'found_entries': found_entries,
+         'num_of_records': num_of_records,
+         'query_string': query_string,
+         'ticker': ticker,
+         'watchlist': watchlist,
+         'wbuyactive': wbuyactive,
+         }
+    c.update(csrf(request))
     return render_to_response('sdapp/screens.html',
-                              {'dbuyactive': dbuyactive,
-                               'found_entries': found_entries,
-                               'num_of_records': num_of_records,
-                               'query_string': query_string,
-                               'ticker': ticker,
-                               'watchlist': watchlist,
-                               'wbuyactive': wbuyactive,
-                               },
+                              c,
                               context_instance=RequestContext(request),
+                              )
+
+
+@login_required()
+def searchsignals(request):
+    # pass search results while in the screens view
+    print 'searchsignals'
+
+    print request.POST
+    if request.method == "POST":
+        search_text = request.POST['search_text'].strip()
+        # dbuyactive = False
+        # wbuyactive = False
+    else:
+        search_text = ''
+
+    # print search_text
+    found_entries = None
+    signal_types = []
+    ticker = None
+    num_of_records = None
+    #
+
+    if 'selectbox' in request.POST\
+            and 'discretionarybuy' in request.POST.getlist('selectbox'):
+        signal_types.append('Discretionary Buy')
+
+    if 'selectbox' in request.POST\
+            and 'buyonweakness' in request.POST.getlist('selectbox'):
+        signal_types.append('Discretionary Buy after a Decline')
+
+    print signal_types
+    if ('search_text' in request.POST) and\
+            SecurityPriceHist.objects\
+            .filter(ticker_sym=search_text.upper()).exists() and\
+            SecurityPriceHist.objects\
+            .filter(ticker_sym=search_text.upper())[0]\
+            .issuer is not None:
+        ticker = search_text.upper()
+        issuer = SecurityPriceHist.objects\
+            .filter(ticker_sym=ticker)[0].issuer
+        found_entries = \
+            Signal.objects.filter(signal_name__in=signal_types)\
+            .filter(issuer=issuer).order_by('-signal_date')
+        num_of_records = found_entries.count()
+    elif ('search_text' in request.POST) and\
+            request.POST['search_text'].strip() == '':
+        found_entries = \
+            Signal.objects.filter(signal_name__in=signal_types)\
+            .order_by('-signal_date')
+        num_of_records = found_entries.count()
+
+    return render_to_response('sdapp/ajax_search.html',
+                              {'found_entries': found_entries,
+                               'num_of_records': num_of_records,
+                               'search_text': search_text,
+                               'ticker': ticker,
+                               },
                               )
 
 

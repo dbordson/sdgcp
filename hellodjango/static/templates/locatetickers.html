@@ -1,62 +1,39 @@
 <div class="col-md-6">
 
-
 <div class="panel panel-default">
   <div class="panel-heading"><h4>Search</h4></div>
     <div class="panel-body">
-    <form method='get' action="{% url 'screens' %}" >
-      
+    
+    <form method='post'>     
       <div>
-      <label for="sel2">Signal select list (hold shift to select more than one):</label>
-        <select multiple class="form-control" name="selectbox">
-          <option value="discretionarybuy" {% if dbuyactive %} selected {% endif %}>Discretionary Buy</option>
-          <option value="buyonweakness" {% if wbuyactive %} selected {% endif %}>Buy on Weakness</option>
+        <label for="sel2">Signal select list (hold shift to select more than one):</label>
+        <select multiple class="form-control" id="selectbox" name="selectbox">
+          <option value="discretionarybuy" id="discretionarybuy"{% if dbuyactive %} selected {% endif %}>Discretionary Buy</option>
+          <option value="buyonweakness" id="weaknessbuy"{% if wbuyactive %} selected {% endif %}>Buy on Weakness</option>
         </select>
       </div>
-      <div class="spacer10"></div>
-      
-        <input type="text" name="q" id="id_q" placeholder="Ticker (optional)" class="form-control">
+      <div class="spacer10"></div>       
+      <input type="text" id="search" placeholder="Ticker (optional)" class="form-control">
+
       <div class="spacer10"></div>
       <div>
-      
-          <button type="submit" value="Submit" class="btn btn-success btn">Search</button>
+        {% csrf_token %}
+        <button id="searchsubmit" class="btn btn-success btn" onclick="return false;">Search</button>
       </div>
-      <!--<span>-->
     </form>
+
     
   <div class="spacer10"></div>
 
-{% if query_string %}    
+<!-- The below div tag is important; ajax.js uses it to know what to do with search results  -->
+<div id="search-results">
 
-
-  {% if query_string == " " %}
-    <!--You searched all tickers.-->
-  {% else %}
-    You searched for "{{ query_string }}"
-  {% endif %}
-
-  <div class="panel panel-default">
-    <div class="panel-heading">Results</div>
-    <ul class="list-group">
-
-  {% if found_entries.exists %}    
-    
-    {% for signal in found_entries %}
-      <a class="list-group-item" href="/sdapp/{{ signal.sph.ticker_sym }}/">{{ signal.signal_date }} - {{ signal.sph.ticker_sym }}: {{ signal.short_statement }}</a>
-    {% endfor %}
-
-  {% elif ticker %}
-    <a class="list-group-item" href="/sdapp/{{ ticker }}/">Ticker matches {{ ticker }}, but no signals were found.</a>
-  {% else %}
-    <a class="list-group-item disabled">No signals found.</a>
-    
-  {% endif %}
-    </ul>
-    </div>
-
-{% endif %}
-  </div>
 </div>
+
+
+
+</div>
+  </div>
 </div>
 
 
