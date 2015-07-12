@@ -1,6 +1,7 @@
 from sdapp.models import Form345Entry
 from django.db.models import Sum
 from decimal import Decimal
+import django.db
 
 # Intro note: the way shares following transaction variable is defined is
 # confusing.  The logic tracks rolls forms forward by filing date and not by
@@ -87,7 +88,7 @@ for affiliation, short_sec_title, scrubbed_underlying_title,\
     # script works, but be careful to update the below if this changes.
     if adjusted_entries_of_this_type.exists():
         starting_shares =\
-            adjusted_entries_of_this_type[0].shares_following_xn_is_adjusted
+            adjusted_entries_of_this_type[0].shares_following_xn
         starting_adjustment_factor =\
             adjusted_entries_of_this_type[0].adjustment_factor
     else:
@@ -102,6 +103,7 @@ for affiliation, short_sec_title, scrubbed_underlying_title,\
         # shares held for this form.
         shares_acquired_disposed =\
             formentries.exclude(xn_acq_disp_code=None)\
+            .exclude(transaction_shares=None)\
             .order_by('-transaction_number')\
             .values_list('xn_acq_disp_code',
                          'transaction_shares',
@@ -183,9 +185,9 @@ for affiliation, short_sec_title, scrubbed_underlying_title,\
             formentry.shares_following_xn = temp_shares_remaining
             formentry.save()
 
-            if xn_acq_disp_code == 'A':
+            if xn_acq_disp_code == 'A' and transaction_shares is not None:
                 temp_shares_remaining -= transaction_shares
-            if xn_acq_disp_code == 'D':
+            if xn_acq_disp_code == 'D' and transaction_shares is not None:
                 temp_shares_remaining += transaction_shares
 
             succeeding_adjustment_factor = adjustment_factor
@@ -194,5 +196,6 @@ for affiliation, short_sec_title, scrubbed_underlying_title,\
         starting_adjustment_factor = ending_adjustment_factor
 
     entries_of_this_type.update(shares_following_xn_is_adjusted=True)
+    django.db.reset_queries()
 
 print 'done.'

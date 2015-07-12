@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+
+<div class="col-md-12">
+  <div class="page-header">
+    <h1>Dashboard</h1>
+  </div>
+</div>
+
+{% include 'locatetickers.html' %}
+
+<div class="col-md-6">
+
+    <div class="panel panel-default">
+    <div class="panel-heading">
+    <div class="row">
+    <div class="col-md-10">
+    <h4>Watchlist</h4>
+    </div>
+    <div class="col-md-2">
+      <div class="pull-right"><a class="btn glyphicon glyphicon-cog" href='{% url "managewatchlist" %}' role="button" aria-hidden="true"></a>
+      </div>
+    </div>
+    </div>
+    </div>
+    <ul class="list-group">
+
+    {% for name in watchlist %}
+      {% if name.last_signal_sent != None %}
+      <a class="list-group-item" href="/sdapp/{{ name.securitypricehist.ticker_sym }}/">{{ name.securitypricehist.ticker_sym }} - last signal {{ name.last_signal_sent }}</a>
+
+      {% else %}
+      <a class="list-group-item" href="/sdapp/{{ name.securitypricehist.ticker_sym }}/">{{ name.securitypricehist.ticker_sym }} - No signals</a>   
+      {% endif %}
+    {% empty %}
+      <a class="list-group-item disabled">No names followed.</a>
+    {% endfor %}
+    </ul>
+    </div>
+
+</div>
+
+
+<!-- Note that the below </div> tag is unmatched and closes a row opened in base.html.  The row following it is closed in the base.html file-->
+</div>
+<div class="row">
+
+
+<div class="col-md-6">
+  <div class="panel panel-default">
+    <div class="panel-heading"><h4>Browse Tickers</h4></div>
+    <div class="list-group">
+      <a href='{% url "index" %}' class="list-group-item">All Tickers</a>
+    </div>
+  </div>
+</div>
+
+
+<div class="col-md-6">
+  <div class="panel panel-default">
+    <div class="panel-heading"><h4>List by Signal</h4></div>
+    <div class="list-group">
+          <a href="/sdapp/screens/dbuy" class="list-group-item">Discretionary Buy</a>
+          <a href="/sdapp/screens/wbuy" class="list-group-item">Buys on Price Weakness</a>
+          <a href="#" class="list-group-item">?</a>
+          <a href="#" class="list-group-item">?</a>
+    </div>
+  </div>
+</div>
+<!--<form method="get" action="{% url 'screens' %}">
+          
+
+<label for="id_q">Search:</label>
+           <input type="text" name="q" id="id_q"/>
+           <input type="submit" value="Submit"/>
+
+
+        </form> -->
+
+
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+
+<h1>{{person_name}} ({{person_title}}): Summary of {{ ticker }} Holdings</h1>
+
+<table border="1" cellspacing="0" cellpadding="1" style="width:200px">
+    <thead>
+        <th style="text-align:left;"  colspan="6">Non-Derivative Holdings</th>
+    </thead>
+    <thead>
+        <th>short_sec_title</th>
+        <th>ticker</th>
+        <th>last_close_price</th>
+        <th>units_held</th>
+        <th>intrinsic_value</th>
+        <th>most_recent_xn</th>
+
+    </thead>
+
+    {% for entry in nonderivativeholdings %}
+    <tr>
+        <td style="text-align:center;">{{ entry.short_sec_title }}</td>
+        <td style="text-align:center;">{{ entry.ticker }}</td>
+        <td style="text-align:center;">{{ entry.last_close_price }}</td>
+        <td style="text-align:center;">{{ entry.units_held }}</td>
+        <td style="text-align:center;">{{ entry.intrinsic_value }}</td>
+        <td style="text-align:center;">{{ entry.most_recent_xn }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<table border="1" cellspacing="0" cellpadding="1" style="width:200px">
+    <thead>
+        <th style="text-align:left;"  colspan="12">Derivative Holdings</th>
+    </thead>
+    <thead>
+        <th>short_sec_title</th>
+        <th>units_held</th>
+        <th>intrinsic_value</th>
+        <th>wavg_expiration_date</th>
+        <th>min_conversion_price</th>
+        <th>max_conversion_price</th>
+        <th>wavg_conversion</th>
+        <th>scrubbed_underlying_title</th>
+        <th>underlying_ticker</th>
+        <th>underlying_shares_total</th>
+        <th>underlying_close_price</th>
+        <th>most_recent_xn</th>
+    </thead>
+
+    {% for entry in derivativeholdings %}
+    <tr>
+        <td style="text-align:center;">{{ entry.short_sec_title }}</td>
+        <td style="text-align:center;">{{ entry.units_held }}</td>
+        <td style="text-align:center;">{{ entry.intrinsic_value }}</td>
+        <td style="text-align:center;">{{ entry.wavg_expiration_date }}</td>
+        <td style="text-align:center;">{{ entry.min_conversion_price }}</td>
+        <td style="text-align:center;">{{ entry.max_conversion_price }}</td>
+        <td style="text-align:center;">{{ entry.wavg_conversion }}</td>
+        <td style="text-align:center;">{{ entry.scrubbed_underlying_title }}</td>
+        <td style="text-align:center;">{{ entry.underlying_ticker }}</td>
+        <td style="text-align:center;">{{ entry.underlying_shares_total }}</td>
+        <td style="text-align:center;">{{ entry.underlying_close_price }}</td>
+        <td style="text-align:center;">{{ entry.most_recent_xn }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<p>Note: Omits holdings in other entities.<p>
+
+
+{% endblock %}

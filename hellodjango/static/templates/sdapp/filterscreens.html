@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+
+
+<h1>Discretionary Buy Signals</h1>
+
+<p>Discretionary buys by executives foreshadow outperformance [X]% of the time</p>
+{% if screenlist.exists %}
+    <ul>
+    {% for signal in screenlist %}
+        <li><a href="/sdapp/{{ signal.sph.ticker_sym }}/">{{ signal.signal_date }} - {{ signal.sph.ticker_sym }}: {{ signal.short_statement }}</a></li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No signals are available.</p>
+{% endif %}
+
+
+  <form action="{% url 'filterintermed' %}" method='post' action='' class="col-md-4"> {% csrf_token %}
+    <div class="form-group">
+      <input type="text" name="cik_num" placeholder="CIK" class="form-control">
+    <span>
+    <label class="checkbox-inline"><input type="checkbox" name="discretionarybuy" value="">Discretionary Buy</label>
+    <label class="checkbox-inline"><input type="checkbox" name="buyonweakness" value="">Buy on Weakness</label>
+    </span>
+    </div>
+    <button type="submit" class="btn">Submit</button>
+  </form>
+
+
+
+
+
+{% endblock %}

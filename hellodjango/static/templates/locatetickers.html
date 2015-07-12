@@ -1,0 +1,43 @@
+<div class="col-md-6">
+
+<div class="panel panel-default">
+  <div class="panel-heading"><h4>Search</h4></div>
+    <div class="panel-body">
+    
+    <form method='post'>     
+      <div>
+        <label for="sel2">Signal select list (hold shift to select more than one):</label>
+        <select multiple class="form-control" id="selectbox" name="selectbox">
+          <option value="discretionarybuy" id="discretionarybuy" selected>Discretionary Buy</option>
+          <option value="buyonweakness" id="weaknessbuy" selected>Buy on Weakness</option>
+        </select>
+      </div>
+      <div class="spacer10"></div>       
+      <input type="text" id="search" placeholder="Ticker (optional)" class="form-control">
+
+      <div class="spacer10"></div>
+      <div>
+        {% csrf_token %}
+        <button id="searchsubmit" class="btn btn-success btn" onclick="return false;">Search</button>
+      </div>
+    </form>
+
+    
+  <div class="spacer10"></div>
+
+<!-- The below div tag is important; ajax.js uses it to know what to do with search results  -->
+<div id="search-results">
+
+</div>
+
+
+
+</div>
+  </div>
+</div>
+
+
+
+
+
+

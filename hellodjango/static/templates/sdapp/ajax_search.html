@@ -1,0 +1,42 @@
+<!-- This code formats the screen results received by static/js/ajax.js (remember there are 2, one in statcfiles/static/ and one in hellodjango/static/) -->
+
+<div class="modal fade" id="resultsmodal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+
+
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Search Results <span class="label label-default">{{num_of_records}}</span></h4>
+      </div>
+
+
+      <div class="modal-body">
+
+      {% if found_entries.exists %}    
+        
+        {% for signal in found_entries %}
+          <a class="list-group-item" href="/sdapp/{{ signal.sph.ticker_sym }}/">{{ signal.signal_date }} - {{ signal.sph.ticker_sym }}: {{ signal.short_statement }}</a>
+        {% endfor %}
+
+      {% elif ticker %}
+        <a class="list-group-item" href="/sdapp/{{ ticker }}/">Ticker matches {{ ticker }}, but no signals were found.</a>
+
+      {% elif search_text == "" %}
+        <a class="list-group-item disabled">No signals were found.</a>
+
+      {% else %}
+        <a class="list-group-item disabled">You searched for "{{ search_text }}".  This ticker is not in our database.</a>
+    
+      {% endif %}
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+

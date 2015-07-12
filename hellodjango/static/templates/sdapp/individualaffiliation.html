@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+
+<h1>Holdings of {{affiliation.person_name}} in {{ ticker_sym }}</h1>
+
+<table border="1" cellspacing="0" cellpadding="1" style="width:200px">
+    <thead>
+        <th>issuer</th>
+        <th>owner</th>
+        <th>affiliation</th>
+        <th>security_title</th>
+        <th>units_held</th>
+        <th>deriv_or_nonderiv</th>
+        <th>conversion_price</th>
+        <th>expiration_date</th>
+        <th>underlying_title</th>
+        <th>underlying_shares</th>
+        <th>first_xn</th>
+        <th>most_recent_xn</th>
+    </thead>
+
+    {% for entry in holdinglist %}
+    <tr>
+        <td style="text-align:center;">{{ entry.issuer }}</td>
+        <td style="text-align:center;">{{ entry.owner }}</td>
+        <td style="text-align:center;">{{ entry.affiliation }}</td>
+        <td style="text-align:center;">{{ entry.security_title }}</td>
+        <td style="text-align:center;">{{ entry.units_held }}</td>
+        <td style="text-align:center;">{{ entry.deriv_or_nonderiv }}</td>
+        <td style="text-align:center;">{{ entry.conversion_price }}</td>
+        <td style="text-align:center;">{{ entry.expiration_date }}</td>
+        <td style="text-align:center;">{{ entry.underlying_title }}</td>
+        <td style="text-align:center;">{{ entry.underlying_shares }}</td>
+        <td style="text-align:center;">{{ entry.first_xn }}</td>
+        <td style="text-align:center;">{{ entry.most_recent_xn }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<p>Note: Omits holdings in other entities.<p>
+
+
+{% endblock %}

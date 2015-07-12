@@ -1,0 +1,52 @@
+.jumbotron {
+
+}
+
+.panel > .panel-heading {
+    background-image: none;
+    background-color: #94B8B8;
+
+}
+
+/*.success {
+    background: green;
+    text-align: center;
+}*/
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Ubuntu', Georgia, Times, serif;
+}
+table, p, div {
+    font-family: 'Vollkorn', Helvetica, Arial, sans-serif;
+}
+
+h1 { 
+    text-shadow: 1px 1px 1px #ccc;
+}
+.navbar { 
+    box-shadow: 0 0 .5em .5em #ccc;
+}
+
+.spacer10 { 
+    height: 10px; width: 100%; font-size: 0; margin: 0; padding: 0; border: 0; display: block; 
+}
+
+.spacer12 { 
+    height: 12px; width: 100%; font-size: 0; margin: 0; padding: 0; border: 0; display: block; 
+}
+
+.spacer15 { 
+    height: 15px; width: 100%; font-size: 0; margin: 0; padding: 0; border: 0; display: block; 
+}
+
+.spacer20 { 
+    height: 20px; width: 100%; font-size: 0; margin: 0; padding: 0; border: 0; display: block; 
+}
+
+.anchor{
+    padding-top: 90px; margin-top: -90px;"
+}
+
+.borderless tbody tr td, .borderless tbody tr th, .borderless thead tr th {
+    border: none;
+}
