@@ -21,28 +21,9 @@
     <div class="panel-heading"><h4>Names</h4></div>
     <div class="list-group">
 
-{% if watchlist.exists %}
 
-  {% for name in watchlist %}
-    {% if name.last_signal_sent != None %}
-      <li class="list-group-item" href="/sdapp/{{ name.securitypricehist.ticker_sym }}/">
-        <a class="btn glyphicon glyphicon-remove-circle" href="/../../sdapp/{{ name.securitypricehist.ticker_sym }}/watchtoggle" role="button" aria-hidden="true"></a>
-        <a href="/../../sdapp/{{ name.securitypricehist.ticker_sym }}">{{ name.securitypricehist.ticker_sym }} - last signal {{ name.last_signal_sent }}</a>
-      </li>
+{% include 'sdapp/includewatchlist.html' %}
 
-      {% else %}
-      <li class="list-group-item" href="/sdapp/{{ name.securitypricehist.ticker_sym }}/">
-        <a class="btn glyphicon glyphicon-remove-circle" href="/../../sdapp/{{ name.securitypricehist.ticker_sym }}/watchtoggle" role="button" aria-hidden="true"></a>
-        <a href="/../../sdapp/{{ name.securitypricehist.ticker_sym }}">{{ name.securitypricehist.ticker_sym }} - No recent signals</a>
-
-      </li>
-    {% endif %}
-  {% endfor %}
-{% else %}
-      <div class="list-group-item disabled">
-        No names followed.
-      </div>  
-{% endif %}
 
     </div>
   </div>

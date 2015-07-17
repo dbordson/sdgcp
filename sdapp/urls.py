@@ -4,7 +4,7 @@ from django.conf.urls import patterns, url
 from sdapp.views import options, formentrydetail, screens,\
     holdingdetail, byperson, holdingtable, personholdingtable,\
     discretionarybuy, weaknessbuy, filterintermed, watchtoggle,\
-    index, tickersearch, drilldown, searchsignals
+    index, tickersearch, drilldown, searchsignals, watchlisttoggle
 
 
 urlpatterns = \
@@ -20,6 +20,7 @@ urlpatterns = \
         url(r'^$', screens, name='screens'),
         url(r'^index', index, name='index'),
         url(r'^tickersearch/', tickersearch, name='tickersearch'),
+        url(r'^watchtoggle/', watchtoggle, name='watchtoggle'),
         url(r'^filter-intermed/$', filterintermed, name='filterintermed'),
         # url(r'^screens/([\w-]+)/$',
         #     filterscreens.as_view(context_object_name='screenlist')),
@@ -28,7 +29,7 @@ urlpatterns = \
         url(r'^search/', searchsignals),
         url(r'^(?P<ticker>\w+)/$', options, name='options'),
         url(r'^(?P<ticker>\w+)/drilldown$', drilldown, name='drilldown'),
-        url(r'^(?P<ticker>\w+)/watchtoggle$', watchtoggle, name='watchtoggle'),
+
         url(r'^(?P<ticker>\w+)/formentries$', formentrydetail,
             name='formentrydetail'),
         url(r'^(?P<ticker>\w+)/holdings$', holdingdetail,
@@ -40,4 +41,5 @@ urlpatterns = \
         url(r'^(?P<ticker>\w+)/(?P<owner>\w+)/byperson$',
             personholdingtable,
             name='personholdingtable'),
+        url(r'^(?P<ticker>\w+)/watchlisttoggle/', watchlisttoggle, name='watchlisttoggle'),
         )

@@ -218,7 +218,70 @@ def drilldown(request, ticker):
 
 
 @login_required()
-def watchtoggle(request, ticker):
+def watchtoggle(request):
+    issuer = None
+    # Handles arrival of request to bounce the user somewhere else
+    # if they aren't carrying the right kind of data
+    if request.method == "POST"\
+            and 'ticker' in request.POST:
+        ticker = request.POST['ticker']
+        common_stock_security = \
+            Security.objects.get(ticker=ticker)
+        issuer = common_stock_security.issuer
+        watchedname = WatchedName.objects.filter(issuer=issuer)\
+            .filter(user__username=request.user.username)
+    if issuer is None and 'HTTP_REFERER' in request.META:
+        return redirect(request.META['HTTP_REFERER'])
+    elif issuer is None:
+        return redirect('/sdapp/')
+
+    if watchedname.exists():
+        watchedname.delete()
+    else:
+        sph = SecurityPriceHist.objects.filter(ticker_sym=ticker)[0]
+        signals = Signal.objects.filter(issuer=issuer)
+        if signals.exists():
+            last_signal_sent = signals.latest('signal_date').signal_date
+        else:
+            last_signal_sent = None
+        WatchedName(user=request.user,
+                    issuer=issuer,
+                    securitypricehist=sph,
+                    ticker_sym=ticker,
+                    last_signal_sent=last_signal_sent).save()
+    return render_to_response('sdapp/watchtoggle.html',
+                              {'watchedname': watchedname,
+                               'ticker': ticker,
+                               },
+                              )
+
+    #     if 'HTTP_REFERER' in request.META:
+    #         url = request.META['HTTP_REFERER']
+    #         if url.find('/?') != -1:
+    #             url = url[:url.find('/?')]
+    #         return redirect(url)
+    #     return HttpResponseRedirect('/sdapp/' + str(ticker))
+    # else:
+    #     sph = SecurityPriceHist.objects.filter(ticker_sym=ticker)[0]
+    #     signals = Signal.objects.filter(issuer=issuer)
+    #     if signals.exists():
+    #         last_signal_sent = signals.latest('signal_date').signal_date
+    #     else:
+    #         last_signal_sent = None
+    #     WatchedName(user=request.user,
+    #                 issuer=issuer,
+    #                 securitypricehist=sph,
+    #                 ticker_sym=ticker,
+    #                 last_signal_sent=last_signal_sent).save()
+    #     messagetext = \
+    #         'Added to watchlist'
+    #     messages.info(request, messagetext)
+    #     if 'HTTP_REFERER' in request.META:
+    #         return redirect(request.META['HTTP_REFERER'])
+    #     return HttpResponseRedirect('/sdapp/' + str(ticker))
+
+@login_required()
+def watchlisttoggle(request, ticker):
     common_stock_security = \
         Security.objects.get(ticker=ticker)
     issuer = common_stock_security.issuer
@@ -228,9 +291,7 @@ def watchtoggle(request, ticker):
     print 'watchedname.exists()', watchedname.exists()
     if watchedname.exists():
         watchedname.delete()
-        messagetext = \
-            'Removed from watchlist'
-        messages.info(request, messagetext)
+
         if 'HTTP_REFERER' in request.META:
             url = request.META['HTTP_REFERER']
             if url.find('/?') != -1:
@@ -249,9 +310,6 @@ def watchtoggle(request, ticker):
                     securitypricehist=sph,
                     ticker_sym=ticker,
                     last_signal_sent=last_signal_sent).save()
-        messagetext = \
-            'Added to watchlist'
-        messages.info(request, messagetext)
         if 'HTTP_REFERER' in request.META:
             return redirect(request.META['HTTP_REFERER'])
         return HttpResponseRedirect('/sdapp/' + str(ticker))

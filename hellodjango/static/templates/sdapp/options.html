@@ -3,9 +3,10 @@
 {% load humanize %}
 
 {% block content %}
-<script src="/../static/static/js/jquery.js"></script>
+<!--<script src="/../static/static/js/jquery.js"></script>-->
 <script type="text/javascript"
   src="/../static/static/js/dygraph-combined-dev.js"></script>
+<script src="/../static/static/js/ajaxwatchedname.js"></script>
 
 <style type="text/css">
 #div_g {
@@ -31,14 +32,11 @@
   <div class="spacer20"></div>
   <div class="pull-right">
   
-  {% if watchedname.exists %}
-  <a class="btn btn-default" href="watchtoggle" role="button">
-    <span class="glyphicon glyphicon-star" aria-hidden="true"></span> Receiving Alerts</a>
-  {% else %}
-  <a class="btn btn-default" href="watchtoggle" role="button">
-    <span class="glyphicon glyphicon-star-empty" aria-hidden="true"></span> Not Receiving Alerts</a>
-  {% endif %}
-
+  <div id="watchstatus{{ ticker }}">
+  {% csrf_token %}
+  
+  {% include 'sdapp/watchtoggle.html' %}
+  </div>
   <div class="spacer20"></div>
   </div>
 </div>

@@ -1,0 +1,6 @@
+  <a class="btn btn-default" role="button" id="watchtoggle" data-ticker="{{ ticker }}" onclick="return false;">
+    {% if watchedname.exists %}<span class="glyphicon glyphicon-star" aria-hidden="true"></span> On Watchlist
+    {% else %}
+    <span class="glyphicon glyphicon-star-empty" aria-hidden="true"></span> Not On Watchlist
+  {% endif %}
+  </a>
