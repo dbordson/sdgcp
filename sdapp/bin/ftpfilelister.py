@@ -21,6 +21,8 @@ def filepathfinder(line):
     filepathend = len(line)
     return line[filepathstart:filepathend].rstrip()
 
+
+
 print "Building a list of form filepaths..."
 
 cik_num_set = set(IssuerCIK.objects.values_list('cik_num', flat=True))
@@ -53,6 +55,8 @@ for index in qindexfilelist:
                 # print 'len(secfileset)'
                 # print len(secfileset)
 secfilestring = ','.join(secfileset)
+print "Deleting old lists of form filepaths..."
+FTPFileList.objects.all().delete()
 print 'Saving ...'
 FTPFileList(files=secfilestring).save()
 print 'Done'

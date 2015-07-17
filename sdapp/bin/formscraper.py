@@ -23,6 +23,8 @@ def ftplogin():
         print "Connected"
         return ftp
     except:
+        e = sys.exc_info()[0]
+        print "Error: %s" % e
         print "Cannot connect"
         exit(0)
 

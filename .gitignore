@@ -5,5 +5,9 @@ staticfiles
 .DS_Store
 emailaddress.txt
 *.DS_Store
+<<<<<<< HEAD
 settings.py
 emailpw.py
+=======
+emailpw.py
+>>>>>>> 0e29c0979d12cff71db0ab527f0788523698410a

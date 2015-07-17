@@ -1,0 +1,9 @@
+<p>We have detected a new signals:<br>
+  <br>
+  {% for signal in signals %}
+    {{ signal.sph.ticker_sym }} - {{ signal.short_statement }}. Click <a href='{{ app_url}}{{ signal.sph.ticker_sym }}'>here</a> for more information. <br>
+     <br>
+  {% endfor %}
+  <br>
+  Regards, [TEAM NAME]
+</p>

@@ -1,4 +1,4 @@
-from sdapp.models import (ReportingPerson, Form345Entry,
+from sdapp.models import (ReportingPerson, Form345Entry, IssuerCIK,
                           Affiliation, Security, SecurityPriceHist)
 # from django.db import connection
 import datetime
@@ -55,6 +55,22 @@ def intrinsicvalcalc(conv_vector, unitsvector, underlyingprice):
             sum(float(p) * float(q)
                 for p, q in zip(inthemoneyvector, unitsvector))
         return dotproduct
+
+
+def add_new_issuer_names():
+    print 'Adding new IssuerCIK object names...'
+    print '    Sorting, adding and saving...',
+    issuer_object_set_to_update =\
+        IssuerCIK.objects.filter(name=None)
+
+    for issuer in issuer_object_set_to_update:
+        forms = Form345Entry.objects.filter(issuer_cik=issuer)
+        if forms.exists():
+            name = Form345Entry.objects.filter(issuer_cik=issuer)\
+                .latest('filedatetime').issuer_name
+            issuer.name = name
+            issuer.save()
+    print 'Done.'
 
 
 def update_reportingpersons():
@@ -466,6 +482,7 @@ def populate_conversion_factors():
 
 
 updatetitles.update_short_titles()
+add_new_issuer_names()
 update_reportingpersons()
 update_affiliations()
 link_entries_for_reporting_person_and_affiliation_foreign_keys()

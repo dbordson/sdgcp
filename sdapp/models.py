@@ -1,11 +1,13 @@
 from django.db import models
 from decimal import Decimal
+from django.contrib.auth.models import User
 # class StockHistories(models.Model):
 #
 
 
 class IssuerCIK(models.Model):
     cik_num = models.IntegerField(primary_key=True)
+    name = models.CharField(max_length=80, null=True)
     # Adapt this for companies with more than one public stock (GOOG)
     # to do this, we will need to update the ticker finder script
 
@@ -106,6 +108,20 @@ class TransactionEvent(models.Model):
                                 str(self.period_end))
 
 
+class WatchedName(models.Model):
+    user = models.ForeignKey(User)
+    issuer = models.ForeignKey(IssuerCIK)
+    securitypricehist = models.ForeignKey(SecurityPriceHist)
+    ticker_sym = models.CharField(max_length=10)
+    last_signal_sent = models.DateField(null=True)
+
+    def __unicode__(self):
+        return u"%s, %s, %s" % (str(self.user),
+                                str(self.issuer),
+                                str(self.ticker_sym),
+                                )
+
+
 class ReportingPersonAtts(models.Model):
     reporting_person = models.ForeignKey(ReportingPerson)
     transactions = models.IntegerField()
@@ -178,11 +194,24 @@ class Signal(models.Model):
                                           null=True)
     short_statement = models.CharField(max_length=200, default='ERROR')
     long_statement = models.CharField(max_length=200, default='ERROR')
+    signal_id_code = models.CharField(max_length=80)
+    signal_is_new = models.BooleanField()
 
     def __unicode__(self):
         return u"%s, %s, %s" % (str(self.reporting_person),
                                 str(self.signal_name),
                                 str(self.signal_date))
+
+
+class Recommendation(models.Model):
+    issuer = models.ForeignKey(IssuerCIK)
+    sentiment = models.CharField(max_length=20, default='ERROR')
+    confidence = models.CharField(max_length=20, default='ERROR')
+
+    def __unicode__(self):
+        return u"%s, %s, %s" % (str(self.issuer),
+                                str(self.sentiment),
+                                str(self.confidence))
 
 
 class SecurityView(models.Model):

@@ -521,8 +521,8 @@ def build_security_views_by_affiliation():
                               scrubbed_underlying_title=sec_obj
                               .scrubbed_underlying_title,
                               underlying_ticker=underlying_ticker,
-                              underlying_shares_total=
-                              rd(underlying_shares_total, s_id),
+                              underlying_shares_total=rd(
+                                underlying_shares_total, s_id),
                               underlying_close_price=rd(underlying_close_price,
                                                         s_id),
                               intrinsic_value=rd(intrinsic_value, s_id),
