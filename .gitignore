@@ -6,3 +6,4 @@ staticfiles
 emailaddress.txt
 *.DS_Store
 settings.py
+emailpw.py
