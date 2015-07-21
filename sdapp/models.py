@@ -363,6 +363,7 @@ class Form345Entry(models.Model):
     tenbfive_note = models.IntegerField(null=True)
     transaction_number = models.IntegerField(null=True)
     sec_path = models.CharField(max_length=150, null=True)
+    sec_url = models.CharField(max_length=150, null=True)
     five_not_subject_to_section_sixteen = models.IntegerField(null=True)
     five_form_three_holdings = models.IntegerField(null=True)
     five_form_four_transactions = models.IntegerField(null=True)

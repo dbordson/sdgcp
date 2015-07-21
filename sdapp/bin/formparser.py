@@ -161,7 +161,7 @@ def b_att(treeobject, path):
 
 
 def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilepath,
-          tenbfivenotenames, filingdatetimestring, list_of_ciks):
+          sec_url, tenbfivenotenames, filingdatetimestring, list_of_ciks):
     a = Form345Entry()
 
     a.period_of_report = d_att(root, 'periodOfReport')
@@ -227,6 +227,7 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilepath,
 
     a.transaction_number = entrynumber
     a.sec_path = xmlfilepath
+    a.sec_url = sec_url
     a.five_not_subject_to_section_sixteen =\
         i_att(root, 'notSubjectToSection16')
     a.five_form_three_holdings = i_att(root, 'form3HoldingsReported')
@@ -277,10 +278,41 @@ def filingdatetimepull(textstring):
         return "error!"
 
 
+def extracturl(sec_path, textstring):
+    schemacodelocation = textstring.find('<schemaVersion>')\
+        + len('<schemaVersion>')
+    first_three_digits_of_schema_code =\
+        textstring[schemacodelocation:schemacodelocation+3]
+    code = first_three_digits_of_schema_code
+
+    accession_number_start =\
+        textstring.find('<SEC-DOCUMENT>') + len('<SEC-DOCUMENT>')
+    accession_number_end = textstring.find('.', accession_number_start)
+    accession_number = textstring[accession_number_start:accession_number_end]
+    accession_number_no_dashes = accession_number.replace('-', '')
+
+    filename_start = textstring.find('<FILENAME>') + len('<FILENAME>')
+    filename_end = textstring.find('.', filename_start)
+    formfilename = textstring[filename_start:filename_end]
+
+    cik_start = textstring.find('<issuerCik>') + len('<issuerCik>')
+    cik_end = textstring.find('</issuerCik>', cik_start)
+    cik = str(int(textstring[cik_start:cik_end]))
+
+    url = 'http://www.sec.gov/Archives/edgar/data/' + cik + '/'\
+        + accession_number_no_dashes + '/xslF345' + code + '/'\
+        + formfilename + '.xml'
+    return url
+
+
 def formcrawl(fullformobject, list_of_ciks):
     textstring = fullformobject.text
     xmlfilepath = fullformobject.sec_path
-
+    try:
+        sec_url = extracturl(fullformobject.sec_path, textstring)
+    except:
+        # print "Error, could not find form with path:", xmlfilepath
+        sec_url = None
     # Pulls xml out of the full form text
     filingdatetimestring = filingdatetimepull(textstring)
     startxml = textstring.find('<XML>') + 5
@@ -304,7 +336,7 @@ def formcrawl(fullformobject, list_of_ciks):
         deriv_or_nonderiv = 'N'
         for child2 in child.findall("./"):
             entry = parse(root, child, child2, NonDerivEntryNumber,
-                          deriv_or_nonderiv, xmlfilepath,
+                          deriv_or_nonderiv, xmlfilepath, sec_url,
                           tenbfivenotenames, filingdatetimestring,
                           list_of_ciks)
             formentries.append(entry)
@@ -315,7 +347,7 @@ def formcrawl(fullformobject, list_of_ciks):
         deriv_or_nonderiv = 'D'
         for child2 in child.findall('./'):
             entry = parse(root, child, child2, DerivEntryNumber,
-                          deriv_or_nonderiv, xmlfilepath,
+                          deriv_or_nonderiv, xmlfilepath, sec_url,
                           tenbfivenotenames, filingdatetimestring,
                           list_of_ciks)
             formentries.append(entry)
@@ -335,7 +367,8 @@ def formentryinsert():
     # not parsed.
     paths_to_parse =\
         storedformpathset - (storedformpathset & parsedformpathset)
-
+    storedformpathset = set()
+    parsedformpathset = set()
     forms_to_parse =\
         FullForm.objects.filter(pk__in=list(paths_to_parse))
     # SHOULD THIS BE CHANGED TO LIMIT THE QS SIZE?

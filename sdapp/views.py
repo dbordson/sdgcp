@@ -156,7 +156,7 @@ def drilldown(request, ticker):
         Form345Entry.objects.filter(issuer_cik=issuer)\
         .filter(filedatetime__gte=startdate)
     persons_for_radio =\
-        recententries_qs\
+        recententries_qs.exclude(reporting_owner_cik=None)\
         .values('reporting_owner_name', 'reporting_owner_cik')\
         .order_by('reporting_owner_name').distinct()
     # Creates variable to be used to filter by person
@@ -175,7 +175,8 @@ def drilldown(request, ticker):
                 'transaction_shares', 'security_title',
                 'xn_price_per_share', 'conversion_price', 'sec_path',
                 'form_type', 'reported_shares_following_xn',
-                'is_director', 'is_officer', 'is_ten_percent')
+                'is_director', 'is_officer', 'is_ten_percent', 'sec_url',
+                'entry_internal_id')
     # Creates variable to filter graph by person
     if selected_person is None:
         persons_data =\
@@ -279,6 +280,7 @@ def watchtoggle(request):
     #     if 'HTTP_REFERER' in request.META:
     #         return redirect(request.META['HTTP_REFERER'])
     #     return HttpResponseRedirect('/sdapp/' + str(ticker))
+
 
 @login_required()
 def watchlisttoggle(request, ticker):

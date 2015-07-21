@@ -41,5 +41,6 @@ urlpatterns = \
         url(r'^(?P<ticker>\w+)/(?P<owner>\w+)/byperson$',
             personholdingtable,
             name='personholdingtable'),
-        url(r'^(?P<ticker>\w+)/watchlisttoggle/', watchlisttoggle, name='watchlisttoggle'),
+        url(r'^(?P<ticker>\w+)/watchlisttoggle/', watchlisttoggle,
+            name='watchlisttoggle'),
         )
