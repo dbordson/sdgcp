@@ -29,10 +29,10 @@
 
     {% for name in watchlist %}
       {% if name.last_signal_sent != None %}
-      <a class="list-group-item" href="/sdapp/{{ name.securitypricehist.ticker_sym }}/">{{ name.securitypricehist.ticker_sym }} - last signal {{ name.last_signal_sent }}</a>
+      <a class="list-group-item" href="{% url 'options' name.securitypricehist.ticker_sym %}">{{ name.securitypricehist.ticker_sym }} - last signal {{ name.last_signal_sent }}</a>
 
       {% else %}
-      <a class="list-group-item" href="/sdapp/{{ name.securitypricehist.ticker_sym }}/">{{ name.securitypricehist.ticker_sym }} - No signals</a>   
+      <a class="list-group-item" href="{% url 'options' name.securitypricehist.ticker_sym %}">{{ name.securitypricehist.ticker_sym }} - No signals</a>   
       {% endif %}
     {% empty %}
       <a class="list-group-item disabled">No names followed.</a>
@@ -62,8 +62,8 @@
   <div class="panel panel-default">
     <div class="panel-heading"><h4>List by Signal</h4></div>
     <div class="list-group">
-          <a href="/sdapp/screens/dbuy" class="list-group-item">Discretionary Buy</a>
-          <a href="/sdapp/screens/wbuy" class="list-group-item">Buys on Price Weakness</a>
+          <a href="{% url 'discretionarybuy' %}" class="list-group-item">Discretionary Buy</a>
+          <a href="{% url 'weaknessbuy' %}" class="list-group-item">Buys on Price Weakness</a>
           <a href="#" class="list-group-item">?</a>
           <a href="#" class="list-group-item">?</a>
     </div>

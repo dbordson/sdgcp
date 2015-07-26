@@ -5,7 +5,7 @@
 
 <div class="col-md-10">
   <h1>{{ ticker }} {{ headtitle }} (CIK: {{ issuer_pk }}) </h1>
-  <a href="/sdapp/{{ ticker }}">(Go to smart view)</a>
+  <a href="{% url 'options' ticker %}">(Go to smart view)</a>
   <div class="spacer10"></div>
 </div>
 <div class="col-md-2">

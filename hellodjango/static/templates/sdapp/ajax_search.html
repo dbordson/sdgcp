@@ -16,11 +16,11 @@
       {% if found_entries.exists %}    
         
         {% for signal in found_entries %}
-          <a class="list-group-item" href="/sdapp/{{ signal.sph.ticker_sym }}/">{{ signal.signal_date }} - {{ signal.sph.ticker_sym }}: {{ signal.short_statement }}</a>
+          <a class="list-group-item" href="{% url 'options' signal.sph.ticker_sym %}">{{ signal.signal_date }} - {{ signal.sph.ticker_sym }}: {{ signal.short_statement }}</a>
         {% endfor %}
 
       {% elif ticker %}
-        <a class="list-group-item" href="/sdapp/{{ ticker }}/">Ticker matches {{ ticker }}, but no signals were found.</a>
+        <a class="list-group-item" href="{% url 'options' ticker %}">Ticker matches {{ ticker }}, but no signals were found.</a>
 
       {% elif search_text == "" %}
         <a class="list-group-item disabled">No signals were found.</a>

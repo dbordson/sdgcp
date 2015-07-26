@@ -6,7 +6,7 @@
 
 <div class="col-md-10">
   <h1>{{ issuer_name }} Holding Table ({{ ticker }})</h1>
-  <a href="/sdapp/{{ ticker }}">(Go to smart view)</a>
+  <a href="{% url 'options' ticker %}">(Go to smart view)</a>
   <div class="spacer10"></div>
 </div>
 <div class="col-md-2">
@@ -43,7 +43,7 @@
     </thead>
     {% for holding in holdings %}
     <tr>
-        <td style="text-align:center;"><a href="/sdapp/{{ ticker }}/{{ holding.owner_id }}/byperson">{{ holding.person_name }}</a></td>
+        <td style="text-align:center;"><a href="{% url 'personholdingtable' ticker holding.owner_id %}">{{ holding.person_name }}</a></td>
         <td style="text-align:center;">{{ holding.person_title }}</td>
         <td style="text-align:right;">{{ holding.units_held }}</td>
         <td style="text-align:center;">{{ holding.most_recent_xn }}</td>
@@ -84,7 +84,7 @@
     </thead>
     {% for holding in holdings %}
     <tr>
-        <td style="text-align:center;"><a href="/sdapp/{{ ticker }}/{{ holding.owner_id }}/byperson">{{ holding.person_name }}</a></td>
+        <td style="text-align:center;"><a href="{% url 'personholdingtable' ticker holding.owner_id %}">{{ holding.person_name }}</a></td>
         <td style="text-align:center;">{{ holding.person_title }}</td>
         <td style="text-align:right;">{{ holding.units_held }}</td>
         <td style="text-align:center;">{{ holding.wavg_expiration_date }}</td>

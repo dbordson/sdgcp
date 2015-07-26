@@ -33,7 +33,7 @@ urlpatterns = \
         url(r'^(?P<ticker>\w+)/formentries$', formentrydetail,
             name='formentrydetail'),
         url(r'^(?P<ticker>\w+)/holdings$', holdingdetail,
-            name='formentrydetail'),
+            name='holdingdetail'),
         url(r'^(?P<ticker>\w+)/byperson$', byperson,
             name='byperson'),
         url(r'^(?P<ticker>\w+)/holdingtable$', holdingtable,

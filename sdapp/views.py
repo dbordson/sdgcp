@@ -83,6 +83,7 @@ def index(request):
 
 @login_required()
 def options(request, ticker):
+    ticker = ticker.upper()
     common_stock_security = \
         Security.objects.get(ticker=ticker)
     issuer = common_stock_security.issuer
@@ -138,6 +139,7 @@ def options(request, ticker):
 
 @login_required()
 def drilldown(request, ticker):
+    ticker = ticker.upper()
     common_stock_security = \
         Security.objects.get(ticker=ticker)
     issuer = common_stock_security.issuer
@@ -151,6 +153,7 @@ def drilldown(request, ticker):
 
     now = datetime.datetime.now(pytz.UTC)
     startdate = now - datetime.timedelta(270)
+    person_include_date = now - datetime.timedelta(2 * 365)
     # Builds transaction queryset
     recententries_qs =\
         Form345Entry.objects.filter(issuer_cik=issuer)\
@@ -180,8 +183,14 @@ def drilldown(request, ticker):
     # Creates variable to filter graph by person
     if selected_person is None:
         persons_data =\
-            Affiliation.objects.filter(issuer=issuer)\
-            .values_list('reporting_owner', 'person_name')
+            Form345Entry.objects.filter(issuer_cik=issuer)\
+            .filter(filedatetime__gte=person_include_date)\
+            .exclude(reporting_owner_cik=None)\
+            .values_list('reporting_owner_cik', 'reporting_owner_name')\
+            .distinct()
+        # persons_data =\
+        #     Affiliation.objects.filter(issuer=issuer)\
+        #     .values_list('reporting_owner', 'person_name')
     else:
         persons_data =\
             Affiliation.objects.filter(issuer=issuer)\
@@ -284,6 +293,7 @@ def watchtoggle(request):
 
 @login_required()
 def watchlisttoggle(request, ticker):
+    ticker = ticker.upper()
     common_stock_security = \
         Security.objects.get(ticker=ticker)
     issuer = common_stock_security.issuer
@@ -463,6 +473,7 @@ def formentrydetail(request, ticker):
 
 @login_required()
 def holdingdetail(request, ticker):
+    ticker = ticker.upper()
     headtitle = 'Current Holdings'
     security_obj = \
         Security.objects.get(ticker=ticker)
@@ -486,6 +497,7 @@ def holdingdetail(request, ticker):
 
 @login_required()
 def byperson(request, ticker):
+    ticker = ticker.upper()
     issuer = \
         Security.objects.get(ticker=ticker).issuer
     personviews = PersonHoldingView.objects.filter(issuer=issuer)\
@@ -519,6 +531,7 @@ def compile_holdings_into_table(person_view_set, total_view_set,
 
 @login_required()
 def holdingtable(request, ticker):
+    ticker = ticker.upper()
     common_stock_security = \
         Security.objects.get(ticker=ticker)
     issuer = common_stock_security.issuer
@@ -548,6 +561,7 @@ def holdingtable(request, ticker):
 
 @login_required()
 def personholdingtable(request, ticker, owner):
+    ticker = ticker.upper()
     common_stock_security = \
         Security.objects.get(ticker=ticker)
     issuer = common_stock_security.issuer

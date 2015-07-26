@@ -72,7 +72,7 @@
 
 <div class="col-md-10">
   <h1>{{ issuer_name }} ({{ ticker }})</h1>
-  <a href="/sdapp/{{ ticker }}">(Return to smart view)</a>
+  <a href="{% url 'options' ticker %}">(Return to smart view)</a>
   <div class="spacer10"></div>
 </div>
 <div class="col-md-2">
@@ -97,7 +97,7 @@
 <div class="col-md-12">
   <div class="panel panel-default">
     <div class="panel-heading">
-      <h3 class="panel-title">Stock Price Chart <a href="/sdapp/{{ ticker }}">(Return to Overview)</a></h3>
+      <h3 class="panel-title">Stock Price Chart</h3>
     </div>
     <div class="panel-body" style="height:350px; overflow-y: scroll;">
       
@@ -124,7 +124,7 @@
       <ul class="list-group">
       {% for signal in signals %}
         <li class="list-group-item">
-          <a href="/sdapp/{{ signal.sph.ticker_sym }}/">{{ signal.signal_date }} - {{ signal.long_statement }}</a>
+          {{ signal.signal_date }} - {{ signal.long_statement }}
         </li>
       {% endfor %}
       </ul>
@@ -311,10 +311,10 @@ $(function () {
 
   <div class="list-group">
 
-    <a href="/sdapp/{{ ticker }}/formentries" class="list-group-item">Form Entries</a>
-    <a href="/sdapp/{{ ticker }}/holdings" class="list-group-item">Current Holdings</a>
-    <a href="/sdapp/{{ ticker }}/byperson" class="list-group-item">Holder Table</a>
-    <a href="/sdapp/{{ ticker }}/holdingtable" class="list-group-item">Holding Table</a>
+    <a href="{% url 'formentrydetail' ticker %}" class="list-group-item">Form Entries</a>
+    <a href="{% url 'holdingdetail' ticker %}" class="list-group-item">Current Holdings</a>
+    <a href="{% url 'byperson' ticker %}" class="list-group-item">Holder Table</a>
+    <a href="{% url 'holdingtable' ticker %}" class="list-group-item">Holding Table</a>
   </div>
 </div>
 

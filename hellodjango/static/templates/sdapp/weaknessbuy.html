@@ -13,7 +13,7 @@
 {% if signals.exists %}
     
     {% for signal in signals %}
-        <a href="/sdapp/{{ signal.sph.ticker_sym }}/" class="list-group-item">{{ signal.signal_date }} - {{ signal.sph.ticker_sym }}: {{ signal.short_statement }}</a>
+        <a href="{% url 'options' signal.sph.ticker_sym %}" class="list-group-item">{{ signal.signal_date }} - {{ signal.sph.ticker_sym }}: {{ signal.short_statement }}</a>
     {% endfor %}
     
 {% else %}

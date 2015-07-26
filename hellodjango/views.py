@@ -131,7 +131,7 @@ def managewatchlist(request):
 
 
 @login_required()
-def pwreminder(request):
+def pwreset(request):
     subject = 'Temporary [PRODUCT NAME] Password'
     new_pw = User.objects.make_random_password()
 
