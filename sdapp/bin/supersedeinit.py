@@ -6,14 +6,15 @@ from sdapp.bin import supersedetools as st
 # It is critical, based on how the logic works, to avoid doing anything
 # while this script runs that could change an entry's primary key (perhaps
 # vacuum could do this?) if this becomes a problem, we could use the
-# internal identifier for each entry, but this will probably be much slower.
+# entry_internal_id for each entry, but this will probably be much slower.
 
 print 'Calculating superseded dates of unsuperseded forms...'
 unique_security_chains =\
     list(Form345Entry.objects
          .filter(supersededdt=None)
          .values_list('affiliation', 'short_sec_title',
-                      'expiration_date', 'direct_or_indirect'))
+                      'expiration_date', 'direct_or_indirect')
+         .distinct())
 
 looplength = float(len(unique_security_chains))
 counter = 0.0

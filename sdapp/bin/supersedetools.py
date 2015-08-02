@@ -75,6 +75,18 @@ def calc_supersededdts_for_chains(affiliation,
         .filter(expiration_date=expiration_date)\
         .filter(direct_or_indirect=direct_or_indirect)
 
+    # determines whether just one xn and whether should be superseded
+    # because of expiration; the +5 gives time delay for filing form 4
+    # recording exercise / forfeiture due to expiration.
+    if chain_entries_incl_superseded.count() == 1:
+        today = datetime.date.today()
+        if expiration_date is not None\
+                and expiration_date + datetime.timedelta(5) < today:
+            pk = chain_entries_incl_superseded[0].pk
+            set_supersededdt(pk,
+                             convert_date_to_datetimestring(expiration_date))
+        return
+
     max_superseded_xn_date = \
         calc_max_superseded_xn_date(chain_entries_incl_superseded)
 
@@ -155,7 +167,7 @@ def supersede_stale_entries(cutoff_years, is_officer):
     #     .distinct()
 
     affiliation_list =\
-        Affiliation.objects.filter(form345entry__supersededdt=None)
+        Affiliation.objects.filter(form345entry__supersededdt=None).distinct()
     # stale_affiliation_list =\
     #     Affiliation.objects.filter(form345entry__supersededdt=None)\
     #     .filter()\
