@@ -1,5 +1,5 @@
+import sys
 from sdapp.models import Form345Entry
-
 from sdapp.bin import supersedetools as st
 
 # INTRO NOTE:
@@ -22,16 +22,21 @@ counter = 0.0
 for affiliation, short_sec_title, expiration_date,\
         direct_or_indirect in unique_security_chains:
 
-    if float(int(20*counter/looplength)) !=\
-            float(int(20*(counter-1)/looplength)):
-        print int(counter/looplength*100), 'percent'
     counter += 1.0
 
     st.calc_supersededdts_for_chains(affiliation,
                                      short_sec_title, expiration_date,
                                      direct_or_indirect)
+
+    # Prints status (please tell me if this floods your terminal with many
+    # rows.  This is an issue on some systems, but I think you should be okay.
+    percentcomplete = round(counter / looplength * 100, 2)
+    sys.stdout.write("\r%s / %s unsuperseded security chains : %.2f%%" %
+                     (int(counter), int(looplength), percentcomplete))
+    sys.stdout.flush()
     if counter % 1000.0 == 0:
         st.reset_database_connection()
+print ''
 print '...Done with general case...'
 # Now superseding officers who disappeared with entries on the books
 print 'Now superseding former officers with stale forms...'

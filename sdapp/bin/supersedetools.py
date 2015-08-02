@@ -1,8 +1,11 @@
-from sdapp.models import Form345Entry, Affiliation
 import datetime
 from decimal import Decimal
+import sys
+
 import django.db
 from django.db.models import Max
+
+from sdapp.models import Form345Entry, Affiliation
 
 
 def convert_date_to_datetimestring(date):
@@ -30,11 +33,6 @@ def string_date_with_years_added(yearsafter, date_in_iso):
 
 def set_supersededdt(pk, supersededdt):
     Form345Entry.objects.filter(pk=pk).update(supersededdt=supersededdt)
-    # a = Form345Entry.objects.get(pk=pk)
-    # a.supersededdt = supersededdt
-    # print supersededdt
-    # a.save()
-    # a = 0
     return
 
 
@@ -152,28 +150,16 @@ def supersede_stale_entries(cutoff_years, is_officer):
     cutoffdatetime =\
         today - datetime.timedelta(cutoff_years * 365)
     staleness_delay = datetime.timedelta(cutoff_years * 365)
-
-    # Figure out why this is screwing up thomas watjen's numbers?
-    # THE BELOW IS CALCULATING THE MAX FILEDATETIME FOR ALL
-    # FORM345ENTRY OBJECTS?
-    # WILL NEED TO DO BY AFFILIATION?
-    # stale_affiliation_list =\
-    #     Form345Entry.objects.filter(supersededdt=None)\
-    #     .exclude(affiliation=None)\
-    #     .filter(is_officer=is_officer)\
-    #     .annotate(Max('filedatetime'))\
-    #     .filter(filedatetime__max__lt=cutoffdatetime)\
-    #     .values_list('affiliation', 'filedatetime__max')\
-    #     .distinct()
-
+    # All affiliations
     affiliation_list =\
         Affiliation.objects.filter(form345entry__supersededdt=None).distinct()
-    # stale_affiliation_list =\
-    #     Affiliation.objects.filter(form345entry__supersededdt=None)\
-    #     .filter()\
-    #     .annotate(Max('filedatetime'))
+
     looplength = float(len(affiliation_list))
     counter = 0.0
+    # This cycles through the affiliations and finds dormant ones, based on
+    # the inputs (in supersedeinit) of [2] years for officers and [5] years
+    # for nonofficers with no filings.  If it finds one, it sets any
+    # outstanding entries as superseded.
     for affiliation in affiliation_list:
         relevant_forms =\
             Form345Entry.objects.filter(affiliation=affiliation)\
@@ -188,16 +174,10 @@ def supersede_stale_entries(cutoff_years, is_officer):
             Form345Entry.objects.filter(affiliation=affiliation)\
                 .filter(supersededdt=None).filter(is_officer=is_officer)\
                 .update(supersededdt=staleness_datetime)
-
-    # for affiliation, filedatetime__max in stale_affiliation_list:
-    #     staleness_datetime =\
-    #     convert_date_to_datetimestring(filedatetime__max + staleness_delay)
-    #     Form345Entry.objects.filter(supersededdt=None)\
-    #         .filter(affiliation=affiliation)\
-    #         .filter(is_officer=is_officer)\
-    #         .update(supersededdt=staleness_datetime)
-        if float(int(10*counter/looplength)) !=\
-                float(int(10*(counter-1)/looplength)):
-            print int(counter/looplength*100), 'percent'
+        # Calculate and display counter below.
         counter += 1.0
+        percentcomplete = round(counter / looplength * 100, 2)
+        sys.stdout.write("\r%s / %s possible dormant filers : %.2f%%" %
+                         (int(counter), int(looplength), percentcomplete))
+        sys.stdout.flush()
     return
