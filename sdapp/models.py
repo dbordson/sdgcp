@@ -2,7 +2,6 @@ from django.db import models
 from decimal import Decimal
 from django.contrib.auth.models import User
 # class StockHistories(models.Model):
-#
 
 
 class IssuerCIK(models.Model):
