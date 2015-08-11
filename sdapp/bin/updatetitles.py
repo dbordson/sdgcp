@@ -1,5 +1,8 @@
-from sdapp.models import Form345Entry
+import sys
+
 from django.db.models import Q
+
+from sdapp.models import Form345Entry
 
 
 def update_short_titles():
@@ -10,6 +13,9 @@ def update_short_titles():
     issuer_ciks_with_forms_missing_short_titles =\
         set(Form345Entry.objects.filter(short_sec_title=None)
             .values_list('issuer_cik_num', flat=True))
+    looplength =\
+        len(issuer_ciks_with_forms_missing_short_titles)
+    counter = 0.0
     for issuer_cik in issuer_ciks_with_forms_missing_short_titles:
         multiple_classes_of_common = False
 # The below script involves some pretty complex queries, but it basically
@@ -272,4 +278,9 @@ def update_short_titles():
         for form in remaining_underlying_title_forms:
             form.scrubbed_underlying_title = form.underlying_title.lower()
             form.save()
+        counter += 1.0
+        percentcomplete = round(counter / looplength * 100, 2)
+        sys.stdout.write("\r%s / %s unsuperseded security chains : %.2f%%" %
+                         (int(counter), int(looplength), percentcomplete))
+        sys.stdout.flush()
     print 'done.'

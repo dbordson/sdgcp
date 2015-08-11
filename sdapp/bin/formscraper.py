@@ -4,6 +4,7 @@ from ftplib import FTP
 from StringIO import StringIO
 import sys
 from datetime import date
+import time
 
 cwd = os.getcwd()
 today = date.today()
@@ -11,6 +12,7 @@ today = date.today()
 
 def ftplogin():
     try:
+        time.sleep(1)
         if os.environ.get('EMAIL_ADDRESS') is None:
             target = open(cwd + '/' + 'emailaddress.txt')
             email = target.read()
@@ -26,6 +28,9 @@ def ftplogin():
         e = sys.exc_info()[0]
         print "Error: %s" % e
         print "Cannot connect"
+        print "Check emailaddress.txt file or EMAIL_ADDRESS global variable"
+        print "And check your internet connection"
+
         exit(0)
 
 

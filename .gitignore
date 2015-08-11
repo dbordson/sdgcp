@@ -10,4 +10,5 @@ settings.py
 emailpw.py
 =======
 emailpw.py
+client_secret.json
 >>>>>>> 0e29c0979d12cff71db0ab527f0788523698410a

@@ -64,6 +64,8 @@ def intrinsicvalcalc(units_held_and_adj_and_conv_vectors,
                      conversion_multiple,
                      underlyingprice):
     # conversion_price_unit_list, underlyingprice):
+    if not units_held_and_adj_and_conv_vectors.exists():
+        return None
     unitsvector, adjustment_vector, conv_vector =\
         zip(*units_held_and_adj_and_conv_vectors)
     # print units_held_and_adj_and_conv_vectors
@@ -197,6 +199,15 @@ def build_security_views():
                 intrinsicvalcalc(units_held_and_adj_and_conv_vectors,
                                  sec_obj.conversion_multiple,
                                  underlyingprice)
+            if intrinsic_value is None:
+                print 'sec_obj', sec_obj
+                print 'No intrinsic value for security_id:', security_id
+                print 'latest_transaction.underlying_security', latest_transaction.underlying_security
+                print 'units_held_and_adjustment_vectors', units_held_and_adjustment_vectors
+                print 'raw form345entry list', Form345Entry.objects.filter(supersededdt=None)\
+                    .filter(security_id=security_id)
+                print 'underlyingprice', underlyingprice
+                print '    units_held_and_adj_and_conv_vectors may be empty.'
             last_close_price = None
             underlying_close_price = underlyingprice
         else:

@@ -1,16 +1,42 @@
-from sdapp.models import Form345Entry, FullForm, IssuerCIK
 import os
+import gc
 import sys
 from decimal import Decimal
-from django import forms
-
-
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
     import xml.etree.ElementTree as ET
 
+
+import django.db
+from django import forms
+
+
+from sdapp.models import Form345Entry, FullForm, IssuerCIK
+
+
 cwd = os.getcwd()
+
+
+def queryset_iterator(queryset, chunksize=50000):
+    # Iterate over a Django Queryset ordered by the primary key
+
+    # This method loads a maximum of chunksize (default: 1000) rows in it's
+    # memory at the same time while django normally would load all rows in it's
+    # memory. Using the iterator() method only causes it to not preload all the
+    # classes.
+
+    # Note that the implementation of the iterator does not support ordered
+    # query sets.
+    pk = 0
+    last_pk = queryset.order_by('-pk')[0].pk
+    queryset = queryset.order_by('pk')
+    while pk < last_pk:
+        for row in queryset.filter(pk__gt=pk)[:chunksize]:
+            pk = row.pk
+            yield row
+        django.db.reset_queries()
+        gc.collect()
 
 
 def binary_to_boolean(inputbinary):
@@ -252,13 +278,26 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilepath,
     if deriv_or_nonderiv == 'D' and a.conversion_price is None:
         a.conversion_price = Decimal(0.0)
 
+    # THE BELOW GENERATES ERRORS IF THE CONVERSION RATIO OF THE DERIVATIVE
+    # SECURITY INTO THE NONDERIVATIVE UNDERLYING != 1 AND THE HOLDING IS
+    # ON FORM 3.  SHOULD BE RARE.
+
+    # This adjusts reported holdings to look like holdings rather than
+    # transactions.  The need for this is caused by SEC's directions for
+    # storing form 3 data and also incorrectly completed forms.
     if a.transaction_date is None and\
             a.transaction_code is None and\
-            a.shares_following_xn is None and\
-            a.transaction_shares is not None:
-        a.shares_following_xn = a.transaction_shares
-        a.transaction_shares = None
-        a.reported_shares_following_xn = None
+            a.shares_following_xn is None:
+        if a.transaction_shares is not None:
+            a.shares_following_xn = a.transaction_shares
+            a.reported_shares_following_xn = a.transaction_shares
+            a.transaction_shares = None
+            a.underlying_shares = None
+        elif a.underlying_shares is not None:
+            a.shares_following_xn = a.underlying_shares
+            a.reported_shares_following_xn = a.underlying_shares
+            a.underlying_shares = None
+
     if a.shares_following_xn is None:
         a.shares_following_xn = Decimal(0.0)
     if a.reported_shares_following_xn is None:
@@ -380,49 +419,65 @@ def formentryinsert():
     ciksnotinlist = []
     i = 0
     totalformslength = len(paths_to_parse)
+    paths_to_parse = set()
     count = 0.0
     print 'Beginning parse loop'
-    for form in forms_to_parse:
-        try:
-            entries += formcrawl(form, list_of_ciks)
-            i += 1
-        except ZeroDivisionError:
-            ciksnotinlist.append(form)
-        except:
-            parseerrorlist.append(form)
+    if forms_to_parse.exists():
+        print '...there are forms to parse'
 
-        # The below reports if 10% progress has been made.
-        if float(int(10*count/totalformslength)) !=\
-                float(int(10*(count-1)/totalformslength)):
-            print int(count/totalformslength*100), 'percent'
-        count += 1.0
+        for form in queryset_iterator(forms_to_parse):
+            try:
+                entries += formcrawl(form, list_of_ciks)
+                i += 1
+            except ZeroDivisionError:
+                ciksnotinlist.append(form)
+            except:
+                parseerrorlist.append(form)
 
-        # This saves is 1 mb of entires have been parsed
-        if sys.getsizeof(entries) > 1000000:  # 1 mb
-            print 'Saving'
-            Form345Entry.objects.bulk_create(entries)
-            entries = []
-            print 'Done with this batch, starting next batch'
+            # The below reports progress.
+            count += 1.0
+            percentcomplete = round(count / totalformslength * 100, 2)
+            sys.stdout.write("\r%s / %s forms to parse : %.2f%%" %
+                             (int(count), int(totalformslength),
+                              percentcomplete))
+            sys.stdout.flush()
 
-    # This saves the remaining entries not saved above
-    print 'Saving'
-    Form345Entry.objects.bulk_create(entries)
+            # if float(int(10*count/totalformslength)) !=\
+            #         float(int(10*(count-1)/totalformslength)):
+            #     print int(count/totalformslength*100), 'percent'
 
-    print "The total number of files reviewed was:", totalformslength
-    print "how many times did the for loop run?", i
-    print "Length of error list indicating omitted files:", len(parseerrorlist)
-    print "Number of forms where issuer not an IssuerCIK", len(ciksnotinlist)
-    print "Here are any files from above that were filed in 2005 or later:"
-    oldyears = ['94', '95', '96', '97', '98', '99',
-                '00', '01', '02', '03', '04']
-    count = 0
-    for line in parseerrorlist:
-        if not any(line.sec_path.find('-' + oldyear + '-') != -1
-                   for oldyear in oldyears):
-            print line.sec_path
-            count += 1
-    print 'Total 2005 or later errors:', count
+            # This saves is 1 mb of entires have been parsed
+            if sys.getsizeof(entries) > 1000000:  # 1 mb
+                print ''
+                print 'now saving'
+                Form345Entry.objects.bulk_create(entries)
+                entries = []
+                print 'Done with this batch, starting next batch'
 
-    print 'Done adding new entries'
+        # This saves the remaining entries not saved above
+        print 'Saving'
+        Form345Entry.objects.bulk_create(entries)
+
+        print "The total number of files reviewed was:", totalformslength
+        print "how many times did the for loop run?", i
+        print "Length of error list indicating omitted files:",\
+            len(parseerrorlist)
+        print "Number of forms where issuer not an IssuerCIK",\
+            len(ciksnotinlist)
+        print "Here are any files from above that were filed in 2005 or later:"
+        oldyears = ['94', '95', '96', '97', '98', '99',
+                    '00', '01', '02', '03', '04']
+        count = 0
+        for line in parseerrorlist:
+            if not any(line.sec_path.find('-' + oldyear + '-') != -1
+                       for oldyear in oldyears):
+                print line.sec_path,
+                count += 1
+        print ''
+        print 'Total 2005 or later errors:', count
+
+        print 'Done adding new entries'
+    else:
+        print '...no forms to parse'
 
 formentryinsert()

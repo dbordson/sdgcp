@@ -131,6 +131,11 @@ def calc_supersededdts_for_chains(affiliation,
             pk = reverse_chrono_sequential_list[0][0]
             set_supersededdt(pk,
                              convert_date_to_datetimestring(expiration_date))
+    # Set supersede most recent xns where the shares remaining is zero
+        shares_following_xn = reverse_chrono_sequential_list[0][3]
+        if shares_following_xn == Decimal(0):
+            pk = reverse_chrono_sequential_list[0][0]
+            set_supersededdt(pk, filedatetime)
         # removes most recent so it won't be set as superseded
         reverse_chrono_sequential_list.pop(0)
 
@@ -152,7 +157,8 @@ def supersede_stale_entries(cutoff_years, is_officer):
     staleness_delay = datetime.timedelta(cutoff_years * 365)
     # All affiliations
     affiliation_list =\
-        Affiliation.objects.filter(form345entry__supersededdt=None).distinct()
+        Affiliation.objects.filter(form345entry__supersededdt=None)\
+        .filter(form345entry__is_officer=is_officer).distinct()
 
     looplength = float(len(affiliation_list))
     counter = 0.0

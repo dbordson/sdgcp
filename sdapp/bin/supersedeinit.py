@@ -22,14 +22,13 @@ counter = 0.0
 for affiliation, short_sec_title, expiration_date,\
         direct_or_indirect in unique_security_chains:
 
-    counter += 1.0
-
     st.calc_supersededdts_for_chains(affiliation,
                                      short_sec_title, expiration_date,
                                      direct_or_indirect)
 
     # Prints status (please tell me if this floods your terminal with many
     # rows.  This is an issue on some systems, but I think you should be okay.
+    counter += 1.0
     percentcomplete = round(counter / looplength * 100, 2)
     sys.stdout.write("\r%s / %s unsuperseded security chains : %.2f%%" %
                      (int(counter), int(looplength), percentcomplete))
