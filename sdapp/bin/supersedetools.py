@@ -48,7 +48,7 @@ def calc_max_superseded_xn_date(chain_entries_incl_superseded):
     else:
         last_superseded_xn_date = datetime.date(1900, 1, 1)
     # This handles holdings (if a holding was filed on 2/1 and then a
-    # transaction on 1/20 is reported later, this infor is already stale
+    # transaction on 1/20 is reported later, this info is already stale
     # because the filedatetime is what matters for holdings)
     last_superseded_holding_dt_in_chain =\
         chain_entries_incl_superseded.exclude(supersededdt=None)\

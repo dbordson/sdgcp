@@ -12,7 +12,7 @@ from sdapp.bin import addissuers, formscraper, formparser,\
 # script should be run:
 
 # from sdapp.bin import addissuers  # Can run in heroku or locally
-# `  # Must be run locally
+# from sdapp.bin import ftpfilelister  # Must be run locally
 #       (because it needs access to file indices, which aren't online)
 # from sdapp.bin import formscraper  # Can run in heroku or locally
 # [etc. - the rest of the scripts can be run in heroku or locally]
