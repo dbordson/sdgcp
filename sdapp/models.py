@@ -301,9 +301,19 @@ class PersonHoldingView(models.Model):
 
 class FTPFileList(models.Model):
     files = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True, auto_now=False)
 
     def __unicode__(self):
         return unicode(len(self.files)) or u''
+
+
+class SECDayIndex(models.Model):
+    indexname = models.TextField()
+    indexcontents = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True, auto_now=False)
+
+    def __unicode__(self):
+        return unicode(self.indexname) or u''
 
 
 class FullForm(models.Model):

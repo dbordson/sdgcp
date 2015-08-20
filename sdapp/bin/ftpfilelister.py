@@ -22,7 +22,6 @@ def filepathfinder(line):
     return line[filepathstart:filepathend].rstrip()
 
 
-
 print "Building a list of form filepaths..."
 
 cik_num_set = set(IssuerCIK.objects.values_list('cik_num', flat=True))
@@ -44,7 +43,6 @@ for index in qindexfilelist:
         print '...for ' + index + '...'
         for line in infile:
             # print "'edgar/data/' in line", 'edgar/data/' in line
-            # print "cikfinder(line) in cik_num_set", cikfinder(line) in cik_num_set
             # print "formfinder(line) in formset", formfinder(line) in formset
             # print 'line', line
             if 'edgar/data/' in line and\

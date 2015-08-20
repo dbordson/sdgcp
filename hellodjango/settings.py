@@ -17,6 +17,7 @@ try:
     from emailpw import SD_EMAIL_PW
 except:
     SD_EMAIL_PW = os.environ['SD_EMAIL_PW']
+    GOOGLE_CLIENT_SECRET = os.environ['GOOGLE_CLIENT_SECRET']
 
 EMAIL_USE_TLS = True
 EMAIL_HOST = 'smtp.gmail.com'
