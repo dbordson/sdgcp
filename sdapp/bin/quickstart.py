@@ -7,6 +7,13 @@ from oauth2client import client
 from oauth2client import tools
 
 try:
+    obj = open('client_secret.json', 'wb')
+    obj.write(os.environ.get('GOOGLE_CLIENT_SECRET'))
+    obj.close
+except:
+    return
+
+try:
     import argparse
     flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
 except ImportError:
