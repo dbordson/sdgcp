@@ -10,6 +10,9 @@ try:
     obj = open('client_secret.json', 'wb')
     obj.write(os.environ.get('GOOGLE_CLIENT_SECRET'))
     obj.close
+    obj = open('client_secret.json')
+    print obj.read()
+    obj.close()
 except:
     print 'Trouble writing environment variable'
 
