@@ -11,7 +11,7 @@ try:
     obj.write(os.environ.get('GOOGLE_CLIENT_SECRET'))
     obj.close
 except:
-    return
+    print 'Trouble writing environment variable'
 
 try:
     import argparse
