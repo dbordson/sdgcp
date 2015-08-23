@@ -115,7 +115,7 @@ formdownloadlist = list(formdownloadset)
 ftp = ftplogin()
 formsforsave = []
 count = 0.0
-looplength = float(len(formdownloadlist))
+totalformslength = float(len(formdownloadlist))
 for formpath in formdownloadlist:
     fullpath = '/edgar/data/' + formpath
     text = ftpdownload(fullpath, ftp)
@@ -123,12 +123,16 @@ for formpath in formdownloadlist:
                  save_date=today,
                  issuer_cik_num=extractcik(formpath),
                  text=text)
-    if float(int(10*count/looplength)) !=\
-            float(int(10*(count-1)/looplength)):
-        print int(count/looplength*100), 'percent'
     count += 1.0
+    percentcomplete = round(count / totalformslength * 100, 2)
+    sys.stdout.write("\r%s / %s forms to scrape : %.2f%%" %
+                     (int(count), int(totalformslength),
+                      percentcomplete))
+    sys.stdout.flush()
+
     formsforsave.append(a)
     if len(formsforsave) > 1000:  # 10 mb
+        print ''
         print 'Saving a batch',
         formsforsave = saveandclear(formsforsave)
         print 'done with this batch, starting next batch'

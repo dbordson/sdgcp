@@ -1,10 +1,13 @@
-from sdapp.models import SecurityPriceHist, ClosePrice, Form345Entry
-from sdapp.models import YearlyReportingPersonAtts
 import datetime
 from decimal import Decimal
+import pytz
+import sys
+
+from sdapp.models import SecurityPriceHist, ClosePrice, Form345Entry
+from sdapp.models import YearlyReportingPersonAtts
+
 from django.db.models import Q
 import django.db
-import pytz
 
 days_over_which_a_trade_is_evaluated = 180
 trade_delta = datetime.timedelta(days_over_which_a_trade_is_evaluated)
@@ -219,13 +222,15 @@ def reviewreppersons(qs, year, trade_delta):
         .values_list('reporting_owner_cik', flat=True).distinct()
     print '    Number of potential reporting persons:', len(reppersons)
     looplength = float(len(reppersons))
-    counter = 0.0
+    count = 0.0
     rpatts_objects = []
     for repperson in reppersons:
-        if float(int(10*counter/looplength)) !=\
-                float(int(10*(counter-1)/looplength)):
-            print '   ', int(counter/looplength*100), 'percent'
-        counter += 1.0
+        count += 1.0
+        percentcomplete = round(count / looplength * 100, 2)
+        sys.stdout.write("\r%s / %s reporting persons: %.2f%%" %
+                         (int(count), int(looplength),
+                          percentcomplete))
+        sys.stdout.flush()
         rpatts_object = \
             execanalyze(yearqs, repperson, trade_delta, win_hurdle, start_dt,
                         end_dt)

@@ -443,10 +443,6 @@ def formentryinsert():
                               percentcomplete))
             sys.stdout.flush()
 
-            # if float(int(10*count/totalformslength)) !=\
-            #         float(int(10*(count-1)/totalformslength)):
-            #     print int(count/totalformslength*100), 'percent'
-
             # This saves is 1 mb of entires have been parsed
             if sys.getsizeof(entries) > 1000000:  # 1 mb
                 print ''

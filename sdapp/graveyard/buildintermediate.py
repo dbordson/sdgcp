@@ -1,8 +1,10 @@
+import datetime
+import sys
+
 from sdapp.models import ReportingPerson, IssuerCIK, Form345Entry,\
     Affiliation, Holding, HoldingType, ClosePrice, SecurityPriceHist,\
     AggHoldingType
 # from django.db import connection
-import datetime
 
 
 def weighted_avg(vectorunitoutput, weightingvector):
@@ -271,10 +273,12 @@ def revise_holdings():
     looplength = float(len(all_affiliations))
     count = 0.0
     for affiliation in all_affiliations:
-        if float(int(10*count/looplength)) !=\
-                float(int(10*(count-1)/looplength)):
-            print int(count/looplength*100), 'percent'
         count += 1.0
+        percentcomplete = round(count / looplength * 100, 2)
+        sys.stdout.write("\r%s / %s affiliations: %.2f%%" %
+                         (int(count), int(looplength),
+                          percentcomplete))
+        sys.stdout.flush()
         # the security title and underlying title mechanic could create issues
         # if someone writes the titles inconsistently from form to form this
         # could be the source of very bad data, so we need to test

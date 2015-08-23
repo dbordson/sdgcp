@@ -280,7 +280,7 @@ def update_short_titles():
             form.save()
         counter += 1.0
         percentcomplete = round(counter / looplength * 100, 2)
-        sys.stdout.write("\r%s / %s unsuperseded security chains : %.2f%%" %
-                         (int(counter), int(looplength), percentcomplete))
+        sys.stdout.write("\r%s / %s issuers w/ forms w/o short titles: %.2f%%"
+                         % (int(counter), int(looplength), percentcomplete))
         sys.stdout.flush()
     print 'done.'

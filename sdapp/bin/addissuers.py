@@ -1,5 +1,7 @@
-from sdapp.models import SecurityPriceHist, IssuerCIK
 import requests
+import sys
+
+from sdapp.models import SecurityPriceHist, IssuerCIK
 # This requires requests, which can be installed via pip using "pip install
 # requests" (http://docs.python-requests.org/en/latest/user/install/#install
 # for info)
@@ -36,6 +38,8 @@ def newciks():
     print '    Sorting, linking and saving...',
     unlinked_tickers = SecurityPriceHist.objects.filter(issuer=None)
     # finds un
+    count = 0.0
+    looplength = len(unlinked_tickers)
     for entry in unlinked_tickers:
         print entry.ticker_sym,
         cik_num = int(CIKFind(str(entry.ticker_sym)))
@@ -44,6 +48,14 @@ def newciks():
             new_issuer_cik.save()
         entry.issuer_id = cik_num
         entry.save()
+        # Counter
+        count += 1.0
+        percentcomplete = round(count / looplength * 100, 2)
+        sys.stdout.write("\r%s / %s forms to parse: %.2f%%" %
+                         (int(count), int(looplength),
+                          percentcomplete))
+        sys.stdout.flush()
+
     print 'done.'
 
 

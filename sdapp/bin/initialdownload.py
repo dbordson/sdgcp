@@ -4,6 +4,7 @@ import os
 import sys
 import time
 
+from sdapp.bin import addissuers
 from sdapp.models import IssuerCIK, FTPFileList
 
 cwd = os.getcwd()
@@ -23,11 +24,6 @@ cwd = os.getcwd()
 #    delete the empty files and re-run the program.  Definitely let me know
 #    if you get the error twice in a row, since that indicates a problem on our
 #    side.
-
-
-def quitandemail(error):
-    return
-    # DEFINE FUNCTION TO QUIT AND SEND EMAIL NOTING ERROR
 
 
 def ftplogin():
@@ -53,12 +49,11 @@ def ftplogin():
         # RUN FUNCTION TO QUIT AND EMAIL ERROR
 
 
-def ftpdownload(filepath, local_filename):
+def ftpdownload(filepath, local_filename, ftp):
     try:
         target = open(local_filename, 'wb')
         ftp.retrbinary('RETR %s' % filepath, target.write)
         target.close()
-
     except:
         print "Can't get file in ", filepath
 
@@ -75,14 +70,12 @@ def isfloat(data):
 def cikfinder(line):
     cikstart = line.find('edgar/data/') + len('edgar/data/')
     cikend = line.find('/', cikstart)
-
     return line[cikstart:cikend]
 
 
 def formfinder(line):
     formstart = 0
     formend = line.find(' ')
-
     return line[formstart:formend]
 
 
@@ -92,129 +85,142 @@ def filepathfinder(line):
     return line[filepathstart:filepathend].rstrip()
 
 
+def downloadindices(storedquarterlist):
+    print "Connecting to SEC FTP site..."
+    ftp = ftplogin()
+    # LOAD LIST OF STORED INDICES. IF ANY ARE OMITTED FROM THE LIST, DOWNLOAD
+    ftp.cwd(qindexbasepath)
+    print "now in /edgar/full-index directory"
+    rawindexyearlist = []
+    indexyearlist = []
+    ftp.retrlines('nlst', rawindexyearlist.append)
+    for entry in rawindexyearlist:
+        if len(entry) == 4 and entry.find('.') == -1:
+            indexyearlist.append(entry)
+    #
+    # Replacing latest index stored (bc/ updated daily by SEC)
+    if len(storedquarterlist) > 0:
+        print 'Replacing latest stored index'
+        year = storedquarterlist[-1][:4]
+        quarter = storedquarterlist[-1][5]
+        ftp.cwd(qindexbasepath + "/" + year + "/QTR" + quarter)
+        sourcename = "form.idx"
+        local_filename = (qindexdirectory + year + "Q" + quarter + ".txt")
+        ftpdownload(sourcename, local_filename, ftp)
+    #
+    print "Now going to go one level deeper and begin to save any missing",
+    print "indices..."
+    for year in indexyearlist:
+        quarterlist = []
+        ftp.cwd(qindexbasepath + "/" + year)
+        ftp.retrlines('nlst', quarterlist.append)
+        for quarter in quarterlist:
+            if len(quarter) < 5 and quarter.startswith('QTR') and\
+                    not year + 'Q' + quarter[3] in storedquarterlist:
+                print (year + 'Q' + quarter[3], "...")
+                indexdirectory = qindexbasepath + "/" + year + "/" + quarter
+                sourcename = "form.idx"
+                local_filename =\
+                    qindexdirectory + year + "Q" + quarter[3] + ".txt"
+                ftpdownload(indexdirectory + '/' + sourcename, local_filename,
+                            ftp)
+    ftp.close()
+    print "Done with index file download attempt"
+    target = open(qindexdirectory + lastdownloadfilename, 'w')
+    print>>target, "lastdl = '" + datestringtoday + "'"
+    target.close()
+    print 'Updated download date storage file.'
+    return
+
+
+def generateFTPFileList(qindexfilelist, qindexdirectory):
+    # note trailing spaces.
+    searchformlist = ['4  ', '3  ', '5  ', '4/A', '3/A', '5/A']
+
+    CIKsInit = IssuerCIK.objects.values_list('cik_num', flat=True)
+    # LOAD A LIST OF ALL INDEXES FROM GOOGLE DRIVE
+    # for filename in os.listdir(qindexdirectory):
+    #     if filename.endswith('.txt'):
+    #         qindexfilelist.append(qindexdirectory + filename)
+    # IF FAILS, QUIT AND SEND EMAIL NOTING ERROR
+
+    print "Now genrating the list of forms we need from the indices we have."
+
+    LastCIK = '911911911911911911911911911'
+    secfileset = set()
+    for index in qindexfilelist:
+        # will need to change below line to work with google drive
+        with open(qindexdirectory + index) as infile:
+            print '...' + index
+            for line in infile:
+                if 'edgar/data/' in line\
+                        and line[:3] in searchformlist\
+                        and int(cikfinder(line)) == LastCIK:
+                    formfilename = filepathfinder(line)
+                    secfileset.add(formfilename)
+
+                elif 'edgar/data/' in line\
+                        and line[:3] in searchformlist\
+                        and int(cikfinder(line)) in CIKsInit:
+                    LastCIK = int(cikfinder(line))
+                    formfilename = filepathfinder(line)
+                    secfileset.add(formfilename)
+        LastCIK = '911911911911911911911911911'
+    'new list generated.'
+    secfilestring = ','.join(secfileset)
+    print "Deleting old lists of form filepaths..."
+    FTPFileList.objects.all().delete()
+    print 'Saving ...'
+    FTPFileList(files=secfilestring).save()
+    return
+
 print "Downloading new form indices and source forms..."
 
 qindexfilelist = []
-qindexdirectory = cwd + '/QFilingIndices/'
+
 qindexbasepath = "/edgar/full-index"
-dindexdirectory = cwd + '/DFilingIndices/'
 download = 0
 
+qindexfolder = '/qindex/'
+qindexdirectory = cwd + qindexfolder
+if not(os.path.exists(qindexdirectory)):
+    print 'Error, /qindex/ directory missing.'
+    print 'If building locally, add /qindex/'
+    print 'Also, do not attempt to run this script in Heroku. Exiting...'
+    exit(0)
 
-authenticated = False
-# AUTHENTICATE INTO GOOGLE DRIVE HERE
-if authenticated is False:  # REPLACE THIS STATEMENT WHEN ABOVE CODE FILLED IN
-    error = 'initialdownload.py failed to authenticate with Google Drive'
-    quitandemail(error)
+# Check for presence of file storing last download date.
+lastdownloadfilename = 'lastdl.py'
+if not(os.path.exists(qindexdirectory + lastdownloadfilename)):
+    target = open(qindexdirectory + lastdownloadfilename, 'w')
+    print>>target, 'lastdl = None'
+    target.close()
+    print 'Added download date storage file.'
 
-# WRITE SCRIPT HERE TO GET LATEST INDEX FROM GOOGLE?/AMZN S3? AND SEE
-# WHEN IT WAS DOWNLOADED
+from qindex.lastdl import lastdl
 
+qindexfilelist = []
+storedquarterlist = []
 
-direxists = False
-# if THE DIRECTORY DOES NOT EXIST:
-# QUIT AND SEND EMAIL STATING ERROR THAT DIRECTORY DOES NOT EXIST
-if direxists is False:  # REPLACE THIS STATEMENT WHEN ABOVE CODE FILLED IN
-    error = 'initialdownload.py failed.  Proper Google Drive dir is absent'
-    quitandemail(error)
+for filename in os.listdir(qindexdirectory):
+    if filename.endswith('.txt'):
+        qindexfilelist.append(filename)
+        storedquarterlist.append(filename[:6])
 
-print "Connecting to SEC FTP site..."
-ftp = ftplogin()
+datestringtoday = datetime.date.today().strftime('%Y%m%d')
+if lastdl != datestringtoday:
+    print 'Running index download function'
+    downloadindices(storedquarterlist)
+else:
+    print 'Already updated indices today. Skipping index download function.'
 
-google_drive_download_success = False
-
-drive_index_list = set(['filepath1', 'filepath2', 'filepath3'])
-if google_drive_download_success is False:
-    error = 'initialdownload.py failed.  Google Drive download failed'
-    quitandemail(error)
-if not(os.path.exists(dindexdirectory)):
-    os.makedirs(dindexdirectory)
-    print "Created a directory: ", dindexdirectory
-
-# note trailing spaces.
-searchformlist = ['4  ', '3  ', '5  ', '4/A', '3/A', '5/A']
-
-CIKsInit = IssuerCIK.objects.values_list('cik_num', flat=True)
-
-# GET DATE OF MOST RECENT INDEX FROM DRIVE HERE
-most_recent_index_date_time = 101010101010
-twelve_hours_ago = datetime.datetime.now() - datetime.timedelta(.5)
-if most_recent_index_date_time < twelve_hours_ago:
-    # IF LATEST INDEX FILE IS MORE THAN THAN 12 HOURS OLD, DELETE IT.
-    # (WILL DOWNLOAD MISSING FILES IN A MINUTE, SO WILL BE REPLACED)
-    return
-
-# LOAD A LIST OF ALL INDEX FILES.  IF ANY ARE OMITTED FROM THE LIST, DOWNLOAD
-ftp.cwd(qindexbasepath)
-print "now in /edgar/full-index directory"
-rawindexyearlist = []
-indexyearlist = []
-ftp.retrlines('nlst', rawindexyearlist.append)
-for entry in rawindexyearlist:
-    if len(entry) < 5 and isfloat(entry):
-        indexyearlist.append(entry)
-print "Now going to go one level deeper and begin to save any missing",
-print "indices..."
-
-for year in indexyearlist:
-    quarterlist = []
-    ftp.cwd(qindexbasepath + "/" + year)
-    ftp.retrlines('nlst', quarterlist.append)
-    for quarter in quarterlist:
-        # FIGURE OUT WHAT quarter[3] IS
-        if len(quarter) < 5 and quarter.startswith('QTR') and\
-                not any(existingindex.find(year + 'Q' + quarter[3] + '.txt')
-                        != -1 for existingindex in qindexfilelist):
-            print (year + 'Q' + quarter[3], "...")
-            indexdirectory = qindexbasepath + "/" + year + "/" + quarter
-            sourcename = "form.idx"
-            local_filename = (os.getcwd() + year + "Q" + quarter[3] + ".txt")
-            # Next we save the file in the ephemeral dyno environment
-            ftpdownload(indexdirectory + '/' + sourcename, local_filename)
-            # Next we upload the file to google drive for safekeeping
-            # NOW MOVE THIS FILE FROM TEMP STORAGE TO GOOGLE DRIVE
-ftp.close()
-print "Done with index file download attempt"
+print 'Now updating FTPFileList object.'
+generateFTPFileList(qindexfilelist, qindexdirectory)
+print 'Done'
 
 # THIS IS NOT USED, BUT SCRIPT WOULD BE SIMPLER IF DOWNLOADED 2 FLAT SETS AND
 # COMPARED THEM.  THE TWO SETS ARE THE SEC FILES AND THE GOOGLE FILES
 # files_to_download = \
 #     sec_index_file_list - (sec_index_file_list & drive_index_list)
-
-
-# LOAD A LIST OF ALL INDEXES FROM GOOGLE DRIVE
-qindexfilelist = ['1', '2', '3']  # pull call indexes from drive, in order?
-# for filename in os.listdir(qindexdirectory):
-#     if filename.endswith('.txt'):
-#         qindexfilelist.append(qindexdirectory + filename)
-# IF FAILS, QUIT AND SEND EMAIL NOTING ERROR
-
-print "Now lets generate the list of forms we need from the indices we have."
-
-LastCIK = '911911911911911911911911911'
-secfileset = set()
-for index in qindexfilelist:
-    # will need to change below line to work with google drive
-    with open(index) as infile:
-        print '... ' + index,
-        for line in infile:
-            if 'edgar/data/' in line\
-                    and line[:3] in searchformlist\
-                    and int(cikfinder(line)) == LastCIK:
-                formfilename = filepathfinder(line)
-                secfileset.add(formfilename)
-
-            elif 'edgar/data/' in line\
-                    and line[:3] in searchformlist\
-                    and int(cikfinder(line)) in CIKsInit:
-                LastCIK = int(cikfinder(line))
-                formfilename = filepathfinder(line)
-                secfileset.add(formfilename)
-    LastCIK = '911911911911911911911911911'
-'new list generated.'
-secfilestring = ','.join(secfileset)
-print "Deleting old lists of form filepaths..."
-FTPFileList.objects.all().delete()
-print 'Saving ...'
-FTPFileList(files=secfilestring).save()
-print 'Done'
+# FOR THIS TO BE REALLY CLEAN WOULD WANT TO GRAB LIST OF INDICES ON FTP
+# SITE IN A SINGLE COMMAND, WHICH MIGHT BE ANNOYING TO DO.

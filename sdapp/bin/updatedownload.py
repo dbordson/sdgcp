@@ -8,6 +8,7 @@ from django.db.models import Max
 from django.utils import timezone
 
 from sdapp.models import IssuerCIK, FTPFileList, SECDayIndex
+from sdapp.bin import addissuers
 
 cwd = os.getcwd()
 
