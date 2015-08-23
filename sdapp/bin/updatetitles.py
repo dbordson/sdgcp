@@ -283,4 +283,5 @@ def update_short_titles():
         sys.stdout.write("\r%s / %s issuers w/ forms w/o short titles: %.2f%%"
                          % (int(counter), int(looplength), percentcomplete))
         sys.stdout.flush()
+    print ''
     print 'done.'

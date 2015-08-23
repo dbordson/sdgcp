@@ -1,7 +1,9 @@
-from sdapp.models import SecurityPriceHist, ClosePrice, SplitOrAdjustmentEvent
-# import pandas
 from datetime import datetime, date
+import sys
+
 from pandas.io.data import DataReader
+
+from sdapp.models import SecurityPriceHist, ClosePrice, SplitOrAdjustmentEvent
 
 
 def savetickerinfo(SPH_id, ticker, security_id):
@@ -66,9 +68,16 @@ print "Updating stock price histories and split data...",
 tickertuples = SecurityPriceHist.objects.values_list('id',
                                                      'ticker_sym',
                                                      'security')
+counter = 0.0
+looplength = float(len(tickertuples))
 for SPH_id, ticker, security_id in tickertuples:
     try:
         savetickerinfo(SPH_id, ticker, security_id)
     except:
         print 'Error for:', SPH_id, ticker, security_id
+    counter += 1.0
+    percentcomplete = round(counter / looplength * 100, 2)
+    sys.stdout.write("\r%s / %s tickers : %.2f%%" %
+                     (int(counter), int(looplength), percentcomplete))
+    sys.stdout.flush()
 print "done."

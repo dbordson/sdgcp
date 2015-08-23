@@ -110,12 +110,10 @@ def update_reportingpersons():
 # The tell should be runaway record creation each time the script is run.
 def update_affiliations():
     print 'Adding new Affiliation objects...'
-    print '    Sorting...',
+    print '    Sorting...'
     storedaffiliations = \
         set(Affiliation.objects
             .values_list('issuer_id', 'reporting_owner_id'))
-    # storedaffiliations =\
-        # set([(int(a), int(b)) for a, b in unicode_combinations])
 
     reporting_person_issuer_combinations =\
         set(Form345Entry.objects
@@ -125,7 +123,7 @@ def update_affiliations():
         reporting_person_issuer_combinations\
         - (reporting_person_issuer_combinations & storedaffiliations)
 
-    print 'building...',
+    print '    building...'
     new_affiliations = []
     for cik_combination in affiliations_cik_combinations_to_add:
         issuer_cik_num = cik_combination[0]
@@ -141,18 +139,18 @@ def update_affiliations():
                         reporting_owner_id=reporting_owner_cik_num,
                         person_name=latest_entry.reporting_owner_name)
         new_affiliations.append(new_affiliation)
-    print 'saving...',
+    print '    saving...'
     Affiliation.objects.bulk_create(new_affiliations)
-    print 'done.'
+    print '    done.'
 
 
 def link_entries_for_reporting_person_and_affiliation_foreign_keys():
     print 'Linking Form345Entry objects to ReportingPerson objects...'
-    print '    Sorting...',
+    print '    Sorting...'
     reporting_owner_ciks_with_unlinked_forms =\
         Form345Entry.objects.filter(reporting_owner_cik=None)\
         .values_list('reporting_owner_cik_num', flat=True).distinct()
-    print 'linking and saving...',
+    print '    linking and saving...'
     for reporting_owner_cik in reporting_owner_ciks_with_unlinked_forms:
         reporting_owner =\
             ReportingPerson.objects\
@@ -160,14 +158,14 @@ def link_entries_for_reporting_person_and_affiliation_foreign_keys():
         Form345Entry.objects.filter(reporting_owner_cik=None)\
             .filter(reporting_owner_cik_num=reporting_owner_cik)\
             .update(reporting_owner_cik=reporting_owner)
-    print 'done.'
+    print '    done.'
 
     print 'Linking Form345Entry objects to Affiliation objects...'
-    print '    Sorting...',
+    print '    Sorting...'
     affiliations_with_unlinked_forms =\
         Form345Entry.objects.filter(affiliation=None)\
         .values_list('reporting_owner_cik', 'issuer_cik').distinct()
-    print 'linking and saving...',
+    print '    linking and saving...'
     for reporting_owner_cik, issuer_cik\
             in affiliations_with_unlinked_forms:
         # print reporting_owner_cik, issuer_cik_num
@@ -180,7 +178,7 @@ def link_entries_for_reporting_person_and_affiliation_foreign_keys():
             .filter(reporting_owner_cik=reporting_owner_cik)\
             .filter(issuer_cik=issuer_cik)\
             .update(affiliation=affiliation.id)
-    print 'done.'
+    print '    done.'
 
 
 def link_security_and_security_price_hist(cik, title):
@@ -288,7 +286,7 @@ def create_primary_security(cik):
 # rest of script and other scripts)
 def update_securities():
     print 'Completing or adding complete Security objects...'
-    print '    Sorting...',
+    print '    Sorting...'
     formtitleset =\
         set(Form345Entry.objects
             .values_list('issuer_cik_num',
@@ -306,7 +304,7 @@ def update_securities():
         formtitleset\
         - (formtitleset & storedtitleset)
     new_securities = []
-    print 'building...',
+    print '    building...'
     # Adjust to permit new securities to be filled in without underlying
     # and later filled in.  This logic could create a problem if a security
     # with a single short title is actually two separate securities which are
@@ -331,15 +329,15 @@ def update_securities():
                          deriv_or_nonderiv=deriv_or_nonderiv,
                          scrubbed_underlying_title=underlying_title)
             new_securities.append(new_security)
-    print 'saving...',
+    print '    saving...'
     Security.objects.bulk_create(new_securities)
-    print 'done.'
+    print '    done.'
     # Below adds securities which are only named as underlying securities
     # and not directly transacted in the available form history.  For example
     # this could happen if a company goes public and insiders hold only deriv.
     # securities (RSUs and common stock) and do not directly hold common stock.
     print 'Adding incomplete Security objects...'
-    print '    Sorting...',
+    print '    Sorting...'
     incomplete_formtitleset =\
         set(Form345Entry.objects
             .exclude(scrubbed_underlying_title=None)
@@ -353,7 +351,7 @@ def update_securities():
         incomplete_formtitleset\
         - (incomplete_formtitleset & incomplete_storedtitleset)
     new_incomplete_securities = []
-    print 'building...',
+    print '    building...'
     for issuer_id, title_to_add in incomplete_security_titles_to_add:
         new_incomplete_security =\
             Security(issuer_id=issuer_id,
@@ -362,9 +360,9 @@ def update_securities():
                      deriv_or_nonderiv=None,
                      scrubbed_underlying_title=None)
         new_incomplete_securities.append(new_incomplete_security)
-    print 'saving...',
+    print '    saving...'
     Security.objects.bulk_create(new_incomplete_securities)
-    print 'done.'
+    print '    done.'
 
     # below determines if any don't have at least one associated
     # ticker.
@@ -440,14 +438,14 @@ def link_underlying_securities():
         set(Security.objects.filter(deriv_or_nonderiv='N')
             .exclude(short_sec_title=None)
             .values_list('issuer', 'short_sec_title'))
-    print '    Sorting...',
+    print '    Sorting...'
     underlying_securities_to_link =\
         unlinked_form_ciks_and_underlying_set &\
         underlying_securities
 
     underlying_securities_to_link_list = list(underlying_securities_to_link)
 
-    print 'linking and saving...',
+    print 'linking and saving...'
     for cik, underlying_title in underlying_securities_to_link_list:
         security_id = \
             Security.objects.filter(issuer=cik)\

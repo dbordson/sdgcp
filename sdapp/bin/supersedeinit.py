@@ -42,11 +42,13 @@ print 'Now superseding former officers with stale forms...'
 officercutoffyears = 2
 is_officer = True
 st.supersede_stale_entries(officercutoffyears, is_officer)
+print ''
 print '...Done with officers...'
 # Now superseding nonofficers who disappeared with entries on the books
 print 'Now superseding former nonofficers with stale forms...'
 nonofficercutoffyears = 5
 is_officer = False
 st.supersede_stale_entries(nonofficercutoffyears, is_officer)
+print ''
 print '...Done with nonofficers...'
 print '...Done with superseded dates script.'
