@@ -167,7 +167,8 @@ def f_att(numdec, treeobject, path):
 # Extracts boolean attribute
 def b_att(treeobject, path):
     try:
-        if treeobject.find(path).text[0:1] == '1':
+        if treeobject.find(path).text[0:1] == '1'\
+                or treeobject.find(path).text[0:4].lower() == 'true':
             a = True
         else:
             a = False
