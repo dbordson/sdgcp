@@ -8,4 +8,4 @@ emailaddress.txt
 settings.py
 emailpw.py
 client_secret.json
-qindex
+qindex/**
