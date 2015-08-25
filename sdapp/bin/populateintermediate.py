@@ -188,7 +188,6 @@ def link_security_and_security_price_hist(cik, title):
         SecurityPriceHist.objects.filter(issuer_id=cik)[0]
     ticker = security_price_hist.ticker_sym
     print ticker
-
     security = \
         Security.objects.get(issuer_id=cik,
                              deriv_or_nonderiv='N',
@@ -367,7 +366,7 @@ def update_securities():
     # below determines if any don't have at least one associated
     # ticker.
     print 'Finding and linking objects with associated',
-    print 'SecurityPriceHist objects, none of which are linked to a ',
+    print 'SecurityPriceHist objects, none of which are linked to a',
     print 'security...'
     print '    Sorting...'
     issuer_with_unlinked_securities =\

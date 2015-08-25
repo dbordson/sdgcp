@@ -1,0 +1,13 @@
+One off adjustments
+
+This is a set of adjustments we will need to run when initializing (or recreating the db).  
+
+Visa's class A common stock should be associated with its ticker.  Not clear from the way its form 4s are filled out, but this can be confirmed with its 10k
+Run the below snippet after the bulkupdate.py script has finished.  Then consider running nightlyupdate.py to make sure any additional connections are made.
+from sdapp.models import SecurityPriceHist, Security
+a = SecurityPriceHist.objects.filter(ticker_sym='V')[0]
+classa = Security.objects.filter(issuer=a.issuer).filter(deriv_or_nonderiv='N').filter(short_sec_title='class a common stock')[0]
+classa.ticker = 'V'
+classa.save()
+a.security = classa
+a.save()

@@ -371,7 +371,7 @@ def formcrawl(fullformobject, list_of_ciks):
 
     formentries = []
     NonDerivEntryNumber = 1
-
+    null_name_start = 'no securities',
     for child in root.findall('nonDerivativeTable'):
         deriv_or_nonderiv = 'N'
         for child2 in child.findall("./"):
@@ -379,8 +379,9 @@ def formcrawl(fullformobject, list_of_ciks):
                           deriv_or_nonderiv, xmlfilepath, sec_url,
                           tenbfivenotenames, filingdatetimestring,
                           list_of_ciks)
-            formentries.append(entry)
-            NonDerivEntryNumber += 1
+            if entry.security_title.find(null_name_start) != 0:
+                formentries.append(entry)
+                NonDerivEntryNumber += 1
 
     DerivEntryNumber = 1
     for child in root.findall('derivativeTable'):
@@ -390,8 +391,9 @@ def formcrawl(fullformobject, list_of_ciks):
                           deriv_or_nonderiv, xmlfilepath, sec_url,
                           tenbfivenotenames, filingdatetimestring,
                           list_of_ciks)
-            formentries.append(entry)
-            DerivEntryNumber += 1
+            if entry.security_title.find(null_name_start) != 0:
+                formentries.append(entry)
+                DerivEntryNumber += 1
 
     return formentries
 
@@ -461,9 +463,9 @@ def formentryinsert():
             len(parseerrorlist)
         print "Number of forms where issuer not an IssuerCIK",\
             len(ciksnotinlist)
-        print "Here are any files from above that were filed in 2005 or later:"
+        print "Here are any files from above that were filed in 2006 or later:"
         oldyears = ['94', '95', '96', '97', '98', '99',
-                    '00', '01', '02', '03', '04']
+                    '00', '01', '02', '03', '04', '05']
         count = 0
         for line in parseerrorlist:
             if not any(line.sec_path.find('-' + oldyear + '-') != -1
