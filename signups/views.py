@@ -17,6 +17,8 @@ def home(request):
         # this part should be removed if that shouldn't happen
         if User.objects.filter(email=form.cleaned_data['email']).exists():
             return HttpResponseRedirect('/duplicate/')
+        if User.objects.filter(username=form.cleaned_data['email']).exists():
+            return HttpResponseRedirect('/duplicate/')
         user = \
             User.objects.create_user(username=form.cleaned_data['email'],
                                      email=form.cleaned_data['email'],

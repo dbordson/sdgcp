@@ -1,11 +1,13 @@
+from collections import Counter
+import datetime
+from decimal import Decimal
+import sys
+
+from django.db.models import Q
+
+from sdapp.bin import updatetitles
 from sdapp.models import (ReportingPerson, Form345Entry, IssuerCIK,
                           Affiliation, Security, SecurityPriceHist)
-# from django.db import connection
-import datetime
-from collections import Counter
-from sdapp.bin import updatetitles
-from django.db.models import Q
-from decimal import Decimal
 
 
 def weighted_avg(vectorunitoutput, weightingvector):
@@ -59,10 +61,11 @@ def intrinsicvalcalc(conv_vector, unitsvector, underlyingprice):
 
 def add_new_issuer_names():
     print 'Adding new IssuerCIK object names...'
-    print '    Sorting, adding and saving...',
+    print '    Sorting, adding and saving any new...',
     issuer_object_set_to_update =\
         IssuerCIK.objects.filter(name=None)
-
+    counter = 0.0
+    looplength = float(len(issuer_object_set_to_update))
     for issuer in issuer_object_set_to_update:
         forms = Form345Entry.objects.filter(issuer_cik=issuer)
         if forms.exists():
@@ -70,12 +73,17 @@ def add_new_issuer_names():
                 .latest('filedatetime').issuer_name
             issuer.name = name
             issuer.save()
-    print 'Done.'
+        counter += 1.0
+        percentcomplete = round(counter / looplength * 100, 2)
+        sys.stdout.write("\r%s / %s issuer objects to update: %.2f%%" %
+                         (int(counter), int(looplength), percentcomplete))
+        sys.stdout.flush()
+    print '\nDone.'
 
 
 def update_reportingpersons():
     print 'Adding new ReportingPerson objects...'
-    print '    Sorting...',
+    print '    Sorting...'
     form_reporting_owner_cik_set =\
         set(Form345Entry.objects
             .values_list('reporting_owner_cik_num', flat=True))
@@ -88,8 +96,10 @@ def update_reportingpersons():
         form_reporting_owner_cik_set\
         - (form_reporting_owner_cik_set & existing_reporting_person_cik_set)
 
-    print 'building...',
+    print '    building...'
     new_persons = []
+    counter = 0.0
+    looplength = float(len(reporting_person_ciks_to_add))
     for reporting_person_cik_to_add in reporting_person_ciks_to_add:
         cik = reporting_person_cik_to_add
         name =\
@@ -100,8 +110,13 @@ def update_reportingpersons():
             ReportingPerson(person_name=name,
                             reporting_owner_cik_num=cik)
         new_persons.append(persontosave)
+        counter += 1.0
+        percentcomplete = round(counter / looplength * 100, 2)
+        sys.stdout.write("\r%s / %s reporting persons to add: %.2f%%" %
+                         (int(counter), int(looplength), percentcomplete))
+        sys.stdout.flush()
 
-    print 'saving...',
+    print '\n    saving any new...'
     ReportingPerson.objects.bulk_create(new_persons)
     print 'done.'
 
@@ -125,6 +140,8 @@ def update_affiliations():
 
     print '    building...'
     new_affiliations = []
+    looplength = float(len(affiliations_cik_combinations_to_add))
+    counter = 0.0
     for cik_combination in affiliations_cik_combinations_to_add:
         issuer_cik_num = cik_combination[0]
         reporting_owner_cik_num = cik_combination[1]
@@ -138,8 +155,13 @@ def update_affiliations():
             Affiliation(issuer_id=issuer_cik_num,
                         reporting_owner_id=reporting_owner_cik_num,
                         person_name=latest_entry.reporting_owner_name)
+        counter += 1.0
+        percentcomplete = round(counter / looplength * 100, 2)
+        sys.stdout.write("\r%s / %s affiliations to add: %.2f%%" %
+                         (int(counter), int(looplength), percentcomplete))
+        sys.stdout.flush()
         new_affiliations.append(new_affiliation)
-    print '    saving...'
+    print '\n    saving any new...'
     Affiliation.objects.bulk_create(new_affiliations)
     print '    done.'
 
@@ -150,7 +172,9 @@ def link_entries_for_reporting_person_and_affiliation_foreign_keys():
     reporting_owner_ciks_with_unlinked_forms =\
         Form345Entry.objects.filter(reporting_owner_cik=None)\
         .values_list('reporting_owner_cik_num', flat=True).distinct()
-    print '    linking and saving...'
+    print '    linking and saving any new...'
+    looplength = float(len(reporting_owner_ciks_with_unlinked_forms))
+    counter = 0.0
     for reporting_owner_cik in reporting_owner_ciks_with_unlinked_forms:
         reporting_owner =\
             ReportingPerson.objects\
@@ -158,14 +182,21 @@ def link_entries_for_reporting_person_and_affiliation_foreign_keys():
         Form345Entry.objects.filter(reporting_owner_cik=None)\
             .filter(reporting_owner_cik_num=reporting_owner_cik)\
             .update(reporting_owner_cik=reporting_owner)
-    print '    done.'
+        counter += 1.0
+        percentcomplete = round(counter / looplength * 100, 2)
+        sys.stdout.write("\r%s / %s owner linkages: %.2f%%" %
+                         (int(counter), int(looplength), percentcomplete))
+        sys.stdout.flush()
+    print '\n    done.'
 
     print 'Linking Form345Entry objects to Affiliation objects...'
     print '    Sorting...'
     affiliations_with_unlinked_forms =\
         Form345Entry.objects.filter(affiliation=None)\
         .values_list('reporting_owner_cik', 'issuer_cik').distinct()
-    print '    linking and saving...'
+    print '    linking and saving any new...'
+    looplength = float(len(affiliations_with_unlinked_forms))
+    counter = 0.0
     for reporting_owner_cik, issuer_cik\
             in affiliations_with_unlinked_forms:
         # print reporting_owner_cik, issuer_cik_num
@@ -178,7 +209,12 @@ def link_entries_for_reporting_person_and_affiliation_foreign_keys():
             .filter(reporting_owner_cik=reporting_owner_cik)\
             .filter(issuer_cik=issuer_cik)\
             .update(affiliation=affiliation.id)
-    print '    done.'
+        counter += 1.0
+        percentcomplete = round(counter / looplength * 100, 2)
+        sys.stdout.write("\r%s / %s affiliations to link: %.2f%%" %
+                         (int(counter), int(looplength), percentcomplete))
+        sys.stdout.flush()
+    print '\n    done.'
 
 
 def link_security_and_security_price_hist(cik, title):
@@ -308,6 +344,8 @@ def update_securities():
     # and later filled in.  This logic could create a problem if a security
     # with a single short title is actually two separate securities which are
     # referenced only as underlying securities.  I suspect this risk is remote.
+    looplength = float(len(security_titles_to_add))
+    counter = 0.0
     for issuer_id, title_to_add, underlying_title, deriv_or_nonderiv\
             in security_titles_to_add:
         short_title_with_no_underlying = \
@@ -328,7 +366,12 @@ def update_securities():
                          deriv_or_nonderiv=deriv_or_nonderiv,
                          scrubbed_underlying_title=underlying_title)
             new_securities.append(new_security)
-    print '    saving...'
+        counter += 1.0
+        percentcomplete = round(counter / looplength * 100, 2)
+        sys.stdout.write("\r%s / %s security objects to add / update: %.2f%%" %
+                         (int(counter), int(looplength), percentcomplete))
+        sys.stdout.flush()
+    print '\n    saving any new...'
     Security.objects.bulk_create(new_securities)
     print '    done.'
     # Below adds securities which are only named as underlying securities
@@ -351,6 +394,8 @@ def update_securities():
         - (incomplete_formtitleset & incomplete_storedtitleset)
     new_incomplete_securities = []
     print '    building...'
+    looplength = float(len(incomplete_security_titles_to_add))
+    counter = 0.0
     for issuer_id, title_to_add in incomplete_security_titles_to_add:
         new_incomplete_security =\
             Security(issuer_id=issuer_id,
@@ -359,7 +404,12 @@ def update_securities():
                      deriv_or_nonderiv=None,
                      scrubbed_underlying_title=None)
         new_incomplete_securities.append(new_incomplete_security)
-    print '    saving...'
+        counter += 1.0
+        percentcomplete = round(counter / looplength * 100, 2)
+        sys.stdout.write("\r%s / %s underlying sec. objects to add: %.2f%%" %
+                         (int(counter), int(looplength), percentcomplete))
+        sys.stdout.flush()
+    print '\n    saving any new...'
     Security.objects.bulk_create(new_incomplete_securities)
     print '    done.'
 
@@ -381,7 +431,7 @@ def update_securities():
         (issuers_with_unlinked_sph_objects & issuer_with_unlinked_securities)
 
     # print len(issuers_with_unlinked_sph_objects)
-    print '    linking and saving...'
+    print '    linking and saving any new...'
     for cik in ciks_with_tickers_unlinked:
         create_primary_security(cik)
     print 'done.'
@@ -389,12 +439,14 @@ def update_securities():
 
 def link_form_objects_to_securities():
     print 'Finding and linking Form345Entry objects with Security objects'
-    print '    Sorting, linking and saving...'
+    print '    Sorting, linking and saving any new...'
     unlinked_form_objects =\
         Form345Entry.objects.filter(security=None)\
         .values_list('issuer_cik_num',
                      'deriv_or_nonderiv',
                      'short_sec_title').distinct()
+    looplength = float(len(unlinked_form_objects))
+    counter = 0.0
     for issuer_cik_num, deriv_or_nonderiv, short_sec_title\
             in unlinked_form_objects:
         security =\
@@ -407,7 +459,12 @@ def link_form_objects_to_securities():
             .filter(deriv_or_nonderiv=deriv_or_nonderiv)\
             .filter(short_sec_title=short_sec_title)\
             .update(security=security)
-    print 'done.'
+        counter += 1.0
+        percentcomplete = round(counter / looplength * 100, 2)
+        sys.stdout.write("\r%s / %s underlying sec.objects to add: %.2f%%" %
+                         (int(counter), int(looplength), percentcomplete))
+        sys.stdout.flush()
+    print '\ndone.'
 
 
 def check_securitypricehist():
@@ -444,7 +501,9 @@ def link_underlying_securities():
 
     underlying_securities_to_link_list = list(underlying_securities_to_link)
 
-    print 'linking and saving...'
+    print 'linking and saving any new...'
+    looplength = float(len(underlying_securities_to_link_list))
+    counter = 0.0
     for cik, underlying_title in underlying_securities_to_link_list:
         security_id = \
             Security.objects.filter(issuer=cik)\
@@ -454,7 +513,12 @@ def link_underlying_securities():
             .filter(underlying_security=None)\
             .filter(scrubbed_underlying_title=underlying_title)\
             .update(underlying_security=security_id)
-    print 'done.'
+        counter += 1.0
+        percentcomplete = round(counter / looplength * 100, 2)
+        sys.stdout.write("\r%s / %s underlying securities to link: %.2f%%" %
+                         (int(counter), int(looplength), percentcomplete))
+        sys.stdout.flush()
+    print '\ndone.'
 
 
 def populate_conversion_factors():
@@ -463,6 +527,8 @@ def populate_conversion_factors():
         .filter(deriv_or_nonderiv='D')\
         .exclude(underlying_security__ticker=None)\
         .values_list('security_id', flat=True).distinct()
+    looplength = float(len(latest_conv_list))
+    counter = 0.0
     for security_id in latest_conv_list:
         sampleentries =\
             Form345Entry.objects.filter(security=security_id)\
@@ -475,7 +541,12 @@ def populate_conversion_factors():
         conversion_multiple = median(conversion_multiples)
         Security.objects.filter(id=security_id)\
             .update(conversion_multiple=conversion_multiple)
-    print 'done.'
+        counter += 1.0
+        percentcomplete = round(counter / looplength * 100, 2)
+        sys.stdout.write("\r%s / %s conversion factors to replace: %.2f%%" %
+                         (int(counter), int(looplength), percentcomplete))
+        sys.stdout.flush()
+    print '\ndone.'
 
 
 updatetitles.update_short_titles()

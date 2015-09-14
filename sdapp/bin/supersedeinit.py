@@ -30,7 +30,7 @@ for affiliation, short_sec_title, expiration_date,\
     # rows.  This is an issue on some systems, but I think you should be okay.
     counter += 1.0
     percentcomplete = round(counter / looplength * 100, 2)
-    sys.stdout.write("\r%s / %s unsuperseded security chains : %.2f%%" %
+    sys.stdout.write("\r%s / %s unsuperseded security chains: %.2f%%" %
                      (int(counter), int(looplength), percentcomplete))
     sys.stdout.flush()
     if counter % 1000.0 == 0:

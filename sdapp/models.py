@@ -321,6 +321,7 @@ class FullForm(models.Model):
     save_date = models.DateField(null=True)
     issuer_cik_num = models.CharField(max_length=10)
     text = models.TextField()
+    parsable = models.BooleanField(default=True)
 
     def __unicode__(self):
         return u"%s, %s" % (str(self.sec_path),

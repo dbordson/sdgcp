@@ -71,7 +71,8 @@ def extractcik(fullpath):
 
 
 def saveandclear(formsforsave):
-    FullForm.objects.bulk_create(formsforsave)
+    if len(formsforsave) > 0:
+        FullForm.objects.bulk_create(formsforsave)
     formsforsave = []
     return formsforsave
 
@@ -130,13 +131,13 @@ for formpath in formdownloadlist:
                       percentcomplete))
     sys.stdout.flush()
 
-    formsforsave.append(a)
+    if text is not None:
+        formsforsave.append(a)
     if len(formsforsave) > 1000:  # 10 mb
-        print ''
-        print 'Saving a batch',
+        print '\nSaving a batch',
         formsforsave = saveandclear(formsforsave)
         print 'done with this batch, starting next batch'
 
-print 'Saving'
+print '\nSaving'
 formsforsave = saveandclear(formsforsave)
 print 'Done with all listed files'

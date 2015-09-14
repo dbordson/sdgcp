@@ -25,6 +25,11 @@ urlpatterns =\
              url(r'^accountinfo/watchlist/$',
                  'hellodjango.views.managewatchlist', name='managewatchlist'),
              url(r'^pwreset/$', 'hellodjango.views.pwreset', name='pwreset'),
+             url(r'^changepwlo/$', 'hellodjango.views.changepwloggedout',
+                 name='changepwloggedout'),
+             url(r'^pwresetloemail/$',
+                 'hellodjango.views.pwresetloggedoutemail',
+                 name='pwresetloggedoutemail'),
              url(r'^sdapp/', include('sdapp.urls')),
              url(r'^admin/', include(admin.site.urls)),
 

@@ -50,6 +50,52 @@ def invalid_login(request):
                               )
 
 
+def changepwloggedout(request):
+
+    return render_to_response('changepwloggedout.html',
+                              {'username': request.user.username},
+                              context_instance=RequestContext(request),
+                              )
+
+
+def pwresetloggedoutemail(request):
+    email = request.POST.get('email', '')
+    subject = 'Temporary [PRODUCT NAME] Password'
+    new_pw = User.objects.make_random_password()
+
+    message =\
+        'We received your password reset request for [PRODUCT NAME].\n\n'\
+        + 'Your new password is %s and we suggest that you reset this to '\
+        % new_pw\
+        + 'something easier to remember. If you did not request a '\
+        + 'password reset, please contact us at [SUPPORT EMAIL ADDRESS].\n\n'\
+        + 'If you have any questions, feel free to reply to this email.\n\n'\
+        + 'Regards,\n'\
+        + '[COMPANY NAME] Support'
+    from_email = settings.EMAIL_HOST_USER
+    # request.user.email
+    to_list = [email]
+    # print User.objects.filter(email=email)
+    if User.objects.filter(email=email).exists():
+        u = User.objects.get(email=email)
+    else:
+        messagetext = \
+            'We do not have the email address "%s" on file.  ' % email\
+            + 'If this email address is correct, '\
+            + 'please contact [SUPPORT EMAIL ADDRESS]'
+        messages.warning(request, messagetext)
+        return HttpResponseRedirect('/changepwlo/')
+    u.set_password(new_pw)
+    u.save()
+    send_mail(subject, message, from_email, to_list, fail_silently=True)
+    print message
+
+    messagetext = \
+        'You should receive a new temporary password shortly.'
+    messages.warning(request, messagetext)
+    return HttpResponseRedirect('/changepwlo/')
+
+
 def logout(request):
     auth.logout(request)
     return render_to_response('logout.html',

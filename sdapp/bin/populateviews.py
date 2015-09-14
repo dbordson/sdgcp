@@ -68,7 +68,11 @@ def intrinsicvalcalc(units_held_and_adj_and_conv_vectors,
         return None
     unitsvector, adjustment_vector, conv_vector =\
         zip(*units_held_and_adj_and_conv_vectors)
-    # print units_held_and_adj_and_conv_vectors
+    # Replaces None with Decimal(0.0)
+    # for index, item in enumerate(conv_vector):
+    #     if item is None:
+    #         conv_vector[index] = Decimal(0.0)
+
     up = underlyingprice
     # print up
     # The below list comprehension is finding in the money options
@@ -91,6 +95,8 @@ def build_security_views():
     print '    Sorting and linking...'
     security_view_objects = []
     security_ids = Form345Entry.objects.filter(supersededdt=None)\
+        .exclude(shares_following_xn=None)\
+        .exclude(shares_following_xn=0)\
         .values_list('security', flat=True).distinct()
     # REMOVE BELOW AFTER BUG FIXED
     # SecurityView.objects.all().delete()
@@ -202,9 +208,12 @@ def build_security_views():
             if intrinsic_value is None:
                 print 'sec_obj', sec_obj
                 print 'No intrinsic value for security_id:', security_id
-                print 'latest_transaction.underlying_security', latest_transaction.underlying_security
-                print 'units_held_and_adjustment_vectors', units_held_and_adjustment_vectors
-                print 'raw form345entry list', Form345Entry.objects.filter(supersededdt=None)\
+                print 'latest_transaction.underlying_security',\
+                    latest_transaction.underlying_security
+                print 'units_held_and_adjustment_vectors',\
+                    units_held_and_adjustment_vectors
+                print 'raw form345entry list',\
+                    Form345Entry.objects.filter(supersededdt=None)\
                     .filter(security_id=security_id)
                 print 'underlyingprice', underlyingprice
                 print '    units_held_and_adj_and_conv_vectors may be empty.'

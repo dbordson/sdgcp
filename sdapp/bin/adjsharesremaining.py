@@ -1,7 +1,11 @@
-from sdapp.models import Form345Entry
-from django.db.models import Sum
+
 from decimal import Decimal
+import sys
+
 import django.db
+# from django.db.models import Sum
+
+from sdapp.models import Form345Entry
 
 # Intro note: the way shares following transaction variable is defined is
 # confusing.  The logic tracks rolls forms forward by filing date and not by
@@ -43,6 +47,9 @@ affiliations_and_securities_with_unadjusted_indirect_entries = \
     .distinct()
 
 print 'building and saving...',
+looplength =\
+    float(len(affiliations_and_securities_with_unadjusted_indirect_entries))
+counter = 0.0
 for affiliation, short_sec_title, scrubbed_underlying_title,\
         expiration_date in \
         affiliations_and_securities_with_unadjusted_indirect_entries:
@@ -196,6 +203,11 @@ for affiliation, short_sec_title, scrubbed_underlying_title,\
         starting_adjustment_factor = ending_adjustment_factor
 
     entries_of_this_type.update(shares_following_xn_is_adjusted=True)
+    counter += 1.0
+    percentcomplete = round(counter / looplength * 100, 2)
+    sys.stdout.write("\r%s / %s indirect entry sets to adjust: %.2f%%" %
+                     (int(counter), int(looplength), percentcomplete))
+    sys.stdout.flush()
     django.db.reset_queries()
 
 print 'done.'

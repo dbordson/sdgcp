@@ -2,11 +2,12 @@
 
 
 {% block content %}
-
+<div class="spacer20"></div>
         <div class="col-md-3">
           
           <p>Your login details are invalid.</p>
-          <p>Click <a href='{% url "loginview" %}''>here</a> to try again.</p>
+          <p>Click <a href='{% url "loginview" %}'>here</a> to try again.</p>
+          <p>Click <a href='{% url "changepwloggedout" %}'>here</a> to reset your password.</p>
         </div>
 
         </div>

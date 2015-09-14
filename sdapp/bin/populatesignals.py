@@ -102,7 +102,7 @@ def updatewatchednames():
 print 'Populating signals...'
 
 today = datetime.datetime.now(pytz.utc)
-lookback = datetime.timedelta(-90)
+lookback = datetime.timedelta(-180)
 
 # insider discretionary buy
 print 'Discretionary Buys'
@@ -119,6 +119,8 @@ a =\
             + datetime.timedelta(-5))\
     .filter(is_officer=True)\
     .exclude(transaction_date=None)\
+    .exclude(xn_price_per_share=None)\
+    .exclude(transaction_shares=None)\
     .filter(xn_acq_disp_code='A')\
     .filter(transaction_code='P')  # Open mkt / private purch
 # .filter(Q(transaction_code='P') |  # Open mkt / private purch
