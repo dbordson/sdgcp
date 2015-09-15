@@ -461,7 +461,7 @@ def link_form_objects_to_securities():
             .update(security=security)
         counter += 1.0
         percentcomplete = round(counter / looplength * 100, 2)
-        sys.stdout.write("\r%s / %s underlying sec.objects to add: %.2f%%" %
+        sys.stdout.write("\r%s / %s underlying sec. objects to link: %.2f%%" %
                          (int(counter), int(looplength), percentcomplete))
         sys.stdout.flush()
     print '\ndone.'
