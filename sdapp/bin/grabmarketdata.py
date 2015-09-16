@@ -80,4 +80,4 @@ for SPH_id, ticker, security_id in tickertuples:
     sys.stdout.write("\r%s / %s tickers : %.2f%%" %
                      (int(counter), int(looplength), percentcomplete))
     sys.stdout.flush()
-print "done."
+print "\nDone."

@@ -1,9 +1,11 @@
-from sdapp.models import Form345Entry, ClosePrice, Security, SecurityView,\
-    Affiliation, PersonHoldingView
-# from django.db import connection
 import datetime
 from decimal import Decimal
+import sys
+
 import django.db
+
+from sdapp.models import Form345Entry, ClosePrice, Security, SecurityView,\
+    Affiliation, PersonHoldingView
 
 
 def rd(a, s_id):
@@ -100,6 +102,8 @@ def build_security_views():
         .values_list('security', flat=True).distinct()
     # REMOVE BELOW AFTER BUG FIXED
     # SecurityView.objects.all().delete()
+    looplength = float(len(security_ids))
+    counter = 0.0
     for security_id in security_ids:
         latest_transaction =\
             Form345Entry.objects.filter(supersededdt=None)\
@@ -315,8 +319,15 @@ def build_security_views():
 
         # security_view_object.save()
 
+        counter += 1.0
+        percentcomplete = round(counter / looplength * 100, 2)
+        sys.stdout\
+            .write("\r%s / %s SecurityView objects: %.2f%%" %
+                   (int(counter), int(looplength), percentcomplete))
+        sys.stdout.flush()
+
         security_view_objects.append(security_view_object)
-    print 'deleting old...'
+    print '\ndeleting old...'
     SecurityView.objects.all().delete()
     print 'saving...'
     SecurityView.objects.bulk_create(security_view_objects)
@@ -331,6 +342,8 @@ def build_security_views_by_affiliation():
     security_ids_and_affiliations = Form345Entry.objects\
         .filter(supersededdt=None)\
         .values_list('security', 'affiliation').distinct()
+    looplength = float(len(security_ids_and_affiliations))
+    counter = 0.0
     for security_id, affiliation in security_ids_and_affiliations:
         latest_transaction =\
             Form345Entry.objects.filter(supersededdt=None)\
@@ -550,7 +563,15 @@ def build_security_views_by_affiliation():
                               most_recent_xn=last_transaction_date)
 
         person_holding_view_objects.append(person_holding_view_object)
-    print 'deleting old...'
+
+        counter += 1.0
+        percentcomplete = round(counter / looplength * 100, 2)
+        sys.stdout\
+            .write("\r%s / %s PersonHoldingView objects: %.2f%%" %
+                   (int(counter), int(looplength), percentcomplete))
+        sys.stdout.flush()
+
+    print '\ndeleting old...'
     PersonHoldingView.objects.all().delete()
     print 'saving...'
     PersonHoldingView.objects.bulk_create(person_holding_view_objects)
