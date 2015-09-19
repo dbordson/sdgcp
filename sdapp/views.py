@@ -96,7 +96,7 @@ def options(request, ticker):
         .order_by('-signal_date')
     persons_data = \
         signals.exclude(reporting_person=None)\
-        .values_list('reporting_person', 'reporting_person_name')
+        .values_list('reporting_person', 'reporting_person_name').distinct()
     graph_data_json, titles_json, ymax =\
         holdingbuild.buildgraphdata(issuer, ticker, persons_data)
 

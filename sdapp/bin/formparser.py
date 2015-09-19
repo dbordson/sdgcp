@@ -54,7 +54,7 @@ def convert_string_to_datetimestring(c):
 
 def scrub_title(security_title_string):
     if security_title_string is None:
-        return 'no title'
+        return None
     if security_title_string.lower().find('no securities') == 0:
         return 'no securities'
     #
