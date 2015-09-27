@@ -15,7 +15,7 @@ class ReportingPerson(models.Model):
 class IssuerCIK(models.Model):
     cik_num = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=80, null=True)
-    current_ceo = models.ForeignKey(ReportingPerson, null=True)
+    # current_ceo = models.ForeignKey(ReportingPerson, null=True)
     # Adapt this for companies with more than one public stock (GOOG)
     # to do this, we will need to update the ticker finder script
 
@@ -354,17 +354,56 @@ class Form345Entry(models.Model):
         return str(self.entry_internal_id)
 
 
+# To be deleted
+class Signal(models.Model):
+    issuer = models.ForeignKey(IssuerCIK)
+    security = models.ForeignKey(Security)
+    sph = models.ForeignKey(SecurityPriceHist, null=True)
+    reporting_person = models.ForeignKey(ReportingPerson)
+    reporting_person_name = models.CharField(max_length=80, default='ERROR')
+    reporting_person_title = models.CharField(max_length=80, default='ERROR')
+    signal_name = models.CharField(max_length=80, default='ERROR')
+    signal_date = models.DateField()
+    formentrysource = models.CharField(max_length=80, default='ERROR')
+    security_title = models.CharField(max_length=80, default='ERROR')
+    security_units = models.DecimalField(max_digits=15, decimal_places=4,
+                                         null=True)
+    signal_value = models.DecimalField(max_digits=15, decimal_places=4,
+                                       null=True)
+    transactions = models.IntegerField(max_length=15)
+    unit_conversion = models.DecimalField(max_digits=15, decimal_places=4,
+                                          null=True)
+    short_statement = models.CharField(max_length=200, default='ERROR')
+    long_statement = models.CharField(max_length=200, default='ERROR')
+    signal_id_code = models.CharField(max_length=80)
+    signal_is_new = models.BooleanField()
+
+    def __unicode__(self):
+        return u"%s, %s, %s" % (str(self.reporting_person),
+                                str(self.signal_name),
+                                str(self.signal_date))
+
+
+# To be deleted
+class Recommendation(models.Model):
+    issuer = models.ForeignKey(IssuerCIK)
+    sentiment = models.CharField(max_length=20, default='ERROR')
+    confidence = models.CharField(max_length=20, default='ERROR')
+
+    def __unicode__(self):
+        return u"%s, %s, %s" % (str(self.issuer),
+                                str(self.sentiment),
+                                str(self.confidence))
+
+
 class DiscretionaryXnEvent(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
     reporting_person = models.ForeignKey(ReportingPerson)
     security = models.ForeignKey(Security)
-    sph = models.ForeignKey(SecurityPriceHist, null=True)
     form_entry = models.ForeignKey(Form345Entry, null=True)
     xn_acq_disp_code = models.CharField(max_length=1)
     transaction_code = models.CharField(max_length=1)
     xn_val = models.DecimalField(max_digits=15, decimal_places=2)
-    end_holding_val = models.DecimalField(max_digits=15, decimal_places=2)
-    net_xn_pct = models.DecimalField(max_digits=15, decimal_places=2)
     filedate = models.DateField()
 
     def __unicode__(self):
@@ -412,10 +451,10 @@ class SignalDisplay(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
     sph = models.ForeignKey(SecurityPriceHist, null=True)
 
-    security_1 = models.ForeignKey(Security)
+    security_one = models.ForeignKey(Security)
     security_title_1 = models.CharField(max_length=80)
     only_security_1 = models.BooleanField()
-    reporting_person_1 = models.ForeignKey(ReportingPerson)
+    reporting_person_two = models.ForeignKey(ReportingPerson)
     reporting_person_name_1 = models.CharField(max_length=80)
     reporting_person_title_1 = models.CharField(max_length=80, null=True)
     signal_name_1 = models.CharField(max_length=80)
@@ -449,10 +488,10 @@ class SignalDisplay(models.Model):
 
     ##############
 
-    security_2 = models.ForeignKey(Security)
+    security_two = models.ForeignKey(Security, related_name='sec1')
     security_title_2 = models.CharField(max_length=80)
     only_security_2 = models.BooleanField()
-    reporting_person_2 = models.ForeignKey(ReportingPerson)
+    reporting_person_two = models.ForeignKey(ReportingPerson)
     reporting_person_name_2 = models.CharField(max_length=80)
     reporting_person_title_2 = models.CharField(max_length=80, null=True)
     signal_name_2 = models.CharField(max_length=80)
