@@ -65,11 +65,11 @@ def calc_max_superseded_xn_date(chain_entries_incl_superseded):
 
 
 def calc_supersededdts_for_chains(affiliation,
-                                  short_sec_title, expiration_date,
+                                  security, expiration_date,
                                   direct_or_indirect):
     chain_entries_incl_superseded =\
         Form345Entry.objects.filter(affiliation=affiliation)\
-        .filter(short_sec_title=short_sec_title)\
+        .filter(security=security)\
         .filter(expiration_date=expiration_date)\
         .filter(direct_or_indirect=direct_or_indirect)
 

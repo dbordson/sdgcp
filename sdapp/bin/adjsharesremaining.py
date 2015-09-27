@@ -32,7 +32,7 @@ def transaction_share_calculator(shares_acquired_disposed,
     return form_transaction_shares
 
 print "Adjusting indirect holdings..."
-print "Sorting...",
+print "Sorting..."
 
 affiliations_and_securities_with_unadjusted_indirect_entries = \
     Form345Entry.objects.filter(shares_following_xn_is_adjusted=False)\
@@ -46,7 +46,7 @@ affiliations_and_securities_with_unadjusted_indirect_entries = \
                  'expiration_date')\
     .distinct()
 
-print 'building and saving...',
+print 'building and saving...'
 looplength =\
     float(len(affiliations_and_securities_with_unadjusted_indirect_entries))
 counter = 0.0
@@ -210,4 +210,4 @@ for affiliation, short_sec_title, scrubbed_underlying_title,\
     sys.stdout.flush()
     django.db.reset_queries()
 
-print 'done.'
+print '\ndone.'

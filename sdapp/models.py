@@ -4,22 +4,23 @@ from django.contrib.auth.models import User
 # class StockHistories(models.Model):
 
 
-class IssuerCIK(models.Model):
-    cik_num = models.IntegerField(primary_key=True)
-    name = models.CharField(max_length=80, null=True)
-    # Adapt this for companies with more than one public stock (GOOG)
-    # to do this, we will need to update the ticker finder script
-
-    def __unicode__(self):
-        return str(self.cik_num)
-
-
 class ReportingPerson(models.Model):
     person_name = models.CharField(max_length=80)
     reporting_owner_cik_num = models.IntegerField(primary_key=True)
 
     def __unicode__(self):
         return self.person_name
+
+
+class IssuerCIK(models.Model):
+    cik_num = models.IntegerField(primary_key=True)
+    name = models.CharField(max_length=80, null=True)
+    current_ceo = models.ForeignKey(ReportingPerson, null=True)
+    # Adapt this for companies with more than one public stock (GOOG)
+    # to do this, we will need to update the ticker finder script
+
+    def __unicode__(self):
+        return str(self.cik_num)
 
 
 class Affiliation(models.Model):
@@ -52,7 +53,8 @@ class SecurityPriceHist(models.Model):
     security = models.ForeignKey(Security, null=True)
 
     def __unicode__(self):
-        return self.ticker_sym
+        return u"%s, %s" % (str(self.ticker_sym),
+                            str(self.issuer.name))
 
 
 class ClosePrice(models.Model):
@@ -171,46 +173,6 @@ class YearlyReportingPersonAtts(models.Model):
         return u"%s, %s, %s" % (str(self.reporting_person),
                                 str(self.transactions),
                                 str(self.activity_threshold))
-
-
-class Signal(models.Model):
-    issuer = models.ForeignKey(IssuerCIK)
-    security = models.ForeignKey(Security)
-    sph = models.ForeignKey(SecurityPriceHist, null=True)
-    reporting_person = models.ForeignKey(ReportingPerson)
-    reporting_person_name = models.CharField(max_length=80, default='ERROR')
-    reporting_person_title = models.CharField(max_length=80, default='ERROR')
-    signal_name = models.CharField(max_length=80, default='ERROR')
-    signal_date = models.DateField()
-    formentrysource = models.CharField(max_length=80, default='ERROR')
-    security_title = models.CharField(max_length=80, default='ERROR')
-    security_units = models.DecimalField(max_digits=15, decimal_places=4,
-                                         null=True)
-    signal_value = models.DecimalField(max_digits=15, decimal_places=4,
-                                       null=True)
-    transactions = models.IntegerField(max_length=15)
-    unit_conversion = models.DecimalField(max_digits=15, decimal_places=4,
-                                          null=True)
-    short_statement = models.CharField(max_length=200, default='ERROR')
-    long_statement = models.CharField(max_length=200, default='ERROR')
-    signal_id_code = models.CharField(max_length=80)
-    signal_is_new = models.BooleanField()
-
-    def __unicode__(self):
-        return u"%s, %s, %s" % (str(self.reporting_person),
-                                str(self.signal_name),
-                                str(self.signal_date))
-
-
-class Recommendation(models.Model):
-    issuer = models.ForeignKey(IssuerCIK)
-    sentiment = models.CharField(max_length=20, default='ERROR')
-    confidence = models.CharField(max_length=20, default='ERROR')
-
-    def __unicode__(self):
-        return u"%s, %s, %s" % (str(self.issuer),
-                                str(self.sentiment),
-                                str(self.confidence))
 
 
 class SecurityView(models.Model):
@@ -390,3 +352,145 @@ class Form345Entry(models.Model):
 
     def __unicode__(self):
         return str(self.entry_internal_id)
+
+
+class DiscretionaryXnEvent(models.Model):
+    issuer = models.ForeignKey(IssuerCIK)
+    reporting_person = models.ForeignKey(ReportingPerson)
+    security = models.ForeignKey(Security)
+    sph = models.ForeignKey(SecurityPriceHist, null=True)
+    form_entry = models.ForeignKey(Form345Entry, null=True)
+    xn_acq_disp_code = models.CharField(max_length=1)
+    transaction_code = models.CharField(max_length=1)
+    xn_val = models.DecimalField(max_digits=15, decimal_places=2)
+    end_holding_val = models.DecimalField(max_digits=15, decimal_places=2)
+    net_xn_pct = models.DecimalField(max_digits=15, decimal_places=2)
+    filedate = models.DateField()
+
+    def __unicode__(self):
+        return u"%s, %s, %s, %s, %s" % (str(self.issuer.name),
+                                        str(self.security.short_sec_title),
+                                        str(self.reporting_person.person_name),
+                                        str(self.xn_val),
+                                        str(self.filedate))
+
+
+class PersonSignal(models.Model):
+    issuer = models.ForeignKey(IssuerCIK)
+    sph = models.ForeignKey(SecurityPriceHist, null=True)
+    reporting_person = models.ForeignKey(ReportingPerson)
+    security_1 = models.ForeignKey(Security)
+    only_security_1 = models.BooleanField()
+
+    reporting_person_title = models.CharField(max_length=80, null=True)
+    signal_name = models.CharField(max_length=80, default='ERROR')
+    signal_detect_date = models.DateField()
+    first_xn_date = models.DateField()
+    last_xn_date = models.DateField()
+    transactions = models.IntegerField(max_length=15)
+
+    average_price = models.DecimalField(max_digits=15, decimal_places=2)
+    gross_signal_value = models.DecimalField(max_digits=15, decimal_places=2)
+    net_signal_value = models.DecimalField(max_digits=15, decimal_places=2)
+    end_holding_val = models.DecimalField(max_digits=15, decimal_places=2)
+    net_signal_pct = models.DecimalField(max_digits=15, decimal_places=2)
+
+    preceding_stock_perf = models.DecimalField(max_digits=15, decimal_places=2)
+    preceding_stock_period_days = models.IntegerField(max_length=3)
+
+    significant = models.BooleanField()
+    new = models.BooleanField()
+
+    def __unicode__(self):
+        return u"%s, %s, %s, %s" % (str(self.issuer.name),
+                                    str(self.reporting_person.person_name),
+                                    str(self.net_signal_value),
+                                    str(self.signal_detect_date))
+
+
+class SignalDisplay(models.Model):
+    issuer = models.ForeignKey(IssuerCIK)
+    sph = models.ForeignKey(SecurityPriceHist, null=True)
+
+    security_1 = models.ForeignKey(Security)
+    security_title_1 = models.CharField(max_length=80)
+    only_security_1 = models.BooleanField()
+    reporting_person_1 = models.ForeignKey(ReportingPerson)
+    reporting_person_name_1 = models.CharField(max_length=80)
+    reporting_person_title_1 = models.CharField(max_length=80, null=True)
+    signal_name_1 = models.CharField(max_length=80)
+
+    signal_detect_date_1 = models.DateField()
+    first_xn_date_1 = models.DateField()
+    last_xn_date_1 = models.DateField()
+    transactions_1 = models.IntegerField(max_length=15)
+
+    average_price_1 = models.DecimalField(max_digits=15, decimal_places=2)
+    gross_signal_value_1 = models.DecimalField(max_digits=15, decimal_places=2)
+    net_signal_value_1 = models.DecimalField(max_digits=15, decimal_places=2)
+    end_holding_val_1 = models.DecimalField(max_digits=15, decimal_places=2)
+    net_signal_pct_1 = models.DecimalField(max_digits=15, decimal_places=2)
+
+    preceding_perf_1 = models.DecimalField(max_digits=15, decimal_places=2)
+    preceding_period_days_1 = models.IntegerField(max_length=3)
+    perf_after_detection_1 =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+
+    buy_on_weakness_1 = models.CharField(max_length=500, null=True)
+    cluster_buy_1 = models.CharField(max_length=500, null=True)
+    discretionary_buy_1 = models.CharField(max_length=500, null=True)
+    big_discretionary_buy_1 = models.CharField(max_length=500, null=True)
+    ceo_buy_1 = models.CharField(max_length=500, null=True)
+    sell_on_weakness_1 = models.CharField(max_length=500, null=True)
+    cluster_sell_1 = models.CharField(max_length=500, null=True)
+    discretionary_sell_1 = models.CharField(max_length=500, null=True)
+    big_discretionary_sell_1 = models.CharField(max_length=500, null=True)
+    ceo_sell_1 = models.CharField(max_length=500, null=True)
+
+    ##############
+
+    security_2 = models.ForeignKey(Security)
+    security_title_2 = models.CharField(max_length=80)
+    only_security_2 = models.BooleanField()
+    reporting_person_2 = models.ForeignKey(ReportingPerson)
+    reporting_person_name_2 = models.CharField(max_length=80)
+    reporting_person_title_2 = models.CharField(max_length=80, null=True)
+    signal_name_2 = models.CharField(max_length=80)
+
+    signal_detect_date_2 = models.DateField()
+    first_xn_date_2 = models.DateField()
+    last_xn_date_2 = models.DateField()
+    transactions_2 = models.IntegerField(max_length=15)
+
+    average_price_2 = models.DecimalField(max_digits=15, decimal_places=2)
+    gross_signal_value_2 = models.DecimalField(max_digits=15, decimal_places=2)
+    net_signal_value_2 = models.DecimalField(max_digits=15, decimal_places=2)
+    end_holding_val_2 = models.DecimalField(max_digits=15, decimal_places=2)
+    net_signal_pct_2 = models.DecimalField(max_digits=15, decimal_places=2)
+
+    preceding_perf_2 = models.DecimalField(max_digits=15, decimal_places=2)
+    preceding_period_days_2 = models.IntegerField(max_length=3)
+    perf_after_detection_2 =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+
+    buy_on_weakness_2 = models.CharField(max_length=500, null=True)
+    cluster_buy_2 = models.CharField(max_length=500, null=True)
+    discretionary_buy_2 = models.CharField(max_length=500, null=True)
+    big_discretionary_buy_2 = models.CharField(max_length=500, null=True)
+    ceo_buy_2 = models.CharField(max_length=500, null=True)
+    sell_on_weakness_2 = models.CharField(max_length=500, null=True)
+    cluster_sell_2 = models.CharField(max_length=500, null=True)
+    discretionary_sell_2 = models.CharField(max_length=500, null=True)
+    big_discretionary_sell_2 = models.CharField(max_length=500, null=True)
+    ceo_sell_2 = models.CharField(max_length=500, null=True)
+
+    ##############
+
+    total_transactions = models.IntegerField(max_length=15)
+    mixed_signals = models.BooleanField()
+    signal_is_new = models.BooleanField()
+
+    def __unicode__(self):
+        return u"%s, %s, %s" % (str(self.reporting_person),
+                                str(self.signal_name),
+                                str(self.signal_date))

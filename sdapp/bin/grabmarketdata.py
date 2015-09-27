@@ -64,7 +64,7 @@ def savetickerinfo(SPH_id, ticker, security_id):
                     event_date=str(datetime.date(key)))\
                     .save()
 
-print "Updating stock price histories and split data...",
+print "Updating stock price histories and split data..."
 tickertuples = SecurityPriceHist.objects.values_list('id',
                                                      'ticker_sym',
                                                      'security')

@@ -3,7 +3,7 @@ import datetime
 from decimal import Decimal
 import sys
 
-from django.db.models import Q
+from django.db.models import F, Q
 
 from sdapp.bin import updatetitles
 from sdapp.models import (ReportingPerson, Form345Entry, IssuerCIK,
@@ -168,25 +168,30 @@ def update_affiliations():
 
 def link_entries_for_reporting_person_and_affiliation_foreign_keys():
     print 'Linking Form345Entry objects to ReportingPerson objects...'
-    print '    Sorting...'
-    reporting_owner_ciks_with_unlinked_forms =\
-        Form345Entry.objects.filter(reporting_owner_cik=None)\
-        .values_list('reporting_owner_cik_num', flat=True).distinct()
-    print '    linking and saving any new...'
-    looplength = float(len(reporting_owner_ciks_with_unlinked_forms))
-    counter = 0.0
-    for reporting_owner_cik in reporting_owner_ciks_with_unlinked_forms:
-        reporting_owner =\
-            ReportingPerson.objects\
-            .get(reporting_owner_cik_num=reporting_owner_cik)
-        Form345Entry.objects.filter(reporting_owner_cik=None)\
-            .filter(reporting_owner_cik_num=reporting_owner_cik)\
-            .update(reporting_owner_cik=reporting_owner)
-        counter += 1.0
-        percentcomplete = round(counter / looplength * 100, 2)
-        sys.stdout.write("\r%s / %s owner linkages: %.2f%%" %
-                         (int(counter), int(looplength), percentcomplete))
-        sys.stdout.flush()
+    # print '    Sorting...'
+    # reporting_owner_ciks_with_unlinked_forms =\
+    #     Form345Entry.objects.filter(reporting_owner_cik=None)\
+    #     .values_list('reporting_owner_cik_num', flat=True).distinct()
+    print '    Sorting and linking...'
+    # looplength = float(len(reporting_owner_ciks_with_unlinked_forms))
+    # counter = 0.0
+
+    # for reporting_owner_cik in reporting_owner_ciks_with_unlinked_forms:
+    #     # reporting_owner =\
+    #     #     ReportingPerson.objects\
+    #     #     .get(reporting_owner_cik_num=reporting_owner_cik)
+    #     Form345Entry.objects.filter(reporting_owner_cik=None)\
+    #         .filter(reporting_owner_cik_num=reporting_owner_cik)\
+    #         .update(reporting_owner_cik=reporting_owner_cik)
+    #     counter += 1.0
+    #     percentcomplete = round(counter / looplength * 100, 2)
+    #     sys.stdout.write("\r%s / %s owner linkages: %.2f%%" %
+    #                      (int(counter), int(looplength), percentcomplete))
+    #     sys.stdout.flush()
+    # Possible this code could exceed requirements of heroku dyno or D
+    # B but not sure.
+    Form345Entry.objects.filter(reporting_owner_cik=None)\
+        .update(reporting_owner_cik=F('reporting_owner_cik_num'))
     print '\n    done.'
 
     print 'Linking Form345Entry objects to Affiliation objects...'
@@ -194,7 +199,7 @@ def link_entries_for_reporting_person_and_affiliation_foreign_keys():
     affiliations_with_unlinked_forms =\
         Form345Entry.objects.filter(affiliation=None)\
         .values_list('reporting_owner_cik', 'issuer_cik').distinct()
-    print '    linking and saving any new...'
+    print '    linking...'
     looplength = float(len(affiliations_with_unlinked_forms))
     counter = 0.0
     for reporting_owner_cik, issuer_cik\
@@ -461,7 +466,7 @@ def link_form_objects_to_securities():
             .update(security=security)
         counter += 1.0
         percentcomplete = round(counter / looplength * 100, 2)
-        sys.stdout.write("\r%s / %s underlying sec. objects to link: %.2f%%" %
+        sys.stdout.write("\r%s / %s security objects to link: %.2f%%" %
                          (int(counter), int(looplength), percentcomplete))
         sys.stdout.flush()
     print '\ndone.'

@@ -51,7 +51,7 @@ def newciks():
         # Counter
         count += 1.0
         percentcomplete = round(count / looplength * 100, 2)
-        sys.stdout.write("\r%s / %s forms to parse: %.2f%%" %
+        sys.stdout.write("\r%s / %s tickers: %.2f%%" %
                          (int(count), int(looplength),
                           percentcomplete))
         sys.stdout.flush()

@@ -12,18 +12,18 @@ print 'Calculating superseded dates of unsuperseded forms...'
 unique_security_chains =\
     list(Form345Entry.objects
          .filter(supersededdt=None)
-         .values_list('affiliation', 'short_sec_title',
+         .values_list('affiliation', 'security',
                       'expiration_date', 'direct_or_indirect')
          .distinct())
 
 looplength = float(len(unique_security_chains))
 counter = 0.0
 
-for affiliation, short_sec_title, expiration_date,\
+for affiliation, security, expiration_date,\
         direct_or_indirect in unique_security_chains:
 
     st.calc_supersededdts_for_chains(affiliation,
-                                     short_sec_title, expiration_date,
+                                     security, expiration_date,
                                      direct_or_indirect)
 
     # Prints status (please tell me if this floods your terminal with many
