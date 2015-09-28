@@ -47,8 +47,8 @@ class Security(models.Model):
 
 class SecurityPriceHist(models.Model):
     ticker_sym = models.CharField(max_length=10)
-    # stockhistories = models.ForeignKey(StockHistories)
-    # last_update = models.DateField(auto_now=True)
+    # primary_ticker_sym = models.BooleanField(default=True)
+
     issuer = models.ForeignKey(IssuerCIK, null=True)
     security = models.ForeignKey(Security, null=True)
 
@@ -404,6 +404,7 @@ class DiscretionaryXnEvent(models.Model):
     xn_acq_disp_code = models.CharField(max_length=1)
     transaction_code = models.CharField(max_length=1)
     xn_val = models.DecimalField(max_digits=15, decimal_places=2)
+    xn_shares = models.DecimalField(max_digits=15, decimal_places=2)
     filedate = models.DateField()
 
     def __unicode__(self):
@@ -434,7 +435,8 @@ class PersonSignal(models.Model):
     end_holding_val = models.DecimalField(max_digits=15, decimal_places=2)
     net_signal_pct = models.DecimalField(max_digits=15, decimal_places=2)
 
-    preceding_stock_perf = models.DecimalField(max_digits=15, decimal_places=2)
+    preceding_stock_perf = models.DecimalField(max_digits=15, decimal_places=2,
+                                               null=True)
     preceding_stock_period_days = models.IntegerField(max_length=3)
 
     significant = models.BooleanField()
