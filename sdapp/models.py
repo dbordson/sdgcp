@@ -425,14 +425,14 @@ class PersonSignal(models.Model):
     reporting_person_title = models.CharField(max_length=80, null=True)
     signal_name = models.CharField(max_length=80, default='ERROR')
     signal_detect_date = models.DateField()
-    first_xn_date = models.DateField()
-    last_xn_date = models.DateField()
+    first_file_date = models.DateField()
+    last_file_date = models.DateField()
     transactions = models.IntegerField(max_length=15)
 
-    average_price = models.DecimalField(max_digits=15, decimal_places=2)
+    average_price_sec_1 = models.DecimalField(max_digits=15, decimal_places=2)
     gross_signal_value = models.DecimalField(max_digits=15, decimal_places=2)
     net_signal_value = models.DecimalField(max_digits=15, decimal_places=2)
-    end_holding_val = models.DecimalField(max_digits=15, decimal_places=2)
+    prior_holding_value = models.DecimalField(max_digits=15, decimal_places=2)
     net_signal_pct = models.DecimalField(max_digits=15, decimal_places=2)
 
     preceding_stock_perf = models.DecimalField(max_digits=15, decimal_places=2,
