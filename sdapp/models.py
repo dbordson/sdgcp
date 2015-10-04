@@ -417,7 +417,7 @@ class DiscretionaryXnEvent(models.Model):
 
 class PersonSignal(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
-    sph = models.ForeignKey(SecurityPriceHist, null=True)
+    sec_price_hist = models.ForeignKey(SecurityPriceHist, null=True)
     reporting_person = models.ForeignKey(ReportingPerson)
     security_1 = models.ForeignKey(Security)
     only_security_1 = models.BooleanField()
@@ -438,6 +438,9 @@ class PersonSignal(models.Model):
     preceding_stock_perf = models.DecimalField(max_digits=15, decimal_places=2,
                                                null=True)
     preceding_stock_period_days = models.IntegerField(max_length=3)
+    perf_after_detection =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    subs_stock_period_days = models.IntegerField(max_length=3)
 
     significant = models.BooleanField()
     new = models.BooleanField()
@@ -451,31 +454,7 @@ class PersonSignal(models.Model):
 
 class SignalDisplay(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
-    sph = models.ForeignKey(SecurityPriceHist, null=True)
-
-    security_one = models.ForeignKey(Security)
-    security_title_1 = models.CharField(max_length=80)
-    only_security_1 = models.BooleanField()
-    reporting_person_two = models.ForeignKey(ReportingPerson)
-    reporting_person_name_1 = models.CharField(max_length=80)
-    reporting_person_title_1 = models.CharField(max_length=80, null=True)
-    signal_name_1 = models.CharField(max_length=80)
-
-    signal_detect_date_1 = models.DateField()
-    first_xn_date_1 = models.DateField()
-    last_xn_date_1 = models.DateField()
-    transactions_1 = models.IntegerField(max_length=15)
-
-    average_price_1 = models.DecimalField(max_digits=15, decimal_places=2)
-    gross_signal_value_1 = models.DecimalField(max_digits=15, decimal_places=2)
-    net_signal_value_1 = models.DecimalField(max_digits=15, decimal_places=2)
-    end_holding_val_1 = models.DecimalField(max_digits=15, decimal_places=2)
-    net_signal_pct_1 = models.DecimalField(max_digits=15, decimal_places=2)
-
-    preceding_perf_1 = models.DecimalField(max_digits=15, decimal_places=2)
-    preceding_period_days_1 = models.IntegerField(max_length=3)
-    perf_after_detection_1 =\
-        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    sec_price_hist = models.ForeignKey(SecurityPriceHist, null=True)
 
     buy_on_weakness_1 = models.CharField(max_length=500, null=True)
     cluster_buy_1 = models.CharField(max_length=500, null=True)
@@ -488,46 +467,8 @@ class SignalDisplay(models.Model):
     big_discretionary_sell_1 = models.CharField(max_length=500, null=True)
     ceo_sell_1 = models.CharField(max_length=500, null=True)
 
-    ##############
-
-    security_two = models.ForeignKey(Security, related_name='sec1')
-    security_title_2 = models.CharField(max_length=80)
-    only_security_2 = models.BooleanField()
-    reporting_person_two = models.ForeignKey(ReportingPerson)
-    reporting_person_name_2 = models.CharField(max_length=80)
-    reporting_person_title_2 = models.CharField(max_length=80, null=True)
-    signal_name_2 = models.CharField(max_length=80)
-
-    signal_detect_date_2 = models.DateField()
-    first_xn_date_2 = models.DateField()
-    last_xn_date_2 = models.DateField()
-    transactions_2 = models.IntegerField(max_length=15)
-
-    average_price_2 = models.DecimalField(max_digits=15, decimal_places=2)
-    gross_signal_value_2 = models.DecimalField(max_digits=15, decimal_places=2)
-    net_signal_value_2 = models.DecimalField(max_digits=15, decimal_places=2)
-    end_holding_val_2 = models.DecimalField(max_digits=15, decimal_places=2)
-    net_signal_pct_2 = models.DecimalField(max_digits=15, decimal_places=2)
-
-    preceding_perf_2 = models.DecimalField(max_digits=15, decimal_places=2)
-    preceding_period_days_2 = models.IntegerField(max_length=3)
-    perf_after_detection_2 =\
-        models.DecimalField(max_digits=15, decimal_places=2, null=True)
-
-    buy_on_weakness_2 = models.CharField(max_length=500, null=True)
-    cluster_buy_2 = models.CharField(max_length=500, null=True)
-    discretionary_buy_2 = models.CharField(max_length=500, null=True)
-    big_discretionary_buy_2 = models.CharField(max_length=500, null=True)
-    ceo_buy_2 = models.CharField(max_length=500, null=True)
-    sell_on_weakness_2 = models.CharField(max_length=500, null=True)
-    cluster_sell_2 = models.CharField(max_length=500, null=True)
-    discretionary_sell_2 = models.CharField(max_length=500, null=True)
-    big_discretionary_sell_2 = models.CharField(max_length=500, null=True)
-    ceo_sell_2 = models.CharField(max_length=500, null=True)
-
-    ##############
-
     total_transactions = models.IntegerField(max_length=15)
+    significant = models.BooleanField()
     mixed_signals = models.BooleanField()
     signal_is_new = models.BooleanField()
 
