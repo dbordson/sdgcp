@@ -437,7 +437,7 @@ class PersonSignal(models.Model):
 
     preceding_stock_perf = models.DecimalField(max_digits=15, decimal_places=2,
                                                null=True)
-    preceding_stock_period_days = models.IntegerField(max_length=3)
+    perf_period_days = models.IntegerField(max_length=3)
     perf_after_detection =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
     subs_stock_period_days = models.IntegerField(max_length=3)
@@ -456,16 +456,16 @@ class SignalDisplay(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
     sec_price_hist = models.ForeignKey(SecurityPriceHist, null=True)
 
-    buy_on_weakness_1 = models.CharField(max_length=500, null=True)
-    cluster_buy_1 = models.CharField(max_length=500, null=True)
-    discretionary_buy_1 = models.CharField(max_length=500, null=True)
-    big_discretionary_buy_1 = models.CharField(max_length=500, null=True)
-    ceo_buy_1 = models.CharField(max_length=500, null=True)
-    sell_on_weakness_1 = models.CharField(max_length=500, null=True)
-    cluster_sell_1 = models.CharField(max_length=500, null=True)
-    discretionary_sell_1 = models.CharField(max_length=500, null=True)
-    big_discretionary_sell_1 = models.CharField(max_length=500, null=True)
-    ceo_sell_1 = models.CharField(max_length=500, null=True)
+    buy_on_weakness = models.CharField(max_length=500, null=True)
+    cluster_buy = models.CharField(max_length=500, null=True)
+    discretionary_buy = models.CharField(max_length=500, null=True)
+    big_discretionary_buy = models.CharField(max_length=500, null=True)
+    ceo_buy = models.CharField(max_length=500, null=True)
+    sell_on_weakness = models.CharField(max_length=500, null=True)
+    cluster_sell = models.CharField(max_length=500, null=True)
+    cluster_sell = models.CharField(max_length=500, null=True)
+    big_discretionary_sell = models.CharField(max_length=500, null=True)
+    ceo_sell = models.CharField(max_length=500, null=True)
 
     total_transactions = models.IntegerField(max_length=15)
     significant = models.BooleanField()
