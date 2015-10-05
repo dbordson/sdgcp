@@ -3,13 +3,13 @@ import datetime
 from decimal import Decimal
 
 import django.db
-from django.db.models import F, Q
+from django.db.models import F, Max, Q
 
 from sdapp.models import DiscretionaryXnEvent, Form345Entry, PersonSignal,\
     SecurityPriceHist, ClosePrice
 # from sdapp.models import WatchedName
 from sdapp.bin.globals import signal_detect_lookback, significant_stock_move,\
-    abs_holding_min, rel_holding_min, perf_period_days, todaymid,\
+    abs_sig_min, abs_sig_min, perf_period_days, todaymid,\
     buy, buy_response_to_perf, sell, sell_response_to_perf
 
 
@@ -99,11 +99,15 @@ def create_disc_xn_events():
     newxns = []
     print '    interpreting...'
     for item in a:
+        split_adj_factor = item.adjustment_factor
         if item.xn_acq_disp_code == 'D':
-            sign_transaction_shares = Decimal(-1) * item.transaction_shares
+            sign_transaction_shares = \
+                Decimal(-1) * item.transaction_shares * item.adjustment_factor
+            xn_val = Decimal(-1) * item.xn_price_per_share
         else:
-            sign_transaction_shares = item.transaction_shares
-        xn_val = item.xn_price_per_share * sign_transaction_shares
+            sign_transaction_shares = \
+                item.transaction_shares * item.adjustment_factor
+            xn_val = item.xn_price_per_share
         newxn =\
             DiscretionaryXnEvent(issuer=item.issuer_cik,
                                  reporting_person=item.reporting_owner_cik,
@@ -178,9 +182,9 @@ def replace_person_signals():
             # if the signal was is rendered insiginificant by the holder
             # selling part of what the holder previously bought.
             if prior_holding_value > Decimal(0)\
-                    and net_signal_value >= abs_holding_min\
+                    and net_signal_value >= abs_sig_min\
                     and net_signal_value / prior_holding_value >=\
-                    rel_holding_min:
+                    abs_sig_min:
                 if signal_detect_date is None:
                     signal_detect_date = filedate
                     significant = True
@@ -281,7 +285,8 @@ def replace_company_signals():
             .order_by('security__short_sec_title')[0]
         person_signals = PersonSignal.objects.filter(issuer=issuer)
 
-        weakness_buys = person_signals.filter(signal_name=buy_response_to_perf)
+        weakness_buys = person_signals\
+            .filter(signal_name=buy_response_to_perf).filter(significant=True)
         # Is there only one weakness buy?
         if weakness_buys.count() == 1:
             wbuy_signal = weakness_buys[0]
@@ -328,23 +333,73 @@ def replace_company_signals():
                 "performance of %s%%. Since then the stock "\
                 "has returned %s." \
                 % sub_tuple
+        # Now address cluster_buy signals, but only if there are not
+        # multiple buys on weakness
+        cluster_buy = None
+        if weakness_buys.count() <= 1:
+            issuer_xns =\
+                DiscretionaryXnEvent.objects.filter(issuer=issuer)
 
+            buy_xns = issuer_xns.filter(xn_acq_disp_code='A').count()
+            net_xn_value = issuer_xns.aggregate(Max('net'))
+            insider_num = len(issuer_xns.filter(xn_acq_disp_code='A')
+                              .values_list('reporting_person').distinct())
+            if insider_num > 1:
+                plural_insiders = 's'
+            else:
+                plural_insiders = ''
+            if buy_xns >= 3 and net_xn_value >= abs_sig_min:
+                sub_tuple = (plural_insiders, buy_xns, net_xn_value)
+                cluster_buy =\
+                    "Insider%s recently engaged in a pattern of recent "\
+                    "buying with net buying of $%s over %s transactions."\
+                    % sub_tuple
+
+
+
+
+
+        # Now address discretionary buy but only if not obviously precluded
+        # by signals that mean the same thing more clearly (i.e. cluster buys,
+        # big_discretionary_buys etc).
+
+        discretionary_buy = None
+        if weakness_buys.count() <= 1 and cluster_buy is None:
+            person_signals =\
+                PersonSignal.objects.filter(issuer=issuer)\
+                .filter(signal_name=buy)\
+                .filter(significant=True)
+            if person_signals.count() > 0:
+                person_xn = person_signals.order_by('net_signal_value')[0]
+                detect_date = person_xn.signal_detect_date
+                person_name = person_xn.reporting_person.person_name
+                xn_val = person_xn.net_signal_value
+                xn_pct = person_xn.net_signal_pct
+                security_name = person_xn.security.short_sec_title
+
+                sub_tuple = (detect_date, person_name, xn_val, security_name,
+                             xn_pct)
+                discretionary_buy =\
+                    "On %s, %s bought $%s of %s (%s%% of total holdings)."
+
+        total_transactions = DiscretionaryXnEvent.objects\
+            .filter(issuer=issuer).count()
 
         newsignaldisplays.append(
             PersonSignal(issuer=issuer,
                          sec_price_hist=sec_price_hist,
                          buy_on_weakness=buy_on_weakness,
                          cluster_buy=cluster_buy,
-                         discretionary_buy=discretionary_buy,
                          big_discretionary_buy=big_discretionary_buy,
                          ceo_buy=ceo_buy,
-                         sell_on_weakness=sell_on_weakness,
-                         cluster_sell=cluster_sell,
-                         big_discretionary_sell=big_discretionary_sell,
-                         ceo_sell=ceo_sell,
+                         discretionary_buy=discretionary_buy,
+                         # sell_on_strength=sell_on_strength,
+                         # cluster_sell=cluster_sell,
+                         # big_discretionary_sell=big_discretionary_sell,
+                         # ceo_sell=ceo_sell,
+                         # discretionary_sells=discretionary_sell,
                          total_transactions=total_transactions,
-                         significant=significant,
-                         mixed_signals=mixed_signals,
+                         # mixed_signals=mixed_signals,
                          signal_is_new=True))
 
     print '    deleting old and saving...'

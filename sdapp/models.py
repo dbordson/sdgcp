@@ -343,6 +343,8 @@ class Form345Entry(models.Model):
     deriv_or_nonderiv = models.CharField(max_length=1, null=True)
     filedatetime = models.DateTimeField()
     supersededdt = models.DateTimeField(null=True)
+    # The below number is the number the reported shares must be multiplied by
+    # to convert to today's units to account for special dividends and splits.
     adjustment_factor = models.DecimalField(max_digits=15, decimal_places=4,
                                             default=Decimal('1.00'))
     adjustment_date = models.DateField(null=True)
@@ -458,18 +460,17 @@ class SignalDisplay(models.Model):
 
     buy_on_weakness = models.CharField(max_length=500, null=True)
     cluster_buy = models.CharField(max_length=500, null=True)
-    discretionary_buy = models.CharField(max_length=500, null=True)
     big_discretionary_buy = models.CharField(max_length=500, null=True)
     ceo_buy = models.CharField(max_length=500, null=True)
-    sell_on_weakness = models.CharField(max_length=500, null=True)
-    cluster_sell = models.CharField(max_length=500, null=True)
-    cluster_sell = models.CharField(max_length=500, null=True)
-    big_discretionary_sell = models.CharField(max_length=500, null=True)
-    ceo_sell = models.CharField(max_length=500, null=True)
+    discretionary_buy = models.CharField(max_length=500, null=True)
+    # sell_on_strength = models.CharField(max_length=500, null=True)
+    # cluster_sell = models.CharField(max_length=500, null=True)
+    # big_discretionary_sell = models.CharField(max_length=500, null=True)
+    # ceo_sell = models.CharField(max_length=500, null=True)
+    # discretionary_sell = models.CharField(max_length=500, null=True)
 
     total_transactions = models.IntegerField(max_length=15)
-    significant = models.BooleanField()
-    mixed_signals = models.BooleanField()
+    # mixed_signals = models.BooleanField()
     signal_is_new = models.BooleanField()
 
     def __unicode__(self):

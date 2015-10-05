@@ -4,8 +4,8 @@ from decimal import Decimal
 
 signal_detect_lookback = datetime.timedelta(-180)
 significant_stock_move = Decimal(.2)
-abs_holding_min = Decimal(10000)
-rel_holding_min = Decimal(.1)
+abs_sig_min = Decimal(10000)
+rel_sig_min = Decimal(.1)
 perf_period_days = datetime.timedelta(-90)
 EST = pytz.timezone('America/New_York')
 today = today = datetime.date.today()
