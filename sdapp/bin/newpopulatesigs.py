@@ -10,7 +10,7 @@ from sdapp.models import DiscretionaryXnEvent, Form345Entry, PersonSignal,\
 # from sdapp.models import WatchedName
 from sdapp.bin.globals import signal_detect_lookback, significant_stock_move,\
     abs_sig_min, abs_sig_min, perf_period_days, todaymid,\
-    buy, buy_response_to_perf, sell, sell_response_to_perf
+    buy, buy_response_to_perf, sell, sell_response_to_perf, big_buy_amt
 
 
 def calc_holdings(securities, issuer, reporting_person):
@@ -72,6 +72,18 @@ def calc_perf(later_price, earlier_price):
     return stock_perf
 
 
+def is_ceo(person_xn_list):
+    keywords = ['ceo', 'chief executive officer',
+                'principal exeuctive officer']
+    ceo_match = False
+    for person_xn in person_xn_list:
+        lowercase_title = person_xn.reporting_person_title.lower()
+        for keyword in keywords:
+            if lowercase_title in keyword:
+                ceo_match = True
+    return ceo_match
+
+
 def create_disc_xn_events():
 
     print 'Creating new discretionary transaction objects'
@@ -99,7 +111,6 @@ def create_disc_xn_events():
     newxns = []
     print '    interpreting...'
     for item in a:
-        split_adj_factor = item.adjustment_factor
         if item.xn_acq_disp_code == 'D':
             sign_transaction_shares = \
                 Decimal(-1) * item.transaction_shares * item.adjustment_factor
@@ -290,7 +301,7 @@ def replace_company_signals():
         # Is there only one weakness buy?
         if weakness_buys.count() == 1:
             wbuy_signal = weakness_buys[0]
-            if issuer.current_ceo == wbuy_signal.reporting_person:
+            if is_ceo([wbuy_signal.reporting_person_title]) is True:
                 ceo_note = "the CEO, "
             else:
                 ceo_note = ""
@@ -313,9 +324,9 @@ def replace_company_signals():
             earliest_detect_date = first_w_buy.signal_detect_date
             earliest_preceding_perf = first_w_buy.preceding_stock_perf
             earliest_subs_perf = first_w_buy.perf_after_detection
-            person_ciks = \
-                weakness_buys.values_list('reporting_person', flat=True)
-            if issuer.current_ceo in person_ciks:
+            person_titles = \
+                weakness_buys.values_list('reporting_person_title', flat=True)
+            if is_ceo(person_titles) is True:
                 ceo_note = "including by CEO, "
             else:
                 ceo_note = ""
@@ -356,31 +367,45 @@ def replace_company_signals():
                     % sub_tuple
 
 
-
-
-
         # Now address discretionary buy but only if not obviously precluded
         # by signals that mean the same thing more clearly (i.e. cluster buys,
         # big_discretionary_buys etc).
 
         discretionary_buy = None
+        d_buy_boole_by_ceo = False
+        d_buy_boole_large = False
+
         if weakness_buys.count() <= 1 and cluster_buy is None:
             person_signals =\
                 PersonSignal.objects.filter(issuer=issuer)\
                 .filter(signal_name=buy)\
                 .filter(significant=True)
+
             if person_signals.count() > 0:
                 person_xn = person_signals.order_by('net_signal_value')[0]
+                if person_xn.net_signal_value > big_buy_amt:
+                    xn_size_note = "In a large transaction on"
+                    d_buy_boole_large = True
+                else:
+                    xn_size_note = "On"
+
+                if is_ceo([person_xn]) is True:
+                    ceo_note = ", the CEO,"
+                    d_buy_boole_by_ceo = True
+                else:
+                    ceo_note = ""
+
                 detect_date = person_xn.signal_detect_date
                 person_name = person_xn.reporting_person.person_name
                 xn_val = person_xn.net_signal_value
                 xn_pct = person_xn.net_signal_pct
                 security_name = person_xn.security.short_sec_title
 
-                sub_tuple = (detect_date, person_name, xn_val, security_name,
-                             xn_pct)
+                sub_tuple = (xn_size_note, detect_date, person_name, ceo_note,
+                             xn_val, security_name, xn_pct)
+                
                 discretionary_buy =\
-                    "On %s, %s bought $%s of %s (%s%% of total holdings)."
+                    "%s %s, %s%s bought $%s of %s (%s%% of total holdings)."
 
         total_transactions = DiscretionaryXnEvent.objects\
             .filter(issuer=issuer).count()
@@ -390,9 +415,9 @@ def replace_company_signals():
                          sec_price_hist=sec_price_hist,
                          buy_on_weakness=buy_on_weakness,
                          cluster_buy=cluster_buy,
-                         big_discretionary_buy=big_discretionary_buy,
-                         ceo_buy=ceo_buy,
                          discretionary_buy=discretionary_buy,
+                         d_buy_boole_by_ceo=d_buy_boole_by_ceo,
+                         d_buy_boole_large=d_buy_boole_large,
                          # sell_on_strength=sell_on_strength,
                          # cluster_sell=cluster_sell,
                          # big_discretionary_sell=big_discretionary_sell,

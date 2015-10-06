@@ -463,6 +463,8 @@ class SignalDisplay(models.Model):
     big_discretionary_buy = models.CharField(max_length=500, null=True)
     ceo_buy = models.CharField(max_length=500, null=True)
     discretionary_buy = models.CharField(max_length=500, null=True)
+    d_buy_boole_by_ceo = models.BooleanField()
+    d_buy_boole_large = models.BooleanField()
     # sell_on_strength = models.CharField(max_length=500, null=True)
     # cluster_sell = models.CharField(max_length=500, null=True)
     # big_discretionary_sell = models.CharField(max_length=500, null=True)
