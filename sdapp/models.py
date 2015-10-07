@@ -421,6 +421,8 @@ class PersonSignal(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
     sec_price_hist = models.ForeignKey(SecurityPriceHist, null=True)
     reporting_person = models.ForeignKey(ReportingPerson)
+    eq_annual_share_grants = \
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
     security_1 = models.ForeignKey(Security)
     only_security_1 = models.BooleanField()
 

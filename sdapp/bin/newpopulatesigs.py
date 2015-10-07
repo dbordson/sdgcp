@@ -9,7 +9,7 @@ from sdapp.models import DiscretionaryXnEvent, Form345Entry, PersonSignal,\
     SecurityPriceHist, ClosePrice
 # from sdapp.models import WatchedName
 from sdapp.bin.globals import signal_detect_lookback, significant_stock_move,\
-    abs_sig_min, abs_sig_min, perf_period_days, todaymid,\
+    abs_sig_min, rel_sig_min, perf_period_days, today, todaymid,\
     buy, buy_response_to_perf, sell, sell_response_to_perf, big_buy_amt
 
 
@@ -82,6 +82,58 @@ def is_ceo(person_xn_list):
             if lowercase_title in keyword:
                 ceo_match = True
     return ceo_match
+
+
+def median(medlist):
+    if len(medlist) == 0:
+        return Decimal(1)
+    medlist.sort()
+    i = len(medlist)/2
+    if len(medlist) % 2 == 0:
+        median_number = (medlist[i] + medlist[i-1])/2
+    else:
+        median_number = medlist[i]
+    return median_number
+
+
+def calc_grants(issuer_cik, reporting_person_cik):
+    grants = Form345Entry.objects.filter(issuer_cik=issuer_cik)\
+        .filter(reporting_owner_cik=reporting_person_cik)\
+        .filter(transaction_code='A')\
+        .filter(transaction_date__gte=today - datetime.timedelta(735))\
+        .filter(filedatetime__gte=todaymid - datetime.timedelta(730))
+    grant_dates = \
+        list(grants.order_by('filedatetime')
+             .values_list('filedatetime', flat=True).distinct())
+    # Do not pass go if no grant info available
+    if len(grant_dates) == 0:
+        return None
+    # If you have only one grant, assume annual because that is typical
+    if len(grant_dates) == 1:
+        grants_per_year = 1
+    # Otherwise, figure out grants per year received based on spacing
+    else:
+        day_gaps = []
+        for first_date, second_date in zip(grant_dates, grant_dates[1:]):
+            day_gaps.append(Decimal((second_date - first_date).days))
+        median_day_gap = median(day_gaps)
+        day_gap_options = [Decimal(30), Decimal(45), Decimal(60),
+                           Decimal(91), Decimal(182), Decimal(365)]
+        estimated_day_gap = min(day_gap_options,
+                                key=lambda x: abs(x-median_day_gap))
+        grants_per_year = int(Decimal(365) / estimated_day_gap)
+    # Now get the latest adjusted shares granted
+    latest_grant_date = grant_dates[-1]
+    latest_grant_set = grants.filter(filedatetime=latest_grant_date)\
+        .values_list('transaction_shares', 'adjustment_factor',
+                     'security__conversion_multiple')
+    grant_shares_adjusted = Decimal(0)
+    for xn_shares, adj_factor, conv_mult in latest_grant_set:
+        grant_shares_adjusted += xn_shares * adj_factor * conv_mult
+    # Annualize latest grant
+    eq_annual_share_grants = grant_shares_adjusted * grants_per_year
+
+    return eq_annual_share_grants
 
 
 def create_disc_xn_events():
@@ -167,6 +219,8 @@ def replace_person_signals():
         last_file_date = entryfiledates[-1].date()
         transactions = len(entryfiledates)
 
+        eq_annual_share_grants = calc_grants(issuer, reporting_person)
+
         # Get holdings before form filed
         prior_holding_value =\
             calc_holdings(securities, issuer, reporting_person)
@@ -195,7 +249,7 @@ def replace_person_signals():
             if prior_holding_value > Decimal(0)\
                     and net_signal_value >= abs_sig_min\
                     and net_signal_value / prior_holding_value >=\
-                    abs_sig_min:
+                    rel_sig_min:
                 if signal_detect_date is None:
                     signal_detect_date = filedate
                     significant = True
@@ -253,6 +307,7 @@ def replace_person_signals():
             PersonSignal(issuer=issuer,
                          sec_price_hist=sec_price_hist,
                          reporting_person=reporting_person,
+                         eq_annual_share_grants=eq_annual_share_grants,
                          security_1=security_1,
                          only_security_1=only_security_1,
                          reporting_person_title=reporting_person_title,
