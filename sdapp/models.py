@@ -423,8 +423,6 @@ class PersonSignal(models.Model):
     reporting_person = models.ForeignKey(ReportingPerson)
     eq_annual_share_grants = \
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
-    security_1 = models.ForeignKey(Security)
-    only_security_1 = models.BooleanField()
 
     reporting_person_title = models.CharField(max_length=80, null=True)
     signal_name = models.CharField(max_length=80, default='ERROR')
@@ -433,7 +431,6 @@ class PersonSignal(models.Model):
     last_file_date = models.DateField()
     transactions = models.IntegerField(max_length=15)
 
-    average_price_sec_1 = models.DecimalField(max_digits=15, decimal_places=2)
     gross_signal_value = models.DecimalField(max_digits=15, decimal_places=2)
     net_signal_value = models.DecimalField(max_digits=15, decimal_places=2)
     prior_holding_value = models.DecimalField(max_digits=15, decimal_places=2)
@@ -460,13 +457,70 @@ class SignalDisplay(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
     sec_price_hist = models.ForeignKey(SecurityPriceHist, null=True)
 
+    # Buy on Weakness
     buy_on_weakness = models.CharField(max_length=500, null=True)
+    bow_plural_insiders = models.NullBooleanField(null=True)
+    bow_first_sig_detect_date = models.DateField(null=True)
+    bow_person_name = models.CharField(max_length=80, null=True)
+    bow_includes_ceo = models.NullBooleanField(null=True)
+    bow_net_signal_value =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    bow_first_perf_period_days = models.IntegerField(max_length=3, null=True)
+    bow_first_pre_stock_perf =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    bow_first_post_stock_perf =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+
+    # Cluster Buy
     cluster_buy = models.CharField(max_length=500, null=True)
-    big_discretionary_buy = models.CharField(max_length=500, null=True)
-    ceo_buy = models.CharField(max_length=500, null=True)
+    cb_plural_insiders = models.NullBooleanField(null=True)
+    cb_buy_xns = models.IntegerField(max_length=3, null=True)
+    cb_net_xn_value =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+
+    # Discretionary Buy
     discretionary_buy = models.CharField(max_length=500, null=True)
-    d_buy_boole_by_ceo = models.BooleanField()
-    d_buy_boole_large = models.BooleanField()
+    db_large_xn_size = models.NullBooleanField(null=True)
+    db_was_ceo = models.NullBooleanField(null=True)
+    db_detect_date = models.DateField(null=True)
+    db_person_name = models.CharField(max_length=80, null=True)
+    db_xn_val = models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    db_security_name = models.CharField(max_length=80, null=True)
+    db_xn_pct_holdings =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+
+    # Sell on Strength
+    sell_on_weakness = models.CharField(max_length=500, null=True)
+    sow_plural_insiders = models.NullBooleanField(null=True)
+    sow_first_sig_detect_date = models.DateField(null=True)
+    sow_person_name = models.CharField(max_length=80, null=True)
+    sow_includes_ceo = models.NullBooleanField(null=True)
+    sow_net_signal_value =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    sow_first_perf_period_days = models.IntegerField(max_length=3, null=True)
+    sow_first_pre_stock_perf =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    sow_first_post_stock_perf =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+
+    # Cluster Sell
+    cluster_sell = models.CharField(max_length=500, null=True)
+    cs_plural_insiders = models.NullBooleanField(null=True)
+    cs_sell_xns = models.IntegerField(max_length=3, null=True)
+    cs_net_xn_value =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+
+    # Discretionary Sell
+    discretionary_buy = models.CharField(max_length=500, null=True)
+    ds_large_xn_size = models.NullBooleanField(null=True)
+    ds_was_ceo = models.NullBooleanField(null=True)
+    ds_detect_date = models.DateField(null=True)
+    ds_person_name = models.CharField(max_length=80, null=True)
+    ds_xn_val = models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    ds_security_name = models.CharField(max_length=80, null=True)
+    ds_xn_pct_holdings =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+
     # sell_on_strength = models.CharField(max_length=500, null=True)
     # cluster_sell = models.CharField(max_length=500, null=True)
     # big_discretionary_sell = models.CharField(max_length=500, null=True)
