@@ -1,27 +1,40 @@
 import datetime
-# import pytz
 from decimal import Decimal
+import pytz
+import sys
 
 import django.db
 from django.db.models import F, Q, Sum
 
-from sdapp.models import DiscretionaryXnEvent, Form345Entry, PersonSignal,\
-    SecurityPriceHist, ClosePrice
+from sdapp.models import (DiscretionaryXnEvent, Form345Entry, PersonSignal,
+                          SecurityPriceHist, ClosePrice, SigDisplay)
 # from sdapp.models import WatchedName
-from sdapp.bin.globals import signal_detect_lookback, significant_stock_move,\
-    abs_sig_min, rel_sig_min, perf_period_days, today, todaymid,\
-    buy, buy_response_to_perf, sell, sell_response_to_perf, big_xn_amt
+from sdapp.bin.globals import (signal_detect_lookback, significant_stock_move,
+                               abs_sig_min, rel_sig_min, perf_period_days_td,
+                               today, todaymid, buy, buy_response_to_perf,
+                               sell, sell_response_to_perf, big_xn_amt)
 
 
 def calc_holdings(securities, issuer, reporting_person):
     first_filing_date = securities[0][3]
-    ticker_security =\
-        SecurityPriceHist.objects.filter(issuer=issuer)[0].security
+    EST = pytz.timezone('America/New_York')
+    ffd = first_filing_date
+    first_filing_dt =\
+        datetime.datetime(ffd.year, ffd.month, ffd.day,
+                          0, 0, 0, 0, tzinfo=EST)\
+        + datetime.timedelta(1)
+    ticker_securities =\
+        SecurityPriceHist.objects.filter(issuer=issuer)
+    if ticker_securities.exists():
+        ticker_security = ticker_securities[0].security
+    else:
+        # No value if can't find a ticker for pricing.
+        return None
     person_forms =\
         Form345Entry.objects.filter(issuer_cik=issuer)\
         .filter(reporting_owner_cik=reporting_person)\
-        .exclude(supersededdt__lt=first_filing_date - datetime.timedelta(1))\
-        .exclude(filedatetime__gte=first_filing_date - datetime.timedelta(1))
+        .exclude(supersededdt__lt=first_filing_dt - datetime.timedelta(1))\
+        .exclude(filedatetime__gte=first_filing_dt - datetime.timedelta(1))
     stock_values = person_forms\
         .filter(security=ticker_security)\
         .exclude(reported_shares_following_xn=None)\
@@ -34,7 +47,7 @@ def calc_holdings(securities, issuer, reporting_person):
     prior_holding_value = Decimal(0)
     for rep_shares, adj_factor in all_values:
         prior_holding_value += Decimal(rep_shares) * Decimal(adj_factor)
-
+    #
     return prior_holding_value
 
 
@@ -132,23 +145,23 @@ def calc_grants(issuer_cik, reporting_person_cik):
         grant_shares_adjusted += xn_shares * adj_factor * conv_mult
     # Annualize latest grant
     eq_annual_share_grants = grant_shares_adjusted * grants_per_year
-
+    #
     return eq_annual_share_grants
 
 
 def create_disc_xn_events():
-
+    #
     print 'Creating new discretionary transaction objects'
     print '    sorting...'
-
+    #
     existing_sig_pks =\
         DiscretionaryXnEvent.objects.values_list('form_entry__pk')
-
+    #
     # Note that the below contains an 'F Object'; since this may be unfamiliar,
     # I will explain -- it filters for transaction dates that are greater than
     # 5 days (timedelta) before the filedatetime.  This avoids interpreting an
     # old transaction in a newly filed form as a new signal.
-
+    #
     a =\
         Form345Entry.objects\
         .filter(filedatetime__gte=todaymid + signal_detect_lookback)\
@@ -162,32 +175,39 @@ def create_disc_xn_events():
         .exclude(pk__in=existing_sig_pks)
     newxns = []
     print '    interpreting...'
+    counter = 0.0
+    looplength = float(len(a))
     for item in a:
         if item.xn_acq_disp_code == 'D':
             sign_transaction_shares = \
                 Decimal(-1) * item.transaction_shares * item.adjustment_factor
-            xn_val = Decimal(-1) * item.xn_price_per_share
+            xn_val = item.xn_price_per_share * sign_transaction_shares
         else:
             sign_transaction_shares = \
                 item.transaction_shares * item.adjustment_factor
-            xn_val = item.xn_price_per_share
+            xn_val = item.xn_price_per_share * sign_transaction_shares
         newxn =\
             DiscretionaryXnEvent(issuer=item.issuer_cik,
                                  reporting_person=item.reporting_owner_cik,
                                  security=item.security,
-                                 form_entry=item.pk,
+                                 form_entry_id=item.pk,
                                  xn_acq_disp_code=item.xn_acq_disp_code,
                                  transaction_code=item.transaction_code,
                                  xn_val=xn_val,
                                  xn_shares=sign_transaction_shares,
-                                 filedate=item.filedatetime.date)
+                                 filedate=item.filedatetime.date())
         newxns.append(newxn)
-    print '    saving...'
+        counter += 1.0
+        percentcomplete = round(counter / looplength * 100, 2)
+        sys.stdout.write("\r%s / %s transaction events to add: %.2f%%" %
+                         (int(counter), int(looplength), percentcomplete))
+        sys.stdout.flush()
+    #
+    print '\n    saving...'
     DiscretionaryXnEvent.objects.bulk_create(newxns)
-
-    print 'done.'
+    #
+    print 'done.\n'
     django.db.reset_queries()
-    print ''
     return
 
 
@@ -199,28 +219,35 @@ def replace_person_signals():
         .values_list('reporting_person', 'issuer').distinct()
     newpersonsignals = []
     print '    interpreting...'
+    counter = 0.0
+    looplength = float(len(a))
     for reporting_person, issuer in a:
         # When primary ticker concept is added, adjust filter accordingly.
         aff_events = DiscretionaryXnEvent.objects.filter(issuer=issuer)\
             .filter(reporting_person=reporting_person)
-        sec_price_hist = SecurityPriceHist.objects.filter(issuer=issuer)\
-            .order_by('security__short_sec_title')[0]
+        sec_price_hists = SecurityPriceHist.objects.filter(issuer=issuer)\
+            .order_by('security__short_sec_title')
+        if sec_price_hists.exists():
+            sec_price_hist = sec_price_hists[0]
+        else:
+            sec_price_hist = None
         reporting_person_title = \
             Form345Entry.objects.filter(reporting_owner_cik=reporting_person)\
             .filter(filedatetime__gte=todaymid + signal_detect_lookback)\
-            .latest('filedatetime').person_title
-
+            .latest('filedatetime').reporting_owner_title
+        #
         securities = aff_events.order_by('filedate')\
             .values_list('security', 'xn_val', 'xn_shares', 'filedate')
-
-        entryfiledates = aff_events.order_by('filedate')\
-            .order_by('filedatetime').values_list('filedatetime', flat=True)
-        first_file_date = entryfiledates[0].date()
-        last_file_date = entryfiledates[-1].date()
+        #
+        entryfiledates = list(aff_events.order_by('filedate')
+                              .order_by('filedate')
+                              .values_list('filedate', flat=True))
+        first_file_date = entryfiledates[0]
+        last_file_date = entryfiledates[-1]
         transactions = len(entryfiledates)
-
+        #
         eq_annual_share_grants = calc_grants(issuer, reporting_person)
-
+        #
         # Get holdings before form filed
         prior_holding_value =\
             calc_holdings(securities, issuer, reporting_person)
@@ -228,9 +255,7 @@ def replace_person_signals():
         net_signal_value = Decimal(0)
         gross_acq_value = Decimal(0)
         gross_disp_value = Decimal(0)
-
-# CONSIDIER REMOVING SECURITY_1 CONCEPT FROM PERSON SIGNALS
-# SET UP SIGNIFICANCE AND SIGNAL DETECT DATE BASED ON NET XNS FOR EACH DATE
+        #
         # Find primary securities and set up shares transacted
         # by filedate
         filedate_dict = {}
@@ -247,18 +272,19 @@ def replace_person_signals():
                 filedate_dict[filedate][1] += xn_shares
             else:
                 filedate_dict[filedate] = [xn_val, xn_shares]
-
+            #
             net_signal_value += xn_val
-
+            #
             if xn_val > 0:
                 gross_acq_value += xn_val
             else:
                 gross_disp_value += xn_val
-
+        #
         signal_detect_date = None
         net_val_of_date = Decimal(0)
         net_shares_of_date = Decimal(0)
         # Find the date activity became significant.
+        significant = False
         for filedate, [net_xn_value, net_xn_shares] in\
                 sorted(filedate_dict.iteritems()):
             net_val_of_date += net_xn_value
@@ -284,26 +310,21 @@ def replace_person_signals():
                         and signal_detect_date is not None:
                     signal_detect_date = filedate
                     significant = True
-
-
-
-
-
-
+        #
         # This fills in the last transaction date if signal is not significant.
         if signal_detect_date is None:
             signal_detect_date = last_file_date
         stock_price_for_perf_lookback =\
-            get_price(sec_price_hist, filedate + perf_period_days)
+            get_price(sec_price_hist, filedate + perf_period_days_td)
         stock_price_at_detection = get_price(sec_price_hist, filedate)
         stock_price_now = get_price(sec_price_hist, filedate)
-
+        #
         preceding_stock_perf =\
             calc_perf(stock_price_at_detection, stock_price_for_perf_lookback)
         perf_after_detection =\
             calc_perf(stock_price_now, stock_price_at_detection)
         subs_stock_period_days = (todaymid.date() - signal_detect_date).days
-
+        #
         # This determines the gross signal value whether a net buy or sale
         if gross_acq_value >= Decimal(-1) * gross_disp_value:
             gross_signal_value = gross_acq_value
@@ -322,22 +343,31 @@ def replace_person_signals():
                 signal_name = sell_response_to_perf
             else:
                 signal_name = sell
-
+        #
         security_1 = max(securities_dict, key=securities_dict.get)
-        average_price_security_1 =\
-            securities_dict[security_1][0] / securities_dict[security_1][1]
-        net_signal_pct = net_signal_value / gross_signal_value * Decimal(100)
+        if securities_dict[security_1][1] == Decimal(0)\
+                or securities_dict[security_1][1] is None:
+            average_price_sec_1 = None
+        else:
+            average_price_sec_1 =\
+                securities_dict[security_1][0] / securities_dict[security_1][1]
+        if prior_holding_value == Decimal(0) or prior_holding_value is None:
+            net_signal_pct = None
+        else:
+            net_signal_pct = net_signal_value / prior_holding_value\
+                * Decimal(100)
+
         if len(securities_dict) == 1:
             only_security_1 = True
         else:
             only_security_1 = False
-
+        #
         newpersonsignals.append(
-            PersonSignal(issuer=issuer,
+            PersonSignal(issuer_id=issuer,
                          sec_price_hist=sec_price_hist,
-                         reporting_person=reporting_person,
+                         reporting_person_id=reporting_person,
                          eq_annual_share_grants=eq_annual_share_grants,
-                         security_1=security_1,
+                         security_1_id=security_1,
                          only_security_1=only_security_1,
                          reporting_person_title=reporting_person_title,
                          signal_name=signal_name,
@@ -345,17 +375,22 @@ def replace_person_signals():
                          first_file_date=first_file_date,
                          last_file_date=last_file_date,
                          transactions=transactions,
-                         average_price_security_1=average_price_security_1,
+                         average_price_sec_1=average_price_sec_1,
                          gross_signal_value=gross_signal_value,
                          net_signal_value=net_signal_value,
                          prior_holding_value=prior_holding_value,
                          net_signal_pct=net_signal_pct,
                          preceding_stock_perf=preceding_stock_perf,
-                         perf_period_days=perf_period_days,
+                         perf_period_days=perf_period_days_td.days,
                          perf_after_detection=perf_after_detection,
                          subs_stock_period_days=subs_stock_period_days,
                          significant=significant,
                          new=True))
+        counter += 1.0
+        percentcomplete = round(counter / looplength * 100, 2)
+        sys.stdout.write("\r%s / %s person signals to add: %.2f%%" %
+                         (int(counter), int(looplength), percentcomplete))
+        sys.stdout.flush()
     print '    deleting old and saving...'
     PersonSignal.objects.all().delete()
     PersonSignal.objects.bulk_create(newpersonsignals)
@@ -373,11 +408,14 @@ def replace_company_signals():
         .values_list('issuer').distinct()
     newsignaldisplays = []
     print '    interpreting...'
+    counter = 0.0
+    looplength = float(len(a))
     for issuer in a:
         # aff_events = DiscretionaryXnEvent.objects.filter(issuer=issuer)
         # When primary ticker concept is added, adjust filter accordingly.
         sec_price_hist = SecurityPriceHist.objects.filter(issuer=issuer)\
             .order_by('security__short_sec_title')[0]
+
         person_signals = PersonSignal.objects.filter(issuer=issuer)
 
 
@@ -437,7 +475,7 @@ def replace_company_signals():
             sow_first_sig_detect_date = first_w_sell.signal_detect_date
             sow_net_signal_value = \
                 weakness_sells.aggregate(Sum('net_signal_value'))
-            sow_first_perf_period_days = first_w_sell.perf_period_days
+            sow_first_perf_period_days = first_w_sell.perf_period_days_td.days
             sow_first_pre_stock_perf = first_w_sell.preceding_stock_perf
             sow_first_post_stock_perf = first_w_sell.perf_after_detection
 
@@ -562,7 +600,7 @@ def replace_company_signals():
             bow_first_sig_detect_date = wbuy_signal.signal_detect_date
             bow_person_name = wbuy_signal.reporting_person.person_name
             bow_net_signal_value = wbuy_signal.net_signal_value
-            bow_first_perf_period_days = wbuy_signal.perf_period_days
+            bow_first_perf_period_days = wbuy_signal.perf_period_days_td.days
             bow_first_pre_stock_perf = wbuy_signal.preceding_stock_perf
             bow_first_post_stock_perf = wbuy_signal.perf_after_detection
 
@@ -595,7 +633,7 @@ def replace_company_signals():
             bow_first_sig_detect_date = first_w_buy.signal_detect_date
             bow_net_signal_value = \
                 weakness_buys.aggregate(Sum('net_signal_value'))
-            bow_first_perf_period_days = first_w_buy.perf_period_days
+            bow_first_perf_period_days = first_w_buy.perf_period_days_td.days
             bow_first_pre_stock_perf = first_w_buy.preceding_stock_perf
             bow_first_post_stock_perf = first_w_buy.perf_after_detection
 
@@ -687,73 +725,68 @@ def replace_company_signals():
                 discretionary_buy =\
                     "%s %s, %s%s bought $%s of %s (%s%% of total holdings)."
 
-
-
-
-
-
-
-
-
-
         total_transactions = DiscretionaryXnEvent.objects\
             .filter(issuer=issuer).count()
 
         newsignaldisplays.append(
-            PersonSignal(issuer=issuer,
-                         sec_price_hist=sec_price_hist,
-                         buy_on_weakness=buy_on_weakness,
-                         bow_plural_insiders=bow_plural_insiders,
-                         bow_first_sig_detect_date=bow_first_sig_detect_date,
-                         bow_person_name=bow_person_name,
-                         bow_includes_ceo=bow_includes_ceo,
-                         bow_net_signal_value=bow_net_signal_value,
-                         bow_first_perf_period_days=bow_first_perf_period_days,
-                         bow_first_pre_stock_perf=bow_first_pre_stock_perf,
-                         bow_first_post_stock_perf=bow_first_post_stock_perf,
-                         cluster_buy=cluster_buy,
-                         cb_plural_insiders=cb_plural_insiders,
-                         cb_buy_xns=cb_buy_xns,
-                         cb_net_xn_value=cb_net_xn_value,
-                         discretionary_buy=discretionary_buy,
-                         db_large_xn_size=db_large_xn_size,
-                         db_was_ceo=db_was_ceo,
-                         db_detect_date=db_detect_date,
-                         db_person_name=db_person_name,
-                         db_xn_val=db_xn_val,
-                         db_security_name=db_security_name,
-                         db_xn_pct_holdings=db_xn_pct_holdings,
-                         # 
-                         sell_on_weakness=sell_on_weakness,
-                         sow_plural_insiders=sow_plural_insiders,
-                         sow_first_sig_detect_date=sow_first_sig_detect_date,
-                         sow_person_name=sow_person_name,
-                         sow_includes_ceo=sow_includes_ceo,
-                         sow_net_signal_value=sow_net_signal_value,
-                         sow_first_perf_period_days=sow_first_perf_period_days,
-                         sow_first_pre_stock_perf=sow_first_pre_stock_perf,
-                         sow_first_post_stock_perf=sow_first_post_stock_perf,
-                         cluster_sell=cluster_sell,
-                         cs_plural_insiders=cs_plural_insiders,
-                         cs_sell_xns=cs_sell_xns,
-                         cs_net_xn_value=cs_net_xn_value,
-                         discretionary_sell=discretionary_sell,
-                         ds_large_xn_size=ds_large_xn_size,
-                         ds_was_ceo=ds_was_ceo,
-                         ds_detect_date=ds_detect_date,
-                         ds_person_name=ds_person_name,
-                         ds_xn_val=ds_xn_val,
-                         ds_security_name=ds_security_name,
-                         ds_xn_pct_holdings=ds_xn_pct_holdings,
-                         # sell_on_strength=sell_on_strength,
-                         # cluster_sell=cluster_sell,
-                         # big_discretionary_sell=big_discretionary_sell,
-                         # ceo_sell=ceo_sell,
-                         # discretionary_sells=discretionary_sell,
-                         total_transactions=total_transactions,
-                         # mixed_signals=mixed_signals,
-                         signal_is_new=True))
-
+            SigDisplay(issuer=issuer,
+                       sec_price_hist=sec_price_hist,
+                       buy_on_weakness=buy_on_weakness,
+                       bow_plural_insiders=bow_plural_insiders,
+                       bow_first_sig_detect_date=bow_first_sig_detect_date,
+                       bow_person_name=bow_person_name,
+                       bow_includes_ceo=bow_includes_ceo,
+                       bow_net_signal_value=bow_net_signal_value,
+                       bow_first_perf_period_days=bow_first_perf_period_days,
+                       bow_first_pre_stock_perf=bow_first_pre_stock_perf,
+                       bow_first_post_stock_perf=bow_first_post_stock_perf,
+                       cluster_buy=cluster_buy,
+                       cb_plural_insiders=cb_plural_insiders,
+                       cb_buy_xns=cb_buy_xns,
+                       cb_net_xn_value=cb_net_xn_value,
+                       discretionary_buy=discretionary_buy,
+                       db_large_xn_size=db_large_xn_size,
+                       db_was_ceo=db_was_ceo,
+                       db_detect_date=db_detect_date,
+                       db_person_name=db_person_name,
+                       db_xn_val=db_xn_val,
+                       db_security_name=db_security_name,
+                       db_xn_pct_holdings=db_xn_pct_holdings,
+                       sell_on_weakness=sell_on_weakness,
+                       sow_plural_insiders=sow_plural_insiders,
+                       sow_first_sig_detect_date=sow_first_sig_detect_date,
+                       sow_person_name=sow_person_name,
+                       sow_includes_ceo=sow_includes_ceo,
+                       sow_net_signal_value=sow_net_signal_value,
+                       sow_first_perf_period_days=sow_first_perf_period_days,
+                       sow_first_pre_stock_perf=sow_first_pre_stock_perf,
+                       sow_first_post_stock_perf=sow_first_post_stock_perf,
+                       cluster_sell=cluster_sell,
+                       cs_plural_insiders=cs_plural_insiders,
+                       cs_sell_xns=cs_sell_xns,
+                       cs_net_xn_value=cs_net_xn_value,
+                       discretionary_sell=discretionary_sell,
+                       ds_large_xn_size=ds_large_xn_size,
+                       ds_was_ceo=ds_was_ceo,
+                       ds_detect_date=ds_detect_date,
+                       ds_person_name=ds_person_name,
+                       ds_xn_val=ds_xn_val,
+                       ds_security_name=ds_security_name,
+                       ds_xn_pct_holdings=ds_xn_pct_holdings,
+                       # sell_on_strength=sell_on_strength,
+                       # cluster_sell=cluster_sell,
+                       # big_discretionary_sell=big_discretionary_sell,
+                       # ceo_sell=ceo_sell,
+                       # discretionary_sells=discretionary_sell,
+                       total_transactions=total_transactions,
+                       # mixed_signals=mixed_signals,
+                       signal_is_new=True))
+        counter += 1.0
+        percentcomplete = round(counter / looplength * 100, 2)
+        sys.stdout.write("\r%s / %s company signal views to add: %.2f%%" %
+                         (int(counter), int(looplength), percentcomplete))
+        sys.stdout.flush()
+    #
     print '    deleting old and saving...'
     PersonSignal.objects.all().delete()
     PersonSignal.objects.bulk_create(newsignaldisplays)
@@ -766,5 +799,4 @@ def replace_company_signals():
 print 'Populating signals...'
 create_disc_xn_events()
 replace_person_signals()
-replace_company_signals()
-positive_sig = True
+# replace_company_signals()

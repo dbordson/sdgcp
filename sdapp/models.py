@@ -423,6 +423,8 @@ class PersonSignal(models.Model):
     reporting_person = models.ForeignKey(ReportingPerson)
     eq_annual_share_grants = \
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    security_1 = models.ForeignKey(Security)
+    only_security_1 = models.BooleanField()
 
     reporting_person_title = models.CharField(max_length=80, null=True)
     signal_name = models.CharField(max_length=80, default='ERROR')
@@ -431,10 +433,14 @@ class PersonSignal(models.Model):
     last_file_date = models.DateField()
     transactions = models.IntegerField(max_length=15)
 
+    average_price_sec_1 =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
     gross_signal_value = models.DecimalField(max_digits=15, decimal_places=2)
     net_signal_value = models.DecimalField(max_digits=15, decimal_places=2)
-    prior_holding_value = models.DecimalField(max_digits=15, decimal_places=2)
-    net_signal_pct = models.DecimalField(max_digits=15, decimal_places=2)
+    prior_holding_value =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    net_signal_pct =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
 
     preceding_stock_perf = models.DecimalField(max_digits=15, decimal_places=2,
                                                null=True)
@@ -453,7 +459,7 @@ class PersonSignal(models.Model):
                                     str(self.signal_detect_date))
 
 
-class SignalDisplay(models.Model):
+class SigDisplay(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
     sec_price_hist = models.ForeignKey(SecurityPriceHist, null=True)
 
@@ -511,7 +517,7 @@ class SignalDisplay(models.Model):
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
 
     # Discretionary Sell
-    discretionary_buy = models.CharField(max_length=500, null=True)
+    discretionary_sell = models.CharField(max_length=500, null=True)
     ds_large_xn_size = models.NullBooleanField(null=True)
     ds_was_ceo = models.NullBooleanField(null=True)
     ds_detect_date = models.DateField(null=True)
@@ -520,12 +526,6 @@ class SignalDisplay(models.Model):
     ds_security_name = models.CharField(max_length=80, null=True)
     ds_xn_pct_holdings =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
-
-    # sell_on_strength = models.CharField(max_length=500, null=True)
-    # cluster_sell = models.CharField(max_length=500, null=True)
-    # big_discretionary_sell = models.CharField(max_length=500, null=True)
-    # ceo_sell = models.CharField(max_length=500, null=True)
-    # discretionary_sell = models.CharField(max_length=500, null=True)
 
     total_transactions = models.IntegerField(max_length=15)
     # mixed_signals = models.BooleanField()
