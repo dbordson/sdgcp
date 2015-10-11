@@ -401,6 +401,7 @@ class Recommendation(models.Model):
 class DiscretionaryXnEvent(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
     reporting_person = models.ForeignKey(ReportingPerson)
+    person_title = models.CharField(max_length=80, null=True)
     security = models.ForeignKey(Security)
     form_entry = models.ForeignKey(Form345Entry, null=True)
     xn_acq_disp_code = models.CharField(max_length=1)
@@ -532,6 +533,6 @@ class SigDisplay(models.Model):
     signal_is_new = models.BooleanField()
 
     def __unicode__(self):
-        return u"%s, %s, %s" % (str(self.reporting_person),
-                                str(self.signal_name),
+        return u"%s, %s, %s" % (str(self.issuer.name),
+                                str(self.total_transactions),
                                 str(self.signal_date))

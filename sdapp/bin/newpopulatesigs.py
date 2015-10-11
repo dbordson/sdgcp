@@ -64,13 +64,19 @@ def laxer_start_price(sec_price_hist, date):
         return None
 
 
-def get_price(sec_price_hist, date):
+def get_price(sec_price_hist, date, issuer, reporting_person, hist_price_dict):
+    if (issuer, reporting_person, date) in hist_price_dict:
+        return hist_price_dict[issuer, reporting_person, date]
     close_price = \
         ClosePrice.objects.filter(securitypricehist=sec_price_hist)\
         .filter(close_date=date)
     if close_price.exists():
+        hist_price_dict[issuer, reporting_person, date] =\
+            close_price[0].adj_close_price
         return close_price[0].adj_close_price
     else:
+        hist_price_dict[issuer, reporting_person, date] =\
+            laxer_start_price(sec_price_hist, date)
         return laxer_start_price(sec_price_hist, date)
 
 
@@ -79,21 +85,23 @@ def calc_perf(later_price, earlier_price):
     if later_price is not None\
             and earlier_price is not None:
         stock_perf =\
-            round((later_price /
-                   earlier_price)
-                  - Decimal(1), 4)
+            Decimal(round((later_price /
+                          earlier_price)
+                          - Decimal(1), 4))\
+            * Decimal(100)
     return stock_perf
 
 
-def is_ceo(person_xn_list):
+def is_ceo(person_title_list):
     keywords = ['ceo', 'chief executive officer',
                 'principal exeuctive officer']
     ceo_match = False
-    for person_xn in person_xn_list:
-        lowercase_title = person_xn.reporting_person_title.lower()
-        for keyword in keywords:
-            if lowercase_title in keyword:
-                ceo_match = True
+    for person_title in person_title_list:
+        if person_title is not None:
+            lowercase_title = person_title.lower()
+            for keyword in keywords:
+                if lowercase_title in keyword:
+                    ceo_match = True
     return ceo_match
 
 
@@ -189,6 +197,7 @@ def create_disc_xn_events():
         newxn =\
             DiscretionaryXnEvent(issuer=item.issuer_cik,
                                  reporting_person=item.reporting_owner_cik,
+                                 person_title=item.reporting_owner_title,
                                  security=item.security,
                                  form_entry_id=item.pk,
                                  xn_acq_disp_code=item.xn_acq_disp_code,
@@ -203,7 +212,7 @@ def create_disc_xn_events():
                          (int(counter), int(looplength), percentcomplete))
         sys.stdout.flush()
     #
-    print '\n    saving...'
+    print '\n    saving any new...'
     DiscretionaryXnEvent.objects.bulk_create(newxns)
     #
     print 'done.\n'
@@ -221,6 +230,7 @@ def replace_person_signals():
     print '    interpreting...'
     counter = 0.0
     looplength = float(len(a))
+    hist_price_dict = {}
     for reporting_person, issuer in a:
         # When primary ticker concept is added, adjust filter accordingly.
         aff_events = DiscretionaryXnEvent.objects.filter(issuer=issuer)\
@@ -231,10 +241,7 @@ def replace_person_signals():
             sec_price_hist = sec_price_hists[0]
         else:
             sec_price_hist = None
-        reporting_person_title = \
-            Form345Entry.objects.filter(reporting_owner_cik=reporting_person)\
-            .filter(filedatetime__gte=todaymid + signal_detect_lookback)\
-            .latest('filedatetime').reporting_owner_title
+        reporting_person_title = aff_events.latest('filedate').person_title
         #
         securities = aff_events.order_by('filedate')\
             .values_list('security', 'xn_val', 'xn_shares', 'filedate')
@@ -292,32 +299,29 @@ def replace_person_signals():
             # This tests if the transactions to date are significant
             # and if so and if the signal was not yet detected, it sets the
             # date of detection.
-            if net_signal_value > Decimal(0):
-                if prior_holding_value > Decimal(0)\
-                        and net_val_of_date >= abs_sig_min\
-                        and net_val_of_date / prior_holding_value >=\
-                        rel_sig_min\
-                        and net_shares_of_date > eq_annual_share_grants\
-                        and signal_detect_date is not None:
-                    signal_detect_date = filedate
-                    significant = True
-            else:
-                if prior_holding_value > Decimal(0)\
-                        and net_val_of_date <= -abs_sig_min\
-                        and net_val_of_date / prior_holding_value <=\
-                        -rel_sig_min\
-                        and -net_shares_of_date > eq_annual_share_grants\
-                        and signal_detect_date is not None:
-                    signal_detect_date = filedate
-                    significant = True
+            if prior_holding_value is not None\
+                    and prior_holding_value > Decimal(0)\
+                    and abs(net_val_of_date) >= abs_sig_min\
+                    and abs(net_val_of_date) / prior_holding_value >=\
+                    rel_sig_min\
+                    and abs(net_shares_of_date) > eq_annual_share_grants\
+                    and signal_detect_date is None:
+                signal_detect_date = filedate
+                significant = True
         #
         # This fills in the last transaction date if signal is not significant.
         if signal_detect_date is None:
             signal_detect_date = last_file_date
+        # Function checks if stock price stored in RAM; otherwise call from DB.
         stock_price_for_perf_lookback =\
-            get_price(sec_price_hist, filedate + perf_period_days_td)
-        stock_price_at_detection = get_price(sec_price_hist, filedate)
-        stock_price_now = get_price(sec_price_hist, filedate)
+            get_price(sec_price_hist, filedate + perf_period_days_td,
+                      issuer, reporting_person, hist_price_dict)
+        stock_price_at_detection =\
+            get_price(sec_price_hist, filedate, issuer, reporting_person,
+                      hist_price_dict)
+        stock_price_now =\
+            get_price(sec_price_hist, filedate, issuer, reporting_person,
+                      hist_price_dict)
         #
         preceding_stock_perf =\
             calc_perf(stock_price_at_detection, stock_price_for_perf_lookback)
@@ -331,7 +335,7 @@ def replace_person_signals():
         else:
             gross_signal_value = gross_disp_value
         # This assigns the signal anme
-        if gross_acq_value >= 0:
+        if gross_signal_value >= 0:
             if preceding_stock_perf is not None\
                     and preceding_stock_perf < -significant_stock_move:
                 signal_name = buy_response_to_perf
@@ -354,7 +358,7 @@ def replace_person_signals():
         if prior_holding_value == Decimal(0) or prior_holding_value is None:
             net_signal_pct = None
         else:
-            net_signal_pct = net_signal_value / prior_holding_value\
+            net_signal_pct = abs(net_signal_value) / prior_holding_value\
                 * Decimal(100)
 
         if len(securities_dict) == 1:
@@ -405,7 +409,7 @@ def replace_company_signals():
     print '    sorting...'
     a =\
         DiscretionaryXnEvent.objects\
-        .values_list('issuer').distinct()
+        .values_list('issuer', flat=True).distinct()
     newsignaldisplays = []
     print '    interpreting...'
     counter = 0.0
@@ -413,15 +417,173 @@ def replace_company_signals():
     for issuer in a:
         # aff_events = DiscretionaryXnEvent.objects.filter(issuer=issuer)
         # When primary ticker concept is added, adjust filter accordingly.
-        sec_price_hist = SecurityPriceHist.objects.filter(issuer=issuer)\
-            .order_by('security__short_sec_title')[0]
+
+        sec_price_hists = SecurityPriceHist.objects.filter(issuer=issuer)\
+            .order_by('security__short_sec_title')
+        if sec_price_hists.exists():
+            sec_price_hist = sec_price_hists[0]
+        else:
+            sec_price_hist = None
 
         person_signals = PersonSignal.objects.filter(issuer=issuer)
 
+        # Buy signal data
+        weakness_buys = person_signals\
+            .filter(signal_name=buy_response_to_perf).filter(significant=True)
+        # Is there only one weakness buy?
+        buy_on_weakness = None
+        bow_plural_insiders = None
+        bow_first_sig_detect_date = None
+        bow_person_name = None
+        bow_includes_ceo = None
+        bow_net_signal_value = None
+        bow_first_perf_period_days = None
+        bow_first_pre_stock_perf = None
+        bow_first_post_stock_perf = None
+        if weakness_buys.count() == 1:
+            wbuy_signal = weakness_buys[0]
+            if is_ceo([wbuy_signal.reporting_person_title]) is True:
+                ceo_note = "the CEO, "
+                bow_includes_ceo = True
+            else:
+                ceo_note = ""
+                bow_includes_ceo = False
+            bow_plural_insiders = False
+            bow_first_sig_detect_date = wbuy_signal.signal_detect_date
+            bow_person_name = wbuy_signal.reporting_person.person_name
+            bow_net_signal_value = wbuy_signal.net_signal_value
+            bow_first_perf_period_days = wbuy_signal.perf_period_days
+            bow_first_pre_stock_perf = wbuy_signal.preceding_stock_perf
+            bow_first_post_stock_perf = wbuy_signal.perf_after_detection
 
+            sub_tuple = (bow_first_sig_detect_date,
+                         bow_person_name,
+                         ceo_note,
+                         bow_net_signal_value,
+                         perf_period_days_td.days,
+                         bow_first_pre_stock_perf,
+                         bow_first_post_stock_perf)
+
+            buy_on_weakness =\
+                "%s - %s %sacquired $%s of company securities "\
+                "when %s day stock performance was %s%%. Since then the "\
+                "stock has returned %s." \
+                % sub_tuple
+
+        if weakness_buys.count() >= 2:
+            first_w_buy = weakness_buys.latest('signal_detect_date')
+            person_titles = \
+                weakness_buys.values_list('reporting_person_title', flat=True)
+            if is_ceo(person_titles) is True:
+                ceo_note = "including by CEO, "
+                bow_includes_ceo = True
+            else:
+                ceo_note = ""
+                bow_includes_ceo = False
+
+            bow_plural_insiders = True
+            bow_first_sig_detect_date = first_w_buy.signal_detect_date
+            bow_net_signal_value = \
+                weakness_buys.aggregate(Sum('net_signal_value'))[
+                    'net_signal_value__sum']
+            bow_first_perf_period_days = first_w_buy.perf_period_days
+            bow_first_pre_stock_perf = first_w_buy.preceding_stock_perf
+            bow_first_post_stock_perf = first_w_buy.perf_after_detection
+
+            sub_tuple = (bow_first_sig_detect_date,
+                         ceo_note,
+                         bow_net_signal_value,
+                         perf_period_days_td.days,
+                         bow_first_pre_stock_perf,
+                         bow_first_post_stock_perf)
+
+            buy_on_weakness =\
+                "%s - Insider buying activity %sof $%s of company "\
+                "securities initially detected after %s day stock "\
+                "performance of %s%%. Since then the stock "\
+                "has returned %s." \
+                % sub_tuple
+        # Now address cluster_buy signals, but only if there are not
+        # multiple buys on weakness
+        cluster_buy = None
+        cb_plural_insiders = None
+        cb_buy_xns = None
+        cb_net_xn_value = None
+        if weakness_buys.count() <= 1:
+            issuer_xns =\
+                DiscretionaryXnEvent.objects.filter(issuer=issuer)
+
+            cb_buy_xns = issuer_xns.filter(xn_acq_disp_code='A').count()
+            cb_net_xn_value =\
+                issuer_xns.aggregate(Sum('xn_val'))['xn_val__sum']
+            insider_num = len(issuer_xns.filter(xn_acq_disp_code='A')
+                              .values_list('reporting_person').distinct())
+            if insider_num > 1:
+                plural_insiders = 's'
+                cb_plural_insiders = True
+            else:
+                plural_insiders = ''
+                cb_plural_insiders = False
+            if cb_buy_xns >= 3 and cb_net_xn_value >= abs_sig_min:
+                sub_tuple = (plural_insiders, cb_net_xn_value, cb_buy_xns)
+                cluster_buy =\
+                    "Recent net buying activity by insider%s "\
+                    "was $%s over %s transactions."\
+                    % sub_tuple
+
+        # Now address discretionary buy but only if not obviously precluded
+        # by signals that mean the same thing more clearly (i.e. cluster buys,
+        # big_discretionary_buys etc).
+
+        discretionary_buy = None
+        db_large_xn_size = None
+        db_was_ceo = None
+        db_detect_date = None
+        db_person_name = None
+        db_xn_val = None
+        db_security_name = None
+        db_xn_pct_holdings = None
+
+        if weakness_buys.count() <= 1 and cluster_buy is None:
+            person_signals =\
+                PersonSignal.objects.filter(issuer=issuer)\
+                .filter(signal_name=buy)\
+                .filter(significant=True)
+
+            if person_signals.count() > 0:
+                person_sig = person_signals.order_by('net_signal_value')[0]
+                if person_sig.net_signal_value > big_xn_amt:
+                    xn_size_note = "In a large transaction on"
+                    db_large_xn_size = True
+                else:
+                    xn_size_note = "On"
+                    db_large_xn_size = False
+
+                if is_ceo([person_sig.reporting_person_title]) is True:
+                    ceo_note = ", the CEO,"
+                    db_was_ceo = True
+                else:
+                    ceo_note = ""
+                    db_was_ceo = False
+
+                db_detect_date = person_sig.signal_detect_date
+                db_person_name = person_sig.reporting_person.person_name
+                db_xn_val = person_sig.net_signal_value
+                db_security_name = person_sig.security_1.short_sec_title
+                db_xn_pct_holdings = person_sig.net_signal_pct
+
+                sub_tuple = (xn_size_note, db_detect_date, db_person_name,
+                             ceo_note, db_xn_val, db_security_name,
+                             db_xn_pct_holdings)
+
+                discretionary_buy =\
+                    "%s %s, %s%s bought $%s of %s (%s%% of total holdings)."
+
+        # Sell signal data
         weakness_sells = person_signals\
             .filter(signal_name=sell_response_to_perf).filter(significant=True)
         # Is there only one weakness buy?
+        sell_on_weakness = None
         sow_plural_insiders = None
         sow_first_sig_detect_date = None
         sow_person_name = None
@@ -450,7 +612,7 @@ def replace_company_signals():
                          sow_person_name,
                          ceo_note,
                          -sow_net_signal_value,
-                         sow_first_perf_period_days,
+                         perf_period_days_td.days,
                          sow_first_pre_stock_perf,
                          sow_first_post_stock_perf)
 
@@ -474,15 +636,16 @@ def replace_company_signals():
             sow_plural_insiders = True
             sow_first_sig_detect_date = first_w_sell.signal_detect_date
             sow_net_signal_value = \
-                weakness_sells.aggregate(Sum('net_signal_value'))
-            sow_first_perf_period_days = first_w_sell.perf_period_days_td.days
+                weakness_sells.aggregate(Sum('net_signal_value'))[
+                    'net_signal_value__sum']
+            sow_first_perf_period_days = first_w_sell.perf_period_days
             sow_first_pre_stock_perf = first_w_sell.preceding_stock_perf
             sow_first_post_stock_perf = first_w_sell.perf_after_detection
 
             sub_tuple = (sow_first_sig_detect_date,
                          ceo_note,
                          -sow_net_signal_value,
-                         sow_first_perf_period_days,
+                         perf_period_days_td.days,
                          sow_first_pre_stock_perf,
                          sow_first_post_stock_perf)
 
@@ -499,12 +662,20 @@ def replace_company_signals():
         cs_sell_xns = None
         cs_net_xn_value = None
         if weakness_sells.count() <= 1:
-            issuer_xns =\
-                DiscretionaryXnEvent.objects.filter(issuer=issuer)
-
-            cs_sell_xns = issuer_xns.filter(xn_acq_disp_code='A').count()
-            cs_net_xn_value = issuer_xns.aggregate(Sum('xn_val'))
-            insider_num = len(issuer_xns.filter(xn_acq_disp_code='A')
+            sig_sales =\
+                PersonSignal.objects.filter(issuer=issuer)\
+                .filter(significant=True)\
+                .filter(net_signal_value__lt=Decimal(0))
+            total_annual_grant_rate =\
+                sig_sales.aggregate(Sum('eq_annual_share_grants'))[
+                    'eq_annual_share_grants__sum']
+            cs_net_xn_value =\
+                sig_sales.aggregate(Sum('net_signal_value'))[
+                    'net_signal_value__sum']
+            cs_sell_xns =\
+                sig_sales.aggregate(Sum('transactions'))[
+                    'transactions__sum']
+            insider_num = len(issuer_xns.filter(xn_acq_disp_code='D')
                               .values_list('reporting_person').distinct())
             if insider_num > 1:
                 plural_insiders = 's'
@@ -512,11 +683,15 @@ def replace_company_signals():
             else:
                 plural_insiders = ''
                 cs_plural_insiders = False
-            if cs_sell_xns >= 3 and cs_net_xn_value <= -abs_sig_min:
-                sub_tuple = (plural_insiders, cs_sell_xns, -cs_net_xn_value)
+            if cs_sell_xns >= 3 and cs_net_xn_value <= -abs_sig_min\
+                    and total_annual_grant_rate is not None\
+                    and cs_net_xn_value <= -total_annual_grant_rate:
+                sub_tuple = (plural_insiders, -cs_net_xn_value, cs_sell_xns,
+                             total_annual_grant_rate)
                 cluster_sell =\
-                    "Recent net selling activity by insider%s"\
-                    "was $%s over %s transactions."\
+                    "Recent net selling activity by insider%s "\
+                    "was $%s over %s transactions, exceeding annual grant "\
+                    "rate of %s."\
                     % sub_tuple
 
         # Now address discretionary buy but only if not obviously precluded
@@ -535,201 +710,43 @@ def replace_company_signals():
         if weakness_sells.count() <= 1 and cluster_sell is None:
             person_signals =\
                 PersonSignal.objects.filter(issuer=issuer)\
-                .filter(signal_name=buy)\
+                .filter(signal_name=sell)\
                 .filter(significant=True)
 
             if person_signals.count() > 0:
-                person_xn = person_signals.order_by('net_signal_value')[0]
-                if person_xn.net_signal_value < -big_xn_amt:
+                person_sig = person_signals.order_by('net_signal_value')[0]
+                if person_sig.net_signal_value < -big_xn_amt:
                     xn_size_note = "In a large transaction on"
                     ds_large_xn_size = True
                 else:
                     xn_size_note = "On"
                     ds_large_xn_size = False
 
-                if is_ceo([person_xn]) is True:
+                if is_ceo([person_sig.reporting_person_title]) is True:
                     ceo_note = ", the CEO,"
                     ds_was_ceo = True
                 else:
                     ceo_note = ""
                     ds_was_ceo = False
 
-                ds_detect_date = person_xn.signal_detect_date
-                ds_person_name = person_xn.reporting_person.person_name
-                ds_xn_val = person_xn.net_signal_value
-                ds_security_name = person_xn.security.short_sec_title
-                ds_xn_pct_holdings = person_xn.net_signal_pct
+                ds_detect_date = person_sig.signal_detect_date
+                ds_person_name = person_sig.reporting_person.person_name
+                ds_xn_val = person_sig.net_signal_value
+                ds_security_name = person_sig.security_1.short_sec_title
+                ds_xn_pct_holdings = person_sig.net_signal_pct
 
                 sub_tuple = (xn_size_note, ds_detect_date, ds_person_name,
                              ceo_note, -ds_xn_val, ds_security_name,
                              ds_xn_pct_holdings)
 
                 discretionary_sell =\
-                    "%s %s, %s%s sold $%s of %s (%s%% of total holdings)."
-
-
-
-
-
-
-
-
-
-
-
-        weakness_buys = person_signals\
-            .filter(signal_name=buy_response_to_perf).filter(significant=True)
-        # Is there only one weakness buy?
-        bow_plural_insiders = None
-        bow_first_sig_detect_date = None
-        bow_person_name = None
-        bow_includes_ceo = None
-        bow_net_signal_value = None
-        bow_first_perf_period_days = None
-        bow_first_pre_stock_perf = None
-        bow_first_post_stock_perf = None
-        if weakness_buys.count() == 1:
-            wbuy_signal = weakness_buys[0]
-            if is_ceo([wbuy_signal.reporting_person_title]) is True:
-                ceo_note = "the CEO, "
-                bow_includes_ceo = True
-            else:
-                ceo_note = ""
-                bow_includes_ceo = False
-            bow_plural_insiders = False
-            bow_first_sig_detect_date = wbuy_signal.signal_detect_date
-            bow_person_name = wbuy_signal.reporting_person.person_name
-            bow_net_signal_value = wbuy_signal.net_signal_value
-            bow_first_perf_period_days = wbuy_signal.perf_period_days_td.days
-            bow_first_pre_stock_perf = wbuy_signal.preceding_stock_perf
-            bow_first_post_stock_perf = wbuy_signal.perf_after_detection
-
-            sub_tuple = (bow_first_sig_detect_date,
-                         bow_person_name,
-                         ceo_note,
-                         bow_net_signal_value,
-                         bow_first_perf_period_days,
-                         bow_first_pre_stock_perf,
-                         bow_first_post_stock_perf)
-
-            buy_on_weakness =\
-                "%s - %s %sacquired $%s of company securities "\
-                "when %s day stock performance was %s%%. Since then the "\
-                "stock has returned %s." \
-                % sub_tuple
-
-        if weakness_buys.count() >= 2:
-            first_w_buy = weakness_buys.latest('signal_detect_date')
-            person_titles = \
-                weakness_buys.values_list('reporting_person_title', flat=True)
-            if is_ceo(person_titles) is True:
-                ceo_note = "including by CEO, "
-                bow_includes_ceo = True
-            else:
-                ceo_note = ""
-                bow_includes_ceo = False
-
-            bow_plural_insiders = True
-            bow_first_sig_detect_date = first_w_buy.signal_detect_date
-            bow_net_signal_value = \
-                weakness_buys.aggregate(Sum('net_signal_value'))
-            bow_first_perf_period_days = first_w_buy.perf_period_days_td.days
-            bow_first_pre_stock_perf = first_w_buy.preceding_stock_perf
-            bow_first_post_stock_perf = first_w_buy.perf_after_detection
-
-            sub_tuple = (bow_first_sig_detect_date,
-                         ceo_note,
-                         bow_net_signal_value,
-                         bow_first_perf_period_days,
-                         bow_first_pre_stock_perf,
-                         bow_first_post_stock_perf)
-
-            buy_on_weakness =\
-                "%s - Insider buying activity %sof $%s of company "\
-                "securities initially detected after %s day stock "\
-                "performance of %s%%. Since then the stock "\
-                "has returned %s." \
-                % sub_tuple
-        # Now address cluster_buy signals, but only if there are not
-        # multiple buys on weakness
-        cluster_buy = None
-        cb_plural_insiders = None
-        cb_buy_xns = None
-        cb_net_xn_value = None
-        if weakness_buys.count() <= 1:
-            issuer_xns =\
-                DiscretionaryXnEvent.objects.filter(issuer=issuer)
-
-            cb_buy_xns = issuer_xns.filter(xn_acq_disp_code='A').count()
-            cb_net_xn_value = issuer_xns.aggregate(Sum('xn_val'))
-            insider_num = len(issuer_xns.filter(xn_acq_disp_code='A')
-                              .values_list('reporting_person').distinct())
-            if insider_num > 1:
-                plural_insiders = 's'
-                cb_plural_insiders = True
-            else:
-                plural_insiders = ''
-                cb_plural_insiders = False
-            if cb_buy_xns >= 3 and cb_net_xn_value >= abs_sig_min:
-                sub_tuple = (plural_insiders, cb_buy_xns, cb_net_xn_value)
-                cluster_buy =\
-                    "Recent net buying activity by insider%s"\
-                    "was $%s over %s transactions."\
+                    "%s %s, %s%s sold $%s of %s (%s%% of total holdings)."\
                     % sub_tuple
-
-        # Now address discretionary buy but only if not obviously precluded
-        # by signals that mean the same thing more clearly (i.e. cluster buys,
-        # big_discretionary_buys etc).
-
-        discretionary_buy = None
-        db_large_xn_size = None
-        db_was_ceo = None
-        db_detect_date = None
-        db_person_name = None
-        db_xn_val = None
-        db_security_name = None
-        db_xn_pct_holdings = None
-
-        if weakness_buys.count() <= 1 and cluster_buy is None:
-            person_signals =\
-                PersonSignal.objects.filter(issuer=issuer)\
-                .filter(signal_name=buy)\
-                .filter(significant=True)
-
-            if person_signals.count() > 0:
-                person_xn = person_signals.order_by('net_signal_value')[0]
-                if person_xn.net_signal_value > big_xn_amt:
-                    xn_size_note = "In a large transaction on"
-                    db_large_xn_size = True
-                else:
-                    xn_size_note = "On"
-                    db_large_xn_size = False
-
-                if is_ceo([person_xn]) is True:
-                    ceo_note = ", the CEO,"
-                    db_was_ceo = True
-                else:
-                    ceo_note = ""
-                    db_was_ceo = False
-
-                db_detect_date = person_xn.signal_detect_date
-                db_person_name = person_xn.reporting_person.person_name
-                db_xn_val = person_xn.net_signal_value
-                db_security_name = person_xn.security.short_sec_title
-                db_xn_pct_holdings = person_xn.net_signal_pct
-
-                sub_tuple = (xn_size_note, db_detect_date, db_person_name,
-                             ceo_note, db_xn_val, db_security_name,
-                             db_xn_pct_holdings)
-
-                discretionary_buy =\
-                    "%s %s, %s%s bought $%s of %s (%s%% of total holdings)."
 
         total_transactions = DiscretionaryXnEvent.objects\
             .filter(issuer=issuer).count()
-
-        newsignaldisplays.append(
-            SigDisplay(issuer=issuer,
+        sigtoappend =\
+            SigDisplay(issuer_id=issuer,
                        sec_price_hist=sec_price_hist,
                        buy_on_weakness=buy_on_weakness,
                        bow_plural_insiders=bow_plural_insiders,
@@ -780,16 +797,24 @@ def replace_company_signals():
                        # discretionary_sells=discretionary_sell,
                        total_transactions=total_transactions,
                        # mixed_signals=mixed_signals,
-                       signal_is_new=True))
+                       signal_is_new=True)
+
+        if buy_on_weakness is not None\
+                or cluster_buy is not None\
+                or discretionary_buy is not None\
+                or sell_on_weakness is not None\
+                or cluster_sell is not None\
+                or discretionary_sell is not None:
+            newsignaldisplays.append(sigtoappend)
         counter += 1.0
         percentcomplete = round(counter / looplength * 100, 2)
-        sys.stdout.write("\r%s / %s company signal views to add: %.2f%%" %
+        sys.stdout.write("\r%s / %s company signal views to analyze: %.2f%%" %
                          (int(counter), int(looplength), percentcomplete))
         sys.stdout.flush()
-    #
+    print '\n    %s objects to save' % len(newsignaldisplays)
     print '    deleting old and saving...'
-    PersonSignal.objects.all().delete()
-    PersonSignal.objects.bulk_create(newsignaldisplays)
+    SigDisplay.objects.all().delete()
+    SigDisplay.objects.bulk_create(newsignaldisplays)
     print 'done.'
     django.db.reset_queries()
     print ''
@@ -797,6 +822,6 @@ def replace_company_signals():
 
 
 print 'Populating signals...'
-create_disc_xn_events()
-replace_person_signals()
-# replace_company_signals()
+# create_disc_xn_events()
+# replace_person_signals()
+replace_company_signals()
