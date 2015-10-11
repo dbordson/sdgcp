@@ -583,40 +583,40 @@ def replace_company_signals():
         weakness_sells = person_signals\
             .filter(signal_name=sell_response_to_perf).filter(significant=True)
         # Is there only one weakness buy?
-        sell_on_weakness = None
-        sow_plural_insiders = None
-        sow_first_sig_detect_date = None
-        sow_person_name = None
-        sow_includes_ceo = None
-        sow_net_signal_value = None
-        sow_first_perf_period_days = None
-        sow_first_pre_stock_perf = None
-        sow_first_post_stock_perf = None
+        sell_on_strength = None
+        sos_plural_insiders = None
+        sos_first_sig_detect_date = None
+        sos_person_name = None
+        sos_includes_ceo = None
+        sos_net_signal_value = None
+        sos_first_perf_period_days = None
+        sos_first_pre_stock_perf = None
+        sos_first_post_stock_perf = None
         if weakness_sells.count() == 1:
             wsell_signal = weakness_sells[0]
             if is_ceo([wsell_signal.reporting_person_title]) is True:
                 ceo_note = "the CEO, "
-                sow_includes_ceo = True
+                sos_includes_ceo = True
             else:
                 ceo_note = ""
-                sow_includes_ceo = False
-            sow_plural_insiders = False
-            sow_first_sig_detect_date = wsell_signal.signal_detect_date
-            sow_person_name = wsell_signal.reporting_person.person_name
-            sow_net_signal_value = wsell_signal.net_signal_value
-            sow_first_perf_period_days = wsell_signal.perf_period_days
-            sow_first_pre_stock_perf = wsell_signal.preceding_stock_perf
-            sow_first_post_stock_perf = wsell_signal.perf_after_detection
+                sos_includes_ceo = False
+            sos_plural_insiders = False
+            sos_first_sig_detect_date = wsell_signal.signal_detect_date
+            sos_person_name = wsell_signal.reporting_person.person_name
+            sos_net_signal_value = wsell_signal.net_signal_value
+            sos_first_perf_period_days = wsell_signal.perf_period_days
+            sos_first_pre_stock_perf = wsell_signal.preceding_stock_perf
+            sos_first_post_stock_perf = wsell_signal.perf_after_detection
 
-            sub_tuple = (sow_first_sig_detect_date,
-                         sow_person_name,
+            sub_tuple = (sos_first_sig_detect_date,
+                         sos_person_name,
                          ceo_note,
-                         -sow_net_signal_value,
+                         -sos_net_signal_value,
                          perf_period_days_td.days,
-                         sow_first_pre_stock_perf,
-                         sow_first_post_stock_perf)
+                         sos_first_pre_stock_perf,
+                         sos_first_post_stock_perf)
 
-            sell_on_weakness =\
+            sell_on_strength =\
                 "%s - %s %ssold $%s of company securities "\
                 "when %s day stock performance was %s%%. Since then the "\
                 "stock has returned %s." \
@@ -628,28 +628,28 @@ def replace_company_signals():
                 weakness_sells.values_list('reporting_person_title', flat=True)
             if is_ceo(person_titles) is True:
                 ceo_note = "including by CEO, "
-                sow_includes_ceo = True
+                sos_includes_ceo = True
             else:
                 ceo_note = ""
-                sow_includes_ceo = False
+                sos_includes_ceo = False
 
-            sow_plural_insiders = True
-            sow_first_sig_detect_date = first_w_sell.signal_detect_date
-            sow_net_signal_value = \
+            sos_plural_insiders = True
+            sos_first_sig_detect_date = first_w_sell.signal_detect_date
+            sos_net_signal_value = \
                 weakness_sells.aggregate(Sum('net_signal_value'))[
                     'net_signal_value__sum']
-            sow_first_perf_period_days = first_w_sell.perf_period_days
-            sow_first_pre_stock_perf = first_w_sell.preceding_stock_perf
-            sow_first_post_stock_perf = first_w_sell.perf_after_detection
+            sos_first_perf_period_days = first_w_sell.perf_period_days
+            sos_first_pre_stock_perf = first_w_sell.preceding_stock_perf
+            sos_first_post_stock_perf = first_w_sell.perf_after_detection
 
-            sub_tuple = (sow_first_sig_detect_date,
+            sub_tuple = (sos_first_sig_detect_date,
                          ceo_note,
-                         -sow_net_signal_value,
+                         -sos_net_signal_value,
                          perf_period_days_td.days,
-                         sow_first_pre_stock_perf,
-                         sow_first_post_stock_perf)
+                         sos_first_pre_stock_perf,
+                         sos_first_post_stock_perf)
 
-            sell_on_weakness =\
+            sell_on_strength =\
                 "%s - Insider selling activity %sof $%s of company "\
                 "securities initially detected after %s day stock "\
                 "performance of %s%%. Since then the stock "\
@@ -769,15 +769,15 @@ def replace_company_signals():
                        db_xn_val=db_xn_val,
                        db_security_name=db_security_name,
                        db_xn_pct_holdings=db_xn_pct_holdings,
-                       sell_on_weakness=sell_on_weakness,
-                       sow_plural_insiders=sow_plural_insiders,
-                       sow_first_sig_detect_date=sow_first_sig_detect_date,
-                       sow_person_name=sow_person_name,
-                       sow_includes_ceo=sow_includes_ceo,
-                       sow_net_signal_value=sow_net_signal_value,
-                       sow_first_perf_period_days=sow_first_perf_period_days,
-                       sow_first_pre_stock_perf=sow_first_pre_stock_perf,
-                       sow_first_post_stock_perf=sow_first_post_stock_perf,
+                       sell_on_strength=sell_on_strength,
+                       sos_plural_insiders=sos_plural_insiders,
+                       sos_first_sig_detect_date=sos_first_sig_detect_date,
+                       sos_person_name=sos_person_name,
+                       sos_includes_ceo=sos_includes_ceo,
+                       sos_net_signal_value=sos_net_signal_value,
+                       sos_first_perf_period_days=sos_first_perf_period_days,
+                       sos_first_pre_stock_perf=sos_first_pre_stock_perf,
+                       sos_first_post_stock_perf=sos_first_post_stock_perf,
                        cluster_sell=cluster_sell,
                        cs_plural_insiders=cs_plural_insiders,
                        cs_sell_xns=cs_sell_xns,
@@ -790,11 +790,6 @@ def replace_company_signals():
                        ds_xn_val=ds_xn_val,
                        ds_security_name=ds_security_name,
                        ds_xn_pct_holdings=ds_xn_pct_holdings,
-                       # sell_on_strength=sell_on_strength,
-                       # cluster_sell=cluster_sell,
-                       # big_discretionary_sell=big_discretionary_sell,
-                       # ceo_sell=ceo_sell,
-                       # discretionary_sells=discretionary_sell,
                        total_transactions=total_transactions,
                        # mixed_signals=mixed_signals,
                        signal_is_new=True)
@@ -802,7 +797,7 @@ def replace_company_signals():
         if buy_on_weakness is not None\
                 or cluster_buy is not None\
                 or discretionary_buy is not None\
-                or sell_on_weakness is not None\
+                or sell_on_strength is not None\
                 or cluster_sell is not None\
                 or discretionary_sell is not None:
             newsignaldisplays.append(sigtoappend)

@@ -497,17 +497,17 @@ class SigDisplay(models.Model):
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
 
     # Sell on Strength
-    sell_on_weakness = models.CharField(max_length=500, null=True)
-    sow_plural_insiders = models.NullBooleanField(null=True)
-    sow_first_sig_detect_date = models.DateField(null=True)
-    sow_person_name = models.CharField(max_length=80, null=True)
-    sow_includes_ceo = models.NullBooleanField(null=True)
-    sow_net_signal_value =\
+    sell_on_strength = models.CharField(max_length=500, null=True)
+    sos_plural_insiders = models.NullBooleanField(null=True)
+    sos_first_sig_detect_date = models.DateField(null=True)
+    sos_person_name = models.CharField(max_length=80, null=True)
+    sos_includes_ceo = models.NullBooleanField(null=True)
+    sos_net_signal_value =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
-    sow_first_perf_period_days = models.IntegerField(max_length=3, null=True)
-    sow_first_pre_stock_perf =\
+    sos_first_perf_period_days = models.IntegerField(max_length=3, null=True)
+    sos_first_pre_stock_perf =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
-    sow_first_post_stock_perf =\
+    sos_first_post_stock_perf =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
 
     # Cluster Sell
