@@ -15,7 +15,35 @@ from sdapp.bin.globals import (signal_detect_lookback, significant_stock_move,
                                sell, sell_response_to_perf, big_xn_amt)
 
 
-def calc_holdings(securities, issuer, reporting_person):
+def laxer_start_price(sec_price_hist, date):
+    wkd_td = datetime.timedelta(5)
+    close_prices = \
+        ClosePrice.objects.filter(securitypricehist=sec_price_hist)
+    price_list = \
+        close_prices.filter(close_date__gte=date-wkd_td)\
+        .filter(close_date__lte=date).order_by('close_date')
+    if price_list.exists():
+        return price_list[0].adj_close_price
+    else:
+        return None
+
+
+def get_price(sec_price_hist, date, issuer, hist_price_dict):
+    if (issuer, date) in hist_price_dict:
+        return hist_price_dict[issuer, date]
+    close_price = \
+        ClosePrice.objects.filter(securitypricehist=sec_price_hist)\
+        .filter(close_date=date)
+    if close_price.exists():
+        hist_price_dict[issuer, date] = close_price[0].adj_close_price
+        return close_price[0].adj_close_price
+    else:
+        laxer_price = laxer_start_price(sec_price_hist, date)
+        hist_price_dict[issuer, date] = laxer_price
+        return laxer_price
+
+
+def calc_holdings(securities, issuer, reporting_person, hist_price_dict):
     first_filing_date = securities[0][3]
     EST = pytz.timezone('America/New_York')
     ffd = first_filing_date
@@ -27,57 +55,40 @@ def calc_holdings(securities, issuer, reporting_person):
         SecurityPriceHist.objects.filter(issuer=issuer)
     if ticker_securities.exists():
         ticker_security = ticker_securities[0].security
+        stock_price_for_holdings =\
+            get_price(ticker_securities[0], ffd, issuer, hist_price_dict)
     else:
         # No value if can't find a ticker for pricing.
+        return None
+    if stock_price_for_holdings is None:
         return None
     person_forms =\
         Form345Entry.objects.filter(issuer_cik=issuer)\
         .filter(reporting_owner_cik=reporting_person)\
-        .exclude(supersededdt__lt=first_filing_dt - datetime.timedelta(1))\
-        .exclude(filedatetime__gte=first_filing_dt - datetime.timedelta(1))
+        .filter(Q(supersededdt__gt=first_filing_dt)
+                | Q(supersededdt=None))\
+        .exclude(filedatetime__gt=first_filing_dt)
     stock_values = person_forms\
         .filter(security=ticker_security)\
         .exclude(reported_shares_following_xn=None)\
-        .values_list('reported_shares_following_xn', 'adjustment_factor')
+        .values_list('shares_following_xn', 'adjustment_factor',
+                     'conversion_price')
     stock_deriv_values = person_forms\
         .filter(underlying_security=ticker_security)\
         .exclude(underlying_shares=None)\
-        .values_list('underlying_shares', 'adjustment_factor')
+        .values_list('underlying_shares', 'adjustment_factor',
+                     'conversion_price')
     all_values = list(stock_values) + list(stock_deriv_values)
     prior_holding_value = Decimal(0)
-    for rep_shares, adj_factor in all_values:
-        prior_holding_value += Decimal(rep_shares) * Decimal(adj_factor)
+    for rep_shares, adj_factor, conversion_price in all_values:
+        if conversion_price is None:
+            cp = Decimal(0)
+        else:
+            cp = conversion_price
+        prior_holding_value += Decimal(rep_shares) * Decimal(adj_factor)\
+            * max(0, stock_price_for_holdings - cp)
     #
     return prior_holding_value
-
-
-def laxer_start_price(sec_price_hist, date):
-    wkd_td = datetime.timedelta(5)
-    close_prices = \
-        ClosePrice.objects.filter(securitypricehist=sec_price_hist)
-    price_list = \
-        close_prices.filter(close_date__lte=date-wkd_td)\
-        .filter(close_date__gte=date).order_by('close_date')
-    if price_list.exists():
-        return price_list[0].adj_close_price
-    else:
-        return None
-
-
-def get_price(sec_price_hist, date, issuer, reporting_person, hist_price_dict):
-    if (issuer, reporting_person, date) in hist_price_dict:
-        return hist_price_dict[issuer, reporting_person, date]
-    close_price = \
-        ClosePrice.objects.filter(securitypricehist=sec_price_hist)\
-        .filter(close_date=date)
-    if close_price.exists():
-        hist_price_dict[issuer, reporting_person, date] =\
-            close_price[0].adj_close_price
-        return close_price[0].adj_close_price
-    else:
-        hist_price_dict[issuer, reporting_person, date] =\
-            laxer_start_price(sec_price_hist, date)
-        return laxer_start_price(sec_price_hist, date)
 
 
 def calc_perf(later_price, earlier_price):
@@ -188,11 +199,13 @@ def create_disc_xn_events():
     for item in a:
         if item.xn_acq_disp_code == 'D':
             sign_transaction_shares = \
-                Decimal(-1) * item.transaction_shares * item.adjustment_factor
+                Decimal(-1) * item.transaction_shares * item.adjustment_factor\
+                * item.security.conversion_multiple
             xn_val = item.xn_price_per_share * sign_transaction_shares
         else:
             sign_transaction_shares = \
-                item.transaction_shares * item.adjustment_factor
+                item.transaction_shares * item.adjustment_factor\
+                * item.security.conversion_multiple
             xn_val = item.xn_price_per_share * sign_transaction_shares
         newxn =\
             DiscretionaryXnEvent(issuer=item.issuer_cik,
@@ -257,9 +270,11 @@ def replace_person_signals():
         #
         # Get holdings before form filed
         prior_holding_value =\
-            calc_holdings(securities, issuer, reporting_person)
+            calc_holdings(securities, issuer, reporting_person,
+                          hist_price_dict)
         securities_dict = {}
         net_signal_value = Decimal(0)
+        net_signal_shares = Decimal(0)
         gross_acq_value = Decimal(0)
         gross_disp_value = Decimal(0)
         #
@@ -281,6 +296,7 @@ def replace_person_signals():
                 filedate_dict[filedate] = [xn_val, xn_shares]
             #
             net_signal_value += xn_val
+            net_signal_shares += xn_shares
             #
             if xn_val > 0:
                 gross_acq_value += xn_val
@@ -302,12 +318,16 @@ def replace_person_signals():
             if prior_holding_value is not None\
                     and prior_holding_value > Decimal(0)\
                     and abs(net_val_of_date) >= abs_sig_min\
-                    and abs(net_val_of_date) / prior_holding_value >=\
-                    rel_sig_min\
-                    and abs(net_shares_of_date) > eq_annual_share_grants\
+                    and (abs(net_val_of_date) / prior_holding_value >=
+                         rel_sig_min or abs(net_val_of_date) >= big_xn_amt)\
                     and signal_detect_date is None:
-                signal_detect_date = filedate
-                significant = True
+                if net_signal_value < Decimal(0)\
+                        and abs(net_shares_of_date) > eq_annual_share_grants:
+                    signal_detect_date = filedate
+                    significant = True
+                elif net_signal_value >= Decimal(0):
+                    signal_detect_date = filedate
+                    significant = True
         #
         # This fills in the last transaction date if signal is not significant.
         if signal_detect_date is None:
@@ -315,13 +335,11 @@ def replace_person_signals():
         # Function checks if stock price stored in RAM; otherwise call from DB.
         stock_price_for_perf_lookback =\
             get_price(sec_price_hist, filedate + perf_period_days_td,
-                      issuer, reporting_person, hist_price_dict)
+                      issuer, hist_price_dict)
         stock_price_at_detection =\
-            get_price(sec_price_hist, filedate, issuer, reporting_person,
-                      hist_price_dict)
+            get_price(sec_price_hist, filedate, issuer, hist_price_dict)
         stock_price_now =\
-            get_price(sec_price_hist, filedate, issuer, reporting_person,
-                      hist_price_dict)
+            get_price(sec_price_hist, today, issuer, hist_price_dict)
         #
         preceding_stock_perf =\
             calc_perf(stock_price_at_detection, stock_price_for_perf_lookback)
@@ -382,6 +400,7 @@ def replace_person_signals():
                          average_price_sec_1=average_price_sec_1,
                          gross_signal_value=gross_signal_value,
                          net_signal_value=net_signal_value,
+                         net_signal_shares=net_signal_shares,
                          prior_holding_value=prior_holding_value,
                          net_signal_pct=net_signal_pct,
                          preceding_stock_perf=preceding_stock_perf,
@@ -395,7 +414,7 @@ def replace_person_signals():
         sys.stdout.write("\r%s / %s person signals to add: %.2f%%" %
                          (int(counter), int(looplength), percentcomplete))
         sys.stdout.flush()
-    print '    deleting old and saving...'
+    print '\n    deleting old and saving...'
     PersonSignal.objects.all().delete()
     PersonSignal.objects.bulk_create(newpersonsignals)
     print 'done.'
@@ -460,14 +479,14 @@ def replace_company_signals():
                          bow_person_name,
                          ceo_note,
                          bow_net_signal_value,
-                         perf_period_days_td.days,
+                         -perf_period_days_td.days,
                          bow_first_pre_stock_perf,
                          bow_first_post_stock_perf)
 
             buy_on_weakness =\
                 "%s - %s %sacquired $%s of company securities "\
-                "when %s day stock performance was %s%%. Since then the "\
-                "stock has returned %s." \
+                "when %s-day stock performance was %s%%. Since then the "\
+                "stock has returned %s%%." \
                 % sub_tuple
 
         if weakness_buys.count() >= 2:
@@ -493,15 +512,15 @@ def replace_company_signals():
             sub_tuple = (bow_first_sig_detect_date,
                          ceo_note,
                          bow_net_signal_value,
-                         perf_period_days_td.days,
+                         -perf_period_days_td.days,
                          bow_first_pre_stock_perf,
                          bow_first_post_stock_perf)
 
             buy_on_weakness =\
                 "%s - Insider buying activity %sof $%s of company "\
-                "securities initially detected after %s day stock "\
+                "securities initially detected after %s-day stock "\
                 "performance of %s%%. Since then the stock "\
-                "has returned %s." \
+                "has returned %s%%." \
                 % sub_tuple
         # Now address cluster_buy signals, but only if there are not
         # multiple buys on weakness
@@ -577,7 +596,8 @@ def replace_company_signals():
                              db_xn_pct_holdings)
 
                 discretionary_buy =\
-                    "%s %s, %s%s bought $%s of %s (%s%% of total holdings)."
+                    "%s %s, %s%s bought $%s of %s (%s%% of total holdings)."\
+                    % sub_tuple
 
         # Sell signal data
         weakness_sells = person_signals\
@@ -612,14 +632,14 @@ def replace_company_signals():
                          sos_person_name,
                          ceo_note,
                          -sos_net_signal_value,
-                         perf_period_days_td.days,
+                         -perf_period_days_td.days,
                          sos_first_pre_stock_perf,
                          sos_first_post_stock_perf)
 
             sell_on_strength =\
                 "%s - %s %ssold $%s of company securities "\
-                "when %s day stock performance was %s%%. Since then the "\
-                "stock has returned %s." \
+                "when %s-day stock performance was %s%%. Since then the "\
+                "stock has returned %s%%." \
                 % sub_tuple
 
         if weakness_sells.count() >= 2:
@@ -645,15 +665,15 @@ def replace_company_signals():
             sub_tuple = (sos_first_sig_detect_date,
                          ceo_note,
                          -sos_net_signal_value,
-                         perf_period_days_td.days,
+                         -perf_period_days_td.days,
                          sos_first_pre_stock_perf,
                          sos_first_post_stock_perf)
 
             sell_on_strength =\
                 "%s - Insider selling activity %sof $%s of company "\
-                "securities initially detected after %s day stock "\
+                "securities initially detected after %s-day stock "\
                 "performance of %s%%. Since then the stock "\
-                "has returned %s." \
+                "has returned %s%%." \
                 % sub_tuple
         # Now address cluster_sell signals, but only if there are not
         # multiple buys on weakness
@@ -666,7 +686,7 @@ def replace_company_signals():
                 PersonSignal.objects.filter(issuer=issuer)\
                 .filter(significant=True)\
                 .filter(net_signal_value__lt=Decimal(0))
-            total_annual_grant_rate =\
+            cs_annual_grant_rate =\
                 sig_sales.aggregate(Sum('eq_annual_share_grants'))[
                     'eq_annual_share_grants__sum']
             cs_net_xn_value =\
@@ -675,6 +695,9 @@ def replace_company_signals():
             cs_sell_xns =\
                 sig_sales.aggregate(Sum('transactions'))[
                     'transactions__sum']
+            cs_net_shares =\
+                sig_sales.aggregate(Sum('net_signal_shares'))[
+                    'net_signal_shares__sum']
             insider_num = len(issuer_xns.filter(xn_acq_disp_code='D')
                               .values_list('reporting_person').distinct())
             if insider_num > 1:
@@ -684,10 +707,10 @@ def replace_company_signals():
                 plural_insiders = ''
                 cs_plural_insiders = False
             if cs_sell_xns >= 3 and cs_net_xn_value <= -abs_sig_min\
-                    and total_annual_grant_rate is not None\
-                    and cs_net_xn_value <= -total_annual_grant_rate:
+                    and cs_annual_grant_rate is not None\
+                    and cs_net_shares <= -cs_annual_grant_rate:
                 sub_tuple = (plural_insiders, -cs_net_xn_value, cs_sell_xns,
-                             total_annual_grant_rate)
+                             cs_annual_grant_rate)
                 cluster_sell =\
                     "Recent net selling activity by insider%s "\
                     "was $%s over %s transactions, exceeding annual grant "\
@@ -782,6 +805,8 @@ def replace_company_signals():
                        cs_plural_insiders=cs_plural_insiders,
                        cs_sell_xns=cs_sell_xns,
                        cs_net_xn_value=cs_net_xn_value,
+                       cs_net_shares=cs_net_shares,
+                       cs_annual_grant_rate=cs_annual_grant_rate,
                        discretionary_sell=discretionary_sell,
                        ds_large_xn_size=ds_large_xn_size,
                        ds_was_ceo=ds_was_ceo,
@@ -806,7 +831,7 @@ def replace_company_signals():
         sys.stdout.write("\r%s / %s company signal views to analyze: %.2f%%" %
                          (int(counter), int(looplength), percentcomplete))
         sys.stdout.flush()
-    print '\n    %s objects to save' % len(newsignaldisplays)
+    print '\n    %s objects to save...' % len(newsignaldisplays)
     print '    deleting old and saving...'
     SigDisplay.objects.all().delete()
     SigDisplay.objects.bulk_create(newsignaldisplays)

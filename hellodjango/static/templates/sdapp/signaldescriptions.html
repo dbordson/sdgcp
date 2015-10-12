@@ -1,0 +1,50 @@
+{% load humanize %}
+
+<ul class="list-group" style="height:200px; overflow-y: scroll;">
+
+{% if signal_entry.buy_on_weakness != None %}
+  <li class="list-group-item">
+    {% if signal_entry.bow_plural_insiders == True %}
+     {{ signal_entry.bow_first_sig_detect_date }} - Insider buying activity{% if signal_entry.bow_includes_ceo == True %}, including by CEO, {% endif %} of ${{ signal_entry.bow_net_signal_value|floatformat:0|intword|intcomma }} of company securities initially detected after {{perf_period }}-day day stock performance of {{ signal_entry.bow_first_pre_stock_perf }}%. Since then the stock has returned {{ signal_entry.bow_first_post_stock_perf }}%.
+    {% else %}
+     {{ signal_entry.bow_first_sig_detect_date }} - {{ signal_entry.bow_person_name }}{% if signal_entry.bow_includes_ceo == True %}, the CEO,{% endif %} acquired ${{ signal_entry.bow_net_signal_value|floatformat:0|intword|intcomma }} of company securities after {{perf_period }}-day day stock performance of {{ signal_entry.bow_first_pre_stock_perf }}%. Since then the stock has returned {{ signal_entry.bow_first_post_stock_perf }}%.
+    {% endif %}
+  </li>
+{% endif %}
+
+{% if signal_entry.cluster_buy != None %}
+  <li class="list-group-item">
+    Recent net buying activity by {% if signal_entry.cb_plural_insiders == True %}insiders{% else %}an insider{% endif %} was ${{ signal_entry.cb_net_xn_value|floatformat:0|intword|intcomma }} of securities over {{ signal_entry.cb_buy_xns }} transactions.
+  </li>
+{% endif %}
+
+{% if signal_entry.discretionary_buy != None %}
+  <li class="list-group-item">
+    {% if signal_entry.db_large_xn_size == True %}In a large transaction on{% else %}On{% endif %} {{ signal_entry.db_detect_date }}, {{ signal_entry.db_person_name }}{% if signal_entry.db_was_ceo == True %} the CEO,{% endif %} bought ${{ signal_entry.db_xn_val|floatformat:0|intword|intcomma }} of {{ signal_entry.db_security_name }} ({{ signal_entry.db_xn_pct_holdings }}% of total holdings).
+  </li>
+{% endif %}
+
+{% if signal_entry.sell_on_strength != None %}
+  <li class="list-group-item">
+    {% if signal_entry.sos_plural_insiders == True %}
+     {{ signal_entry.sos_first_sig_detect_date }} - Insider selling activity{% if signal_entry.sos_includes_ceo == True %}, including by CEO, {% endif %} of ${{ signal_entry.sos_net_signal_value|negate|floatformat:0|intword|intcomma }} of company securities initially detected after {{perf_period }}-day day stock performance of {{ signal_entry.sos_first_pre_stock_perf }}%. The stock has since returned {{ signal_entry.sos_first_post_stock_perf }}%.
+    {% else %}
+     {{ signal_entry.sos_first_sig_detect_date }} - {{ signal_entry.sos_person_name }}{% if signal_entry.sos_includes_ceo == True %}, the CEO,{% endif %} sold ${{ signal_entry.sos_net_signal_value|negate|floatformat:0|intword|intcomma }} of company securities after {{perf_period }}-day day stock performance of {{ signal_entry.sos_first_pre_stock_perf }}%. The stock has since returned {{ signal_entry.sos_first_post_stock_perf }}%.
+    {% endif %}  
+  </li>
+{% endif %}
+
+{% if signal_entry.cluster_sell != None %}
+  <li class="list-group-item">
+    Recent net selling activity by {% if signal_entry.cs_plural_insiders == True %}insiders{% else %}an insider{% endif %} was ${{ signal_entry.cs_net_xn_value|negate|floatformat:0|intword|intcomma }} ({{ signal_entry.cs_net_shares|negate|floatformat:0|intword|intcomma }} share equivalents) over {{ signal_entry.cs_sell_xns }} transactions, exceeding annual compensatory grants of {{ signal_entry.cs_annual_grant_rate|floatformat:0|intword|intcomma }} share equivalents.
+  </li>
+{% endif %}
+
+{% if signal_entry.discretionary_sell != None %}
+  <li class="list-group-item">
+    {% if signal_entry.ds_large_xn_size == True %}In a large transaction on{% else %}On{% endif %} {{ signal_entry.ds_detect_date }}, {{ signal_entry.ds_person_name }}{% if signal_entry.ds_was_ceo == True %} the CEO,{% endif %} sold ${{ signal_entry.ds_xn_val|negate|floatformat:0|intword|intcomma }} of {{ signal_entry.ds_security_name }} ({{ signal_entry.ds_xn_pct_holdings }}% of total holdings).
+  </li>
+{% endif %}
+
+
+</ul>

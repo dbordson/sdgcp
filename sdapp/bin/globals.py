@@ -7,15 +7,23 @@ significant_stock_move = Decimal(10)  # percent
 abs_sig_min = Decimal(10 * 1000)
 rel_sig_min = Decimal(.1)
 perf_period_days_td = datetime.timedelta(-90)
-big_xn_amt = Decimal(1000 * 1000)
+big_xn_amt = Decimal(100 * 1000)
 EST = pytz.timezone('America/New_York')
 today = datetime.date.today()
 todaymid = datetime.datetime(today.year, today.month, today.day,
                              0, 0, 0, 0, tzinfo=EST)\
            + datetime.timedelta(1)
 
-# Signal names
+# Person Signal names
 buy = "Buy"
 buy_response_to_perf = "Buy Responsive to Performance"
 sell = "Sell"
 sell_response_to_perf = "Sell Responsive to Performance"
+
+# Signal Display names
+buy_on_weakness = "Buying in Response to Performance"
+cluster_buy = "Cluster Buying"
+discretionary_buy = "Plain Vanilla Buying"
+sell_on_strength = "Selling in Response to Performance"
+cluster_sell = "Cluster Selling"
+discretionary_sell = "Plain Vanilla Selling"

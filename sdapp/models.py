@@ -438,6 +438,7 @@ class PersonSignal(models.Model):
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
     gross_signal_value = models.DecimalField(max_digits=15, decimal_places=2)
     net_signal_value = models.DecimalField(max_digits=15, decimal_places=2)
+    net_signal_shares = models.DecimalField(max_digits=15, decimal_places=2)
     prior_holding_value =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
     net_signal_pct =\
@@ -516,7 +517,10 @@ class SigDisplay(models.Model):
     cs_sell_xns = models.IntegerField(max_length=3, null=True)
     cs_net_xn_value =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
-
+    cs_annual_grant_rate =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    cs_net_shares =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
     # Discretionary Sell
     discretionary_sell = models.CharField(max_length=500, null=True)
     ds_large_xn_size = models.NullBooleanField(null=True)
@@ -533,6 +537,5 @@ class SigDisplay(models.Model):
     signal_is_new = models.BooleanField()
 
     def __unicode__(self):
-        return u"%s, %s, %s" % (str(self.issuer.name),
-                                str(self.total_transactions),
-                                str(self.signal_date))
+        return u"%s, %s" % (str(self.issuer.name),
+                            str(self.total_transactions))

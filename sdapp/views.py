@@ -12,11 +12,20 @@ from django.shortcuts import (render_to_response, redirect,
                               RequestContext, HttpResponseRedirect)
 from django.template.defaulttags import register
 
-from sdapp.models import (Security, Signal, SecurityPriceHist,
-                          Form345Entry, PersonHoldingView, SecurityView,
-                          Affiliation, Recommendation, WatchedName)
+from sdapp.bin.globals import (perf_period_days_td, buy_on_weakness,
+                               cluster_buy, discretionary_buy,
+                               sell_on_strength, cluster_sell,
+                               discretionary_sell)
+from sdapp.models import (Affiliation, Form345Entry, PersonHoldingView,
+                          Recommendation, Security, SecurityView, SigDisplay,
+                          Signal, SecurityPriceHist, WatchedName)
 from sdapp.misc.filingcodes import filingcodes, acq_disp_codes
 from sdapp import holdingbuild
+
+
+@register.filter
+def negate(value):
+    return -value
 
 
 @register.filter
@@ -68,6 +77,15 @@ def nd(dt):
         return dt
 
 
+def appendif(startlist, newitem):
+    print startlist, newitem
+    if newitem is None:
+        return startlist
+    else:
+        startlist.append(newitem)
+        return startlist
+
+
 def index(request):
     sphset = SecurityPriceHist.objects.exclude(issuer=None)\
         .order_by('ticker_sym')
@@ -101,14 +119,25 @@ def options(request, ticker):
         holdingbuild.buildgraphdata(issuer, ticker, persons_data)
 
     # print prices_json, titles_json
+    signal_entries = SigDisplay.objects.filter(issuer=issuer)
+    sig_dates = []
+    signal_entry = None
+    if signal_entries.exists():
+        signal_entry = signal_entries[0]
+        sig_dates = appendif(sig_dates, signal_entry.bow_first_sig_detect_date)
+        sig_dates = appendif(sig_dates, signal_entry.db_detect_date)
+        sig_dates = appendif(sig_dates, signal_entry.sos_first_sig_detect_date)
+        sig_dates = appendif(sig_dates, signal_entry.ds_detect_date)
+
+    perf_period = -perf_period_days_td.days
 
     signals = Signal.objects.filter(issuer=issuer)\
         .order_by('-signal_date')
     sig_highlights = []
-    for signal in signals:
+    for sig_date in sig_dates:
         sig_highlights.append(
-            [js_readable_date(signal.signal_date + datetime.timedelta(-5)),
-             js_readable_date(signal.signal_date + datetime.timedelta(5))])
+            [js_readable_date(sig_date + datetime.timedelta(-5)),
+             js_readable_date(sig_date + datetime.timedelta(5))])
 
     recset = Recommendation.objects.filter(issuer=issuer)
     if recset.exists():
@@ -125,8 +154,10 @@ def options(request, ticker):
                               {'ann_affiliations': ann_affiliations,
                                'issuer_name': issuer_name,
                                'graph_data_json': graph_data_json,
+                               'perf_period': perf_period,
                                'rec': rec,
                                'sig_highlights': sig_highlights,
+                               'signal_entry': signal_entry,
                                'signals': signals,
                                'titles_json': titles_json,
                                'ticker': ticker,
@@ -365,7 +396,13 @@ def tickersearch(request):
 def screens(request):
     watchlist = \
         WatchedName.objects.filter(user=request.user).order_by('ticker_sym')
-    c = {'watchlist': watchlist}
+    c = {'buy_on_weakness': buy_on_weakness,
+         'cluster_buy': cluster_buy,
+         'discretionary_buy': discretionary_buy,
+         'sell_on_strength': sell_on_strength,
+         'cluster_sell': cluster_sell,
+         'discretionary_sell': discretionary_sell,
+         'watchlist': watchlist}
     c.update(csrf(request))
     return render_to_response('sdapp/screens.html',
                               c,
@@ -380,20 +417,50 @@ def searchsignals(request):
     else:
         search_text = ''
 
-    found_entries = None
-    signal_types = []
     ticker = None
     num_of_records = 0
 
-    if 'selectbox' in request.POST\
-            and 'discretionarybuy' in request.POST.getlist('selectbox'):
-        signal_types.append('Discretionary Buy')
 
-    if 'selectbox' in request.POST\
-            and 'buyonweakness' in request.POST.getlist('selectbox'):
-        signal_types.append('Discretionary Buy after a Decline')
+    # if 'selectbox' in request.POST\
+    #         and 'discretionarybuy' in request.POST.getlist('selectbox'):
+    #     signal_types.append('Discretionary Buy')
 
-    if ('search_text' in request.POST) and\
+    # if 'selectbox' in request.POST\
+    #         and 'buyonweakness' in request.POST.getlist('selectbox'):
+    #     signal_types.append('Discretionary Buy after a Decline')
+
+    qs = SigDisplay.objects.none()
+
+    if 'selectbox' in request.POST:
+        signals = [buy_on_weakness, cluster_buy, discretionary_buy,
+                   sell_on_strength, cluster_sell, discretionary_sell]
+        signal_count = 0
+
+        if buy_on_weakness in request.POST.getlist('selectbox'):
+            qs = qs | SigDisplay.objects.exclude(buy_on_weakness=None)
+            signal_count += 1
+        if cluster_buy in request.POST.getlist('selectbox'):
+            qs = qs | SigDisplay.objects.exclude(cluster_buy=None)
+            signal_count += 1
+        if discretionary_buy in request.POST.getlist('selectbox'):
+            qs = qs | SigDisplay.objects.exclude(discretionary_buy=None)
+            signal_count += 1
+        if sell_on_strength in request.POST.getlist('selectbox'):
+            qs = qs | SigDisplay.objects.exclude(sell_on_strength=None)
+            signal_count += 1
+        if cluster_sell in request.POST.getlist('selectbox'):
+            qs = qs | SigDisplay.objects.exclude(cluster_sell=None)
+            signal_count += 1
+        if discretionary_sell in request.POST.getlist('selectbox'):
+            qs = qs | SigDisplay.objects.exclude(discretionary_sell=None)
+            signal_count += 1
+
+        if signal_count == 0:
+            qs = SigDisplay.objects.all()
+
+    if search_text == '':
+        found_entries = qs
+    elif ('search_text' in request.POST) and\
             SecurityPriceHist.objects\
             .filter(ticker_sym=search_text.upper()).exists() and\
             SecurityPriceHist.objects\
@@ -403,16 +470,11 @@ def searchsignals(request):
         issuer = SecurityPriceHist.objects\
             .filter(ticker_sym=ticker)[0].issuer
         found_entries = \
-            Signal.objects.filter(signal_name__in=signal_types)\
-            .filter(issuer=issuer).order_by('-signal_date')
-        num_of_records = found_entries.count()
-    elif ('search_text' in request.POST) and\
-            request.POST['search_text'].strip() == '':
-        found_entries = \
-            Signal.objects.filter(signal_name__in=signal_types)\
-            .order_by('-signal_date')
-        num_of_records = found_entries.count()
-
+            qs.filter(issuer=issuer)
+    else:
+        found_entries = SigDisplay.objects.none()
+    print found_entries
+    num_of_records = found_entries.count()
     return render_to_response('sdapp/ajax_search.html',
                               {'found_entries': found_entries,
                                'num_of_records': num_of_records,

@@ -16,7 +16,7 @@
       {% if found_entries.exists %}    
         
         {% for signal in found_entries %}
-          <a class="list-group-item" href="{% url 'options' signal.sph.ticker_sym %}">{{ signal.signal_date }} - {{ signal.sph.ticker_sym }}: {{ signal.short_statement }}</a>
+          <a class="list-group-item" href="{% url 'options' signal.sec_price_hist.ticker_sym %}">{{ signal.issuer.name }} - {{ signal.sec_price_hist.ticker_sym }}: {{ signal.total_transactions }} relevant transactions [Message to be cleaned up]</a>
         {% endfor %}
 
       {% elif ticker %}

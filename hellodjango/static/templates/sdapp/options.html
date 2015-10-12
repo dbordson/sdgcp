@@ -146,17 +146,13 @@
     <div class="panel-heading">
       <h3 class="panel-title">Signals</h3>
     </div>
-  
-  {% if signals.exists %}
-    <ul class="list-group" style="height:200px; overflow-y: scroll;">
 
-    {% for signal in signals %}
-      <li class="list-group-item">
-        {{ signal.signal_date }} - {{ signal.long_statement }}
-      </li>
-    {% endfor %}
 
-    </ul>
+  {% if signal_entry != None %}
+
+    {% include 'sdapp/signaldescriptions.html' %}
+
+
 
   {% else %}
     <div class="panel-body" style="height:200px; overflow-y: scroll;">
@@ -164,7 +160,6 @@
     </div>
 
   {% endif %}
-
   </div>  
 </div>
 
