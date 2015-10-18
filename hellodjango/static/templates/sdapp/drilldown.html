@@ -160,7 +160,7 @@
       
     {% for person in persons_for_radio %}
         
-          <button type="submit" class="btn btn-default {% ifequal selected_person person.reporting_owner_cik %}active{% endifequal %}" name="person_cik" type="submit" value="{{ person.reporting_owner_cik }}" onclick="window.location.hash = 'filter';">{{ person.reporting_owner_name }}</button>
+          <button type="submit" class="btn btn-default {% ifequal selected_person person.reporting_owner %}active{% endifequal %}" name="person_cik" type="submit" value="{{ person.reporting_owner }}" onclick="window.location.hash = 'filter';">{{ person.reporting_owner__person_name }}</button>
       
       
     {% empty %}

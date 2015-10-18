@@ -15,6 +15,14 @@ from sdapp.bin.globals import (signal_detect_lookback, significant_stock_move,
                                sell, sell_response_to_perf, big_xn_amt)
 
 
+def appendif(startlist, newitem):
+    if newitem is None:
+        return startlist
+    else:
+        startlist.append(newitem)
+        return startlist
+
+
 def laxer_start_price(sec_price_hist, date):
     wkd_td = datetime.timedelta(5)
     close_prices = \
@@ -766,11 +774,21 @@ def replace_company_signals():
                     "%s %s, %s%s sold $%s of %s (%s%% of total holdings)."\
                     % sub_tuple
 
+        signal_dates = []
+        signal_dates = appendif(signal_dates, bow_first_sig_detect_date)
+        signal_dates = appendif(signal_dates, db_detect_date)
+        signal_dates = appendif(signal_dates, sos_first_sig_detect_date)
+        signal_dates = appendif(signal_dates, ds_detect_date)
+        last_signal = None
+        if len(signal_dates) != 0:
+            last_signal = max(signal_dates)
+
         total_transactions = DiscretionaryXnEvent.objects\
             .filter(issuer=issuer).count()
         sigtoappend =\
             SigDisplay(issuer_id=issuer,
                        sec_price_hist=sec_price_hist,
+                       last_signal=last_signal,
                        buy_on_weakness=buy_on_weakness,
                        bow_plural_insiders=bow_plural_insiders,
                        bow_first_sig_detect_date=bow_first_sig_detect_date,
@@ -842,6 +860,6 @@ def replace_company_signals():
 
 
 print 'Populating signals...'
-# create_disc_xn_events()
-# replace_person_signals()
+create_disc_xn_events()
+replace_person_signals()
 replace_company_signals()

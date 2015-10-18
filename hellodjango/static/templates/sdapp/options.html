@@ -44,7 +44,7 @@
 </div>
 <div class="row">
 
-
+<!--
 <div class="col-md-6">
   <div class="panel panel-default">
     <div class="panel-heading">
@@ -52,8 +52,8 @@
     </div>
     <div class="panel-body" style="height:200px; overflow-y: scroll;">
     {% if rec != None %}
-      
-      <!-- Colors based on confidence -->
+      -->
+      <!-- Colors based on confidence --><!--
       {% if rec.confidence = "Strong" %}
       <h1 class="text-info" align="center">{{rec.confidence}}</h1>
       {% elif rec.confidence = "Moderate" %}
@@ -62,8 +62,8 @@
       <h2 class="text-muted" align="center">{{rec.confidence}}</h2>
       {% endif %}
 
-      <h3 align="center">and</h3>
-      <!-- Colors based on sentiment -->
+      <h3 align="center">and</h3>  -->
+      <!-- Colors based on sentiment --> <!--
       {% if rec.sentiment = "Bullish" %}
       <h2 class="text-success" align="center">{{rec.sentiment}}</h2>
       {% elif rec.sentiment = "Bearish" %}
@@ -79,89 +79,94 @@
 
     </div>
   </div>  
-</div>
+</div> -->
 
 <div class="col-md-6">
   <div class="panel panel-default">
     <div class="panel-heading">
-      <h3 class="panel-title">Stock Price Chart</h3>
-    </div>
-    <div class="panel-body" style="height:200px; overflow-y: scroll;">
-      
-      {% if graph_data_json != "????" %} <!-- We could set up an inequality that works to disable the graph when it would be empty, not sure if an empty graph would throw an error, but it might -->
-      {% include 'optionsgraphjs.html' %}
-
-      {% else %}
-        <p>No price information available.</p>
-      {% endif %}
-
-    </div>  
-  </div>  
-</div>
-<!-- Note that the below </div> tag is unmatched and closes a row opened in base.html.  The row following it is closed in the base.html file-->
-</div>
-<div class="row">
-
-
-<div class="col-md-6">
-  <div class="panel panel-default">
-    <div class="panel-heading">
-      <h3 class="panel-title">Top Holdings</h3>
+      <h3 class="panel-title">Background</h3>
     </div>
 
-    <div class="panel-body" style="height:200px; overflow-y: scroll;">
+    <ul class="list-group" style="height:460px; overflow-y: scroll;">
+    {% if signal_entry != None %}
 
-    {% if ann_affiliations.exists %}
-      <table class="table table-striped table-condensed">
-        <thead>
-          <tr>
-            <th>Top Holders</th>
-            <th style="text-align:right">Holding Value</th>
-          </tr>
-        </thead>  
-        <tbody>
+      {% include 'sdapp/signaldescriptions.html' %}
 
-      {% for ann_affiliation in ann_affiliations %}
-          <tr>
-            <td>{{ ann_affiliation.person_name }}</td>
-            <td align="right">${{ ann_affiliation.intrinsic_value|floatformat:0|intcomma }}</td>
-          </tr>
-      {% endfor %}
-
-        </tbody>
-      </table>
-      
     {% else %}
-        <p>No holdings are available.</p>
-      
+      <li class="list-group-item">
+        <p>No signals detected.</p>
+      </li>
     {% endif %}
 
-    </div>
+      <li class="list-group-item">
+        [INSERT GENERAL BACKGROUND ON EQUITY GRANT SIZE AND PRICING]
+      </li>
+    </ul>
   </div>  
 </div>
-
 
 <div class="col-md-6">
-  <div class="panel panel-default">
-    <div class="panel-heading">
-      <h3 class="panel-title">Signals</h3>
-    </div>
+  <div class="col-md-12">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Stock Price Chart</h3>
+      </div>
+      <div class="panel-body" style="height:200px; overflow-y: scroll;">
+        
+        {% if graph_data_json != "????" %} <!-- We could set up an inequality that works to disable the graph when it would be empty, not sure if an empty graph would throw an error, but it might -->
+        {% include 'optionsgraphjs.html' %}
 
+        {% else %}
+          <p>No price information available.</p>
+        {% endif %}
 
-  {% if signal_entry != None %}
+      </div>  
+    </div>  
+  </div>
 
-    {% include 'sdapp/signaldescriptions.html' %}
+  <div class="col-md-12">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Top Equity Holdings</h3>
+      </div>
 
+      <div class="panel-body" style="height:200px; overflow-y: scroll;">
 
+      {% if ann_affiliations.exists %}
+        <table class="table table-striped table-condensed">
+          <thead>
+            <tr>
+              <th>Top Holders</th>
+              <th align="center">Dil. Avg. Price</th>
+              <th align="center">Price Percentile</th>
+              <th style="text-align:right">Value</th>
+            </tr>
+          </thead>  
+          <tbody>
 
-  {% else %}
-    <div class="panel-body" style="height:200px; overflow-y: scroll;">
-      <p>No signals are available.</p>
-    </div>
+        {% for ann_affiliation in ann_affiliations %}
+            <tr>
+              <td>{{ ann_affiliation.person_name }}</td>
+              <td align="center">$[__.__]</td>
+              <td align="center">[__._]%</td>
+              <td align="right">${{ ann_affiliation.intrinsic_value|floatformat:0|intcomma }}</td>
+            </tr>
+        {% endfor %}
 
-  {% endif %}
-  </div>  
+          </tbody>
+        </table>
+        
+      {% else %}
+          <p>No holdings are available.</p>
+        
+      {% endif %}
+
+      </div>
+    </div>  
+  </div>
 </div>
+
+
 
 
 </div>

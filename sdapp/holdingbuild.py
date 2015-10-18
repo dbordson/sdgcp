@@ -6,6 +6,7 @@ import pytz
 import time
 
 from django.core.serializers.json import DjangoJSONEncoder
+from django.db.models import Q
 
 from sdapp.models import (SecurityPriceHist, ClosePrice,
                           Form345Entry)
@@ -78,21 +79,24 @@ def pull_person_holdings(ticker, issuer, person_cik, person_name,
     #     dotproduct(current_stock_values)\
     #     + dotproduct(current_stock_deriv_values)
 
-    date_set = set()
-    stock_values = person_forms\
-        .filter(security=ticker_security)\
+    all_values = person_forms\
+        .filter(Q(security=ticker_security)
+                | Q(underlying_security=ticker_security))\
         .exclude(reported_shares_following_xn=None)\
         .values_list('filedatetime', 'supersededdt',
-                     'reported_shares_following_xn', 'adjustment_factor')
+                     'reported_shares_following_xn', 'adjustment_factor',
+                     'security__conversion_multiple')
 
-    stock_deriv_values = person_forms\
-        .filter(underlying_security=ticker_security)\
-        .exclude(underlying_shares=None)\
-        .values_list('filedatetime', 'supersededdt',
-                     'underlying_shares', 'adjustment_factor')
-
-    all_values = list(stock_values) + list(stock_deriv_values)
-    for f, s, r, a in all_values:
+    # stock_deriv_values = person_forms\
+    #     .filter(underlying_security=ticker_security)\
+    #     .exclude(underlying_shares=None)\
+    #     .values_list('filedatetime', 'supersededdt',
+    #                  'underlying_shares', 'adjustment_factor',
+    #                  'security__conversion_multiple')
+    print all_values
+    # all_values = list(stock_values) + list(stock_deriv_values)
+    date_set = set()
+    for f, s, r, a, c in all_values:
         date_set.add(f)
         date_set.add(s)
     # Don't use this because want to keep "None" values in dict
@@ -103,17 +107,20 @@ def pull_person_holdings(ticker, issuer, person_cik, person_name,
     # date_list = list(date_set)
 
     xn_dict = {}
-    for filedt, superseddt, rep_shares, adj_factor in all_values:
+    for filedt, superseddt, rep_shares, adj_factor, conv_mult in all_values:
         if nd(filedt) in xn_dict:
-            xn_dict[nd(filedt)] += Decimal(rep_shares) * Decimal(adj_factor)
+            xn_dict[nd(filedt)] += Decimal(rep_shares) * Decimal(adj_factor)\
+                * Decimal(conv_mult)
         else:
-            xn_dict[nd(filedt)] = Decimal(rep_shares) * Decimal(adj_factor)
+            xn_dict[nd(filedt)] = Decimal(rep_shares) * Decimal(adj_factor)\
+                * Decimal(conv_mult)
         if nd(superseddt) in xn_dict:
             xn_dict[nd(superseddt)] -=\
-                Decimal(rep_shares) * Decimal(adj_factor)
+                Decimal(rep_shares) * Decimal(adj_factor) * Decimal(conv_mult)
         else:
             xn_dict[nd(superseddt)] =\
-                Decimal(-1) * Decimal(rep_shares) * Decimal(adj_factor)
+                Decimal(-1) * Decimal(rep_shares) * Decimal(adj_factor)\
+                * Decimal(conv_mult)
     # print xn_dict
     if None in xn_dict:
         currentshares = Decimal(-1) * xn_dict.pop(None, None)

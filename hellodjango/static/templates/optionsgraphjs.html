@@ -1,3 +1,5 @@
+<!-- KEY USAGE NOTE.  THIS IS A 2 AXIS GRAPH IF THERE ARE SIGNAL HIGHLIGHTS AND A 1 AXIS GRAPH IF THERE ARE NOT.  THE IDEA IS THAT SIGNAL HIGHLIGHTS WILL ALWAYS TIE TO WHETHER HOLDINGS WILL SHOW UP.  WE DON'T WANT TO CLUTTER THE GRAPH IS NO SIGNALS SHOW.  IF THIS SHOULD CHANGE, THE BELOW JAVASCRIPT WILL NEED TO BE SUITABLY CHANGED. -->
+
 <div id="div_g" ></div>
 <script type="text/javascript">
 
@@ -52,8 +54,14 @@ if (0 != signal_highlights_len)
           y:
           {
             labelsKMB: true,
+            // logscale: true,
             // axisLabelWidth: 60,
             valueRange: [0, ymax],
+          },
+          y2:
+          {
+            labelsKMB: true,
+            valueRange: [null, null],
           }
         },
       // ylabel: 'Primary y-axis',
@@ -114,6 +122,13 @@ if (0 != signal_highlights_len)
       // color: "rgba(0,0,0, 0.2)",
       // errorBars: true,
       // sigma: 1.0,
+
+      series: {
+        'Close Price': {
+          axis: 'y'
+        },
+      },
+
       axes: 
         {
           x:
@@ -122,10 +137,23 @@ if (0 != signal_highlights_len)
             axisLabelFormatter: Dygraph.dateAxisFormatter,
             ticker: Dygraph.dateTicker
           },
+          // y:
+          // {
+          //   labelsKMB: true,
+          //   // valueRange: [null, null],
+          //   // drawAxis: false,
+          //   // axisLabelFormatter: function() {
+          //     // return '';
+          //   // axisLabelColor: Tomato,
+          //   // pixelsPerLabel: 10,
+          //   // logscale: true,
+          //   // axisLabelWidth: 60,
+          //   // valueRange: [0, ymax],
+          // },
           y:
           {
-            // axisLabelWidth: 60,
-            // valueRange: [0, ymax],
+            labelsKMB: true,
+            valueRange: [null, null],
           }
         },
       

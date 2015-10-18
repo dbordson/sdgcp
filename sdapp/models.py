@@ -464,6 +464,7 @@ class PersonSignal(models.Model):
 class SigDisplay(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
     sec_price_hist = models.ForeignKey(SecurityPriceHist, null=True)
+    last_signal = models.DateField(null=True)
 
     # Buy on Weakness
     buy_on_weakness = models.CharField(max_length=500, null=True)

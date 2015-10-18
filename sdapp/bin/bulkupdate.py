@@ -6,4 +6,4 @@ from sdapp.bin import formscraper, formparser,\
     populateintermediate, supersedeinit, adjsharesremaining,\
     grabmarketdata,\
     populateformadjustments, populateviews, populatesignals,\
-    populaterecommendations
+    populaterecommendations, newpopulatesigs

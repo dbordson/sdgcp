@@ -27,13 +27,9 @@
     </div>
     <ul class="list-group">
 
-    {% for name in watchlist %}
-      {% if name.last_signal_sent != None %}
-      <a class="list-group-item" href="{% url 'options' name.securitypricehist.ticker_sym %}">{{ name.securitypricehist.ticker_sym }} - last signal {{ name.last_signal_sent }}</a>
-
-      {% else %}
-      <a class="list-group-item" href="{% url 'options' name.securitypricehist.ticker_sym %}">{{ name.securitypricehist.ticker_sym }} - No signals</a>   
-      {% endif %}
+    {% for watched_name in watched_names %}
+      
+      <a class="list-group-item" href="{% url 'options' watched_name.securitypricehist__ticker_sym %}">{{ watched_name.securitypricehist__ticker_sym }} - {% if watched_name.last_signal != None %}last signal {{ watched_name.last_signal }}{% else %}No recent signals{% endif %}</a>
     {% empty %}
       <a class="list-group-item disabled">No names followed.</a>
     {% endfor %}
