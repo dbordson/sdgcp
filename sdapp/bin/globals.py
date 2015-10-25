@@ -9,11 +9,18 @@ rel_sig_min = Decimal(.1)
 perf_period_days_td = datetime.timedelta(-90)
 big_xn_amt = Decimal(100 * 1000)
 EST = pytz.timezone('America/New_York')
+now = datetime.datetime.now(EST)
+# THIS TIME ASSUMES THE SCRIPT WILL NOT RUN BTW 2 am and 3 am EST
+if now.time().hour >= 3:
+    delta = datetime.timedelta(1)
+else:
+    delta = datetime.timedelta(0)
 today = datetime.date.today()
+# todaymid is midnight for the most recent filing index
 todaymid = datetime.datetime(today.year, today.month, today.day,
                              0, 0, 0, 0, tzinfo=EST)\
-           + datetime.timedelta(1)
-
+           + delta
+date_of_any_new_filings = today + delta + datetime.timedelta(-2)
 # Person Signal names
 buy = "Buy"
 buy_response_to_perf = "Buy Responsive to Performance"
@@ -27,3 +34,5 @@ discretionary_buy = "Plain Vanilla Buying"
 sell_on_strength = "Selling in Response to Performance"
 cluster_sell = "Cluster Selling"
 discretionary_sell = "Plain Vanilla Selling"
+
+app_url = 'http://127.0.0.1:8000/sdapp/'

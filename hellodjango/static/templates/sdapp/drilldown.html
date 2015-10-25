@@ -117,25 +117,26 @@
 <div class="col-md-12">
   <div class="panel panel-default">
     <div class="panel-heading">
-      <h3 class="panel-title">Signals</h3>
+      <h3 class="panel-title">Background</h3>
     </div>
   
-    {% if signals.exists %}
-      <ul class="list-group">
-      {% for signal in signals %}
-        <li class="list-group-item">
-          {{ signal.signal_date }} - {{ signal.long_statement }}
-        </li>
-      {% endfor %}
-      </ul>
+    <ul class="list-group" >
+    {% if signal_entry != None %}
+
+      {% include 'sdapp/signaldescriptions.html' %}
 
     {% else %}
-      <div class="panel-body">
-        <p>No signals are available.</p>
-      </div>
+      <li class="list-group-item">
+        <p>No signals detected.</p>
+      </li>
     {% endif %}
-    </div>  
-  </div>
+
+      <li class="list-group-item">
+        [INSERT GENERAL BACKGROUND ON EQUITY GRANT SIZE AND PRICING]
+      </li>
+    </ul>
+  </div>  
+</div>
 
 
 

@@ -36,7 +36,7 @@
 
 {% if signal_entry.cluster_sell != None %}
   <li class="list-group-item">
-    Recent net selling activity by {% if signal_entry.cs_plural_insiders == True %}insiders{% else %}an insider{% endif %} was ${{ signal_entry.cs_net_xn_value|negate|floatformat:0|intword|intcomma }} ({{ signal_entry.cs_net_shares|negate|floatformat:0|intword|intcomma }} share equivalents) over {{ signal_entry.cs_sell_xns }} transactions, exceeding annual compensatory grants of {{ signal_entry.cs_annual_grant_rate|floatformat:0|intword|intcomma }} share equivalents.
+    Recent net selling activity by {% if signal_entry.cs_plural_insiders == True %}insiders{% else %}an insider{% endif %} was ${{ signal_entry.cs_net_xn_value|negate|floatformat:0|intword|intcomma }} ({{ signal_entry.cs_net_shares|negate|floatformat:0|intword|intcomma }} share equivalents) over {{ signal_entry.cs_sell_xns }} transactions, exceeding annual compensatory grants of {{ signal_entry.cs_annual_grant_rate|floatformat:0|intword|intcomma }} share equivalents for the selling group.
   </li>
 {% endif %}
 

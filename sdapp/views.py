@@ -7,7 +7,7 @@ import time
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.context_processors import csrf
-from django.db.models import Q, Sum
+from django.db.models import Sum
 from django.shortcuts import (render_to_response, redirect,
                               RequestContext, HttpResponseRedirect)
 from django.template.defaulttags import register
@@ -19,7 +19,6 @@ from sdapp.bin.globals import (perf_period_days_td, buy_on_weakness,
 from sdapp.models import (Affiliation, Form345Entry, PersonHoldingView,
                           PersonSignal, Security, SecurityView, SigDisplay,
                           SecurityPriceHist, WatchedName)
-from sdapp.models import Signal
 from sdapp.misc.filingcodes import filingcodes, acq_disp_codes
 from sdapp import holdingbuild
 
@@ -110,8 +109,6 @@ def options(request, ticker):
     watchedname = WatchedName.objects.filter(issuer=issuer)\
         .filter(user__username=request.user.username)
 
-    # signals = Signal.objects.filter(issuer=issuer)\
-    #     .order_by('-signal_date')
     signal_entries = SigDisplay.objects.filter(issuer=issuer)
     sig_dates = []
     signal_entry = None
@@ -139,15 +136,6 @@ def options(request, ticker):
         holdingbuild.buildgraphdata(issuer, ticker, persons_data)
 
     perf_period = -perf_period_days_td.days
-
-    # signals = Signal.objects.filter(issuer=issuer)\
-    #    .order_by('-signal_date')
-
-    # recset = Recommendation.objects.filter(issuer=issuer)
-    # if recset.exists():
-    #    rec = recset[0]
-    # else:
-    #     rec = None
 
     issuer_affiliations = Affiliation.objects.filter(issuer=issuer)
     ann_affiliations = issuer_affiliations\
@@ -183,9 +171,21 @@ def drilldown(request, ticker):
     watchedname = WatchedName.objects.filter(issuer=issuer)\
         .filter(user__username=request.user.username)
 
-    signals = Signal.objects.filter(issuer=issuer)\
-        .order_by('-signal_date')
+    signal_entries = SigDisplay.objects.filter(issuer=issuer)
 
+    sig_dates = []
+    signal_entry = None
+    if signal_entries.exists():
+        signal_entry = signal_entries[0]
+        sig_dates = appendif(sig_dates, signal_entry.bow_first_sig_detect_date)
+        sig_dates = appendif(sig_dates, signal_entry.db_detect_date)
+        sig_dates = appendif(sig_dates, signal_entry.sos_first_sig_detect_date)
+        sig_dates = appendif(sig_dates, signal_entry.ds_detect_date)
+    sig_highlights = []
+    for sig_date in sig_dates:
+        sig_highlights.append(
+            [js_readable_date(sig_date + datetime.timedelta(-5)),
+             js_readable_date(sig_date + datetime.timedelta(5))])
     now = datetime.datetime.now(pytz.UTC)
     startdate = now - datetime.timedelta(270)
     person_include_date = now - datetime.timedelta(2 * 365)
@@ -236,12 +236,6 @@ def drilldown(request, ticker):
     graph_data_json, titles_json, ymax =\
         holdingbuild.buildgraphdata(issuer, ticker, persons_data)
 
-    sig_highlights = []
-    for signal in signals:
-        sig_highlights.append(
-            [js_readable_date(signal.signal_date + datetime.timedelta(-5)),
-             js_readable_date(signal.signal_date + datetime.timedelta(5))])
-
     return render_to_response('sdapp/drilldown.html',
                               {'acq_disp_codes': acq_disp_codes,
                                'recententries': recententries,
@@ -252,7 +246,7 @@ def drilldown(request, ticker):
                                'persons_with_data': persons_with_data,
                                'selected_person': selected_person,
                                'sig_highlights': sig_highlights,
-                               'signals': signals,
+                               'signal_entry': signal_entry,
                                'titles_json': titles_json,
                                'ticker': ticker,
                                'watchedname': watchedname,
@@ -284,9 +278,9 @@ def watchtoggle(request):
         watchedname.delete()
     else:
         sph = SecurityPriceHist.objects.filter(ticker_sym=ticker)[0]
-        signals = Signal.objects.filter(issuer=issuer)
-        if signals.exists():
-            last_signal_sent = signals.latest('signal_date').signal_date
+        sig_disps = SigDisplay.objects.filter(issuer=issuer)
+        if sig_disps.exists():
+            last_signal_sent = sig_disps.latest('last_signal').last_signal
         else:
             last_signal_sent = None
         WatchedName(user=request.user,
@@ -299,31 +293,6 @@ def watchtoggle(request):
                                'ticker': ticker,
                                },
                               )
-
-    #     if 'HTTP_REFERER' in request.META:
-    #         url = request.META['HTTP_REFERER']
-    #         if url.find('/?') != -1:
-    #             url = url[:url.find('/?')]
-    #         return redirect(url)
-    #     return HttpResponseRedirect('/sdapp/' + str(ticker))
-    # else:
-    #     sph = SecurityPriceHist.objects.filter(ticker_sym=ticker)[0]
-    #     signals = Signal.objects.filter(issuer=issuer)
-    #     if signals.exists():
-    #         last_signal_sent = signals.latest('signal_date').signal_date
-    #     else:
-    #         last_signal_sent = None
-    #     WatchedName(user=request.user,
-    #                 issuer=issuer,
-    #                 securitypricehist=sph,
-    #                 ticker_sym=ticker,
-    #                 last_signal_sent=last_signal_sent).save()
-    #     messagetext = \
-    #         'Added to watchlist'
-    #     messages.info(request, messagetext)
-    #     if 'HTTP_REFERER' in request.META:
-    #         return redirect(request.META['HTTP_REFERER'])
-    #     return HttpResponseRedirect('/sdapp/' + str(ticker))
 
 
 @login_required()
@@ -347,9 +316,9 @@ def watchlisttoggle(request, ticker):
         return HttpResponseRedirect('/sdapp/' + str(ticker))
     else:
         sph = SecurityPriceHist.objects.filter(ticker_sym=ticker)[0]
-        signals = Signal.objects.filter(issuer=issuer)
-        if signals.exists():
-            last_signal_sent = signals.latest('signal_date').signal_date
+        sig_disps = SigDisplay.objects.filter(issuer=issuer)
+        if sig_disps.exists():
+            last_signal_sent = sig_disps.latest('last_signal').last_signal
         else:
             last_signal_sent = None
         WatchedName(user=request.user,
@@ -495,34 +464,6 @@ def searchsignals(request):
                                'search_text': search_text,
                                'ticker': ticker,
                                },
-                              )
-
-
-@login_required()
-def discretionarybuy(request):
-    signal_name_1 = 'Discretionary Buy'
-    signal_name_2 = 'Discretionary Buy after a Decline'
-    qs = Signal.objects\
-        .filter(Q(signal_name=signal_name_1) |
-                Q(signal_name=signal_name_2))\
-        .order_by('-signal_date')
-
-    return render_to_response('sdapp/discretionarybuy.html',
-                              {'signals': qs},
-                              context_instance=RequestContext(request),
-                              )
-
-
-@login_required()
-def weaknessbuy(request):
-    signal_name = 'Discretionary Buy after a Decline'
-    qs = Signal.objects\
-        .filter(signal_name=signal_name)\
-        .order_by('-signal_date')
-
-    return render_to_response('sdapp/weaknessbuy.html',
-                              {'signals': qs},
-                              context_instance=RequestContext(request),
                               )
 
 

@@ -356,48 +356,6 @@ class Form345Entry(models.Model):
         return str(self.entry_internal_id)
 
 
-# To be deleted
-class Signal(models.Model):
-    issuer = models.ForeignKey(IssuerCIK)
-    security = models.ForeignKey(Security)
-    sph = models.ForeignKey(SecurityPriceHist, null=True)
-    reporting_person = models.ForeignKey(ReportingPerson)
-    reporting_person_name = models.CharField(max_length=80, default='ERROR')
-    reporting_person_title = models.CharField(max_length=80, default='ERROR')
-    signal_name = models.CharField(max_length=80, default='ERROR')
-    signal_date = models.DateField()
-    formentrysource = models.CharField(max_length=80, default='ERROR')
-    security_title = models.CharField(max_length=80, default='ERROR')
-    security_units = models.DecimalField(max_digits=15, decimal_places=4,
-                                         null=True)
-    signal_value = models.DecimalField(max_digits=15, decimal_places=4,
-                                       null=True)
-    transactions = models.IntegerField(max_length=15)
-    unit_conversion = models.DecimalField(max_digits=15, decimal_places=4,
-                                          null=True)
-    short_statement = models.CharField(max_length=200, default='ERROR')
-    long_statement = models.CharField(max_length=200, default='ERROR')
-    signal_id_code = models.CharField(max_length=80)
-    signal_is_new = models.BooleanField()
-
-    def __unicode__(self):
-        return u"%s, %s, %s" % (str(self.reporting_person),
-                                str(self.signal_name),
-                                str(self.signal_date))
-
-
-# To be deleted
-class Recommendation(models.Model):
-    issuer = models.ForeignKey(IssuerCIK)
-    sentiment = models.CharField(max_length=20, default='ERROR')
-    confidence = models.CharField(max_length=20, default='ERROR')
-
-    def __unicode__(self):
-        return u"%s, %s, %s" % (str(self.issuer),
-                                str(self.sentiment),
-                                str(self.confidence))
-
-
 class DiscretionaryXnEvent(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
     reporting_person = models.ForeignKey(ReportingPerson)
@@ -469,6 +427,8 @@ class SigDisplay(models.Model):
     # Buy on Weakness
     buy_on_weakness = models.CharField(max_length=500, null=True)
     bow_plural_insiders = models.NullBooleanField(null=True)
+    bow_start_date = models.DateField(null=True)
+    bow_end_date = models.DateField(null=True)
     bow_first_sig_detect_date = models.DateField(null=True)
     bow_person_name = models.CharField(max_length=80, null=True)
     bow_includes_ceo = models.NullBooleanField(null=True)
@@ -482,6 +442,8 @@ class SigDisplay(models.Model):
 
     # Cluster Buy
     cluster_buy = models.CharField(max_length=500, null=True)
+    cb_start_date = models.DateField(null=True)
+    cb_end_date = models.DateField(null=True)
     cb_plural_insiders = models.NullBooleanField(null=True)
     cb_buy_xns = models.IntegerField(max_length=3, null=True)
     cb_net_xn_value =\
@@ -491,6 +453,8 @@ class SigDisplay(models.Model):
     discretionary_buy = models.CharField(max_length=500, null=True)
     db_large_xn_size = models.NullBooleanField(null=True)
     db_was_ceo = models.NullBooleanField(null=True)
+    db_start_date = models.DateField(null=True)
+    db_end_date = models.DateField(null=True)
     db_detect_date = models.DateField(null=True)
     db_person_name = models.CharField(max_length=80, null=True)
     db_xn_val = models.DecimalField(max_digits=15, decimal_places=2, null=True)
@@ -501,6 +465,8 @@ class SigDisplay(models.Model):
     # Sell on Strength
     sell_on_strength = models.CharField(max_length=500, null=True)
     sos_plural_insiders = models.NullBooleanField(null=True)
+    sos_start_date = models.DateField(null=True)
+    sos_end_date = models.DateField(null=True)
     sos_first_sig_detect_date = models.DateField(null=True)
     sos_person_name = models.CharField(max_length=80, null=True)
     sos_includes_ceo = models.NullBooleanField(null=True)
@@ -514,6 +480,8 @@ class SigDisplay(models.Model):
 
     # Cluster Sell
     cluster_sell = models.CharField(max_length=500, null=True)
+    cs_start_date = models.DateField(null=True)
+    cs_end_date = models.DateField(null=True)
     cs_plural_insiders = models.NullBooleanField(null=True)
     cs_sell_xns = models.IntegerField(max_length=3, null=True)
     cs_net_xn_value =\
@@ -526,6 +494,8 @@ class SigDisplay(models.Model):
     discretionary_sell = models.CharField(max_length=500, null=True)
     ds_large_xn_size = models.NullBooleanField(null=True)
     ds_was_ceo = models.NullBooleanField(null=True)
+    ds_start_date = models.DateField(null=True)
+    ds_end_date = models.DateField(null=True)
     ds_detect_date = models.DateField(null=True)
     ds_person_name = models.CharField(max_length=80, null=True)
     ds_xn_val = models.DecimalField(max_digits=15, decimal_places=2, null=True)

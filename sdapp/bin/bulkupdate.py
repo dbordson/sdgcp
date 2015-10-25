@@ -4,6 +4,4 @@
 # in heroku.
 from sdapp.bin import formscraper, formparser,\
     populateintermediate, supersedeinit, adjsharesremaining,\
-    grabmarketdata,\
-    populateformadjustments, populateviews, populatesignals,\
-    populaterecommendations, newpopulatesigs
+    grabmarketdata, populateformadjustments, populateviews, newpopulatesigs

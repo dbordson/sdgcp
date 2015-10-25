@@ -7,12 +7,14 @@ import django.db
 from django.db.models import F, Q, Sum
 
 from sdapp.models import (DiscretionaryXnEvent, Form345Entry, PersonSignal,
-                          SecurityPriceHist, ClosePrice, SigDisplay)
+                          SecurityPriceHist, ClosePrice, SigDisplay,
+                          WatchedName)
 # from sdapp.models import WatchedName
 from sdapp.bin.globals import (signal_detect_lookback, significant_stock_move,
                                abs_sig_min, rel_sig_min, perf_period_days_td,
                                today, todaymid, buy, buy_response_to_perf,
-                               sell, sell_response_to_perf, big_xn_amt)
+                               sell, sell_response_to_perf, big_xn_amt,
+                               date_of_any_new_filings)
 
 
 def appendif(startlist, newitem):
@@ -460,7 +462,9 @@ def replace_company_signals():
         # Is there only one weakness buy?
         buy_on_weakness = None
         bow_plural_insiders = None
+        bow_start_date = None
         bow_first_sig_detect_date = None
+        bow_end_date = None
         bow_person_name = None
         bow_includes_ceo = None
         bow_net_signal_value = None
@@ -476,7 +480,9 @@ def replace_company_signals():
                 ceo_note = ""
                 bow_includes_ceo = False
             bow_plural_insiders = False
-            bow_first_sig_detect_date = wbuy_signal.signal_detect_date
+            bow_start_date = wbuy_signal.signal_detect_date
+            bow_end_date = wbuy_signal.last_file_date
+            bow_first_sig_detect_date = wbuy_signal.first_file_date
             bow_person_name = wbuy_signal.reporting_person.person_name
             bow_net_signal_value = wbuy_signal.net_signal_value
             bow_first_perf_period_days = wbuy_signal.perf_period_days
@@ -498,7 +504,12 @@ def replace_company_signals():
                 % sub_tuple
 
         if weakness_buys.count() >= 2:
-            first_w_buy = weakness_buys.latest('signal_detect_date')
+            bow_start_date = weakness_buys.earliest('first_file_date')\
+                .first_file_date
+            bow_end_date = weakness_buys.latest('last_file_date')\
+                .last_file_date
+            first_w_buy = weakness_buys.earliest('signal_detect_date')
+
             person_titles = \
                 weakness_buys.values_list('reporting_person_title', flat=True)
             if is_ceo(person_titles) is True:
@@ -533,25 +544,35 @@ def replace_company_signals():
         # Now address cluster_buy signals, but only if there are not
         # multiple buys on weakness
         cluster_buy = None
+        cb_start_date = None
+        cb_end_date = None
         cb_plural_insiders = None
         cb_buy_xns = None
         cb_net_xn_value = None
         if weakness_buys.count() <= 1:
             issuer_xns =\
                 DiscretionaryXnEvent.objects.filter(issuer=issuer)
-
-            cb_buy_xns = issuer_xns.filter(xn_acq_disp_code='A').count()
-            cb_net_xn_value =\
+            buy_xns = issuer_xns.filter(xn_acq_disp_code='A').count()
+            net_xn_value =\
                 issuer_xns.aggregate(Sum('xn_val'))['xn_val__sum']
             insider_num = len(issuer_xns.filter(xn_acq_disp_code='A')
                               .values_list('reporting_person').distinct())
-            if insider_num > 1:
-                plural_insiders = 's'
-                cb_plural_insiders = True
-            else:
-                plural_insiders = ''
-                cb_plural_insiders = False
-            if cb_buy_xns >= 3 and cb_net_xn_value >= abs_sig_min:
+            cb_net_xn_value
+            if cb_buy_xns >= 3 and net_xn_value >= abs_sig_min:
+                if insider_num > 1:
+                    plural_insiders = 's'
+                    cb_plural_insiders = True
+                else:
+                    plural_insiders = ''
+                    cb_plural_insiders = False
+                cb_start_date = issuer_xns\
+                    .filter(xn_acq_disp_code='A').earliest('filedate')\
+                    .filedate
+                cb_end_date = issuer_xns\
+                    .filter(xn_acq_disp_code='A').latest('filedate')\
+                    .filedate
+                cb_net_xn_value = net_xn_value
+                cb_buy_xns = buy_xns
                 sub_tuple = (plural_insiders, cb_net_xn_value, cb_buy_xns)
                 cluster_buy =\
                     "Recent net buying activity by insider%s "\
@@ -565,7 +586,9 @@ def replace_company_signals():
         discretionary_buy = None
         db_large_xn_size = None
         db_was_ceo = None
+        db_start_date = None
         db_detect_date = None
+        db_end_date = None
         db_person_name = None
         db_xn_val = None
         db_security_name = None
@@ -579,6 +602,8 @@ def replace_company_signals():
 
             if person_signals.count() > 0:
                 person_sig = person_signals.order_by('net_signal_value')[0]
+                db_start_date = person_sig.first_file_date
+                db_end_date = person_sig.last_file_date
                 if person_sig.net_signal_value > big_xn_amt:
                     xn_size_note = "In a large transaction on"
                     db_large_xn_size = True
@@ -613,7 +638,9 @@ def replace_company_signals():
         # Is there only one weakness buy?
         sell_on_strength = None
         sos_plural_insiders = None
+        sos_start_date = None
         sos_first_sig_detect_date = None
+        sos_end_date = None
         sos_person_name = None
         sos_includes_ceo = None
         sos_net_signal_value = None
@@ -629,6 +656,8 @@ def replace_company_signals():
                 ceo_note = ""
                 sos_includes_ceo = False
             sos_plural_insiders = False
+            sos_start_date = wsell_signal.first_file_date
+            sos_end_date = wsell_signal.last_file_date
             sos_first_sig_detect_date = wsell_signal.signal_detect_date
             sos_person_name = wsell_signal.reporting_person.person_name
             sos_net_signal_value = wsell_signal.net_signal_value
@@ -651,7 +680,11 @@ def replace_company_signals():
                 % sub_tuple
 
         if weakness_sells.count() >= 2:
-            first_w_sell = weakness_sells.latest('signal_detect_date')
+            sos_start_date = weakness_sells.earliest('first_file_date')\
+                .first_file_date
+            sos_end_date = weakness_sells.latest('last_file_date')\
+                .last_file_date
+            first_w_sell = weakness_sells.earliest('signal_detect_date')
             person_titles = \
                 weakness_sells.values_list('reporting_person_title', flat=True)
             if is_ceo(person_titles) is True:
@@ -686,6 +719,8 @@ def replace_company_signals():
         # Now address cluster_sell signals, but only if there are not
         # multiple buys on weakness
         cluster_sell = None
+        cs_start_date = None
+        cs_end_date = None
         cs_plural_insiders = None
         cs_sell_xns = None
         cs_net_xn_value = None
@@ -694,29 +729,41 @@ def replace_company_signals():
                 PersonSignal.objects.filter(issuer=issuer)\
                 .filter(significant=True)\
                 .filter(net_signal_value__lt=Decimal(0))
-            cs_annual_grant_rate =\
+            annual_grant_rate =\
                 sig_sales.aggregate(Sum('eq_annual_share_grants'))[
                     'eq_annual_share_grants__sum']
-            cs_net_xn_value =\
+            net_xn_value =\
                 sig_sales.aggregate(Sum('net_signal_value'))[
                     'net_signal_value__sum']
-            cs_sell_xns =\
+            sell_xns =\
                 sig_sales.aggregate(Sum('transactions'))[
                     'transactions__sum']
-            cs_net_shares =\
+            net_shares =\
                 sig_sales.aggregate(Sum('net_signal_shares'))[
                     'net_signal_shares__sum']
             insider_num = len(issuer_xns.filter(xn_acq_disp_code='D')
                               .values_list('reporting_person').distinct())
-            if insider_num > 1:
-                plural_insiders = 's'
-                cs_plural_insiders = True
-            else:
-                plural_insiders = ''
-                cs_plural_insiders = False
-            if cs_sell_xns >= 3 and cs_net_xn_value <= -abs_sig_min\
-                    and cs_annual_grant_rate is not None\
-                    and cs_net_shares <= -cs_annual_grant_rate:
+
+            if sell_xns >= 3 and net_xn_value <= -abs_sig_min\
+                    and annual_grant_rate is not None\
+                    and net_shares <= -annual_grant_rate:
+                if insider_num > 1:
+                    plural_insiders = 's'
+                    cs_plural_insiders = True
+                else:
+                    plural_insiders = ''
+                    cs_plural_insiders = False
+                cs_start_date = issuer_xns\
+                    .filter(xn_acq_disp_code='D').earliest('filedate')\
+                    .filedate
+                cs_end_date = issuer_xns\
+                    .filter(xn_acq_disp_code='D').latest('filedate')\
+                    .filedate
+                cs_annual_grant_rate = annual_grant_rate
+                cs_net_xn_value = net_xn_value
+                cs_sell_xns = sell_xns
+                cs_net_shares = net_shares
+
                 sub_tuple = (plural_insiders, -cs_net_xn_value, cs_sell_xns,
                              cs_annual_grant_rate)
                 cluster_sell =\
@@ -732,6 +779,8 @@ def replace_company_signals():
         discretionary_sell = None
         ds_large_xn_size = None
         ds_was_ceo = None
+        ds_start_date = None
+        ds_end_date = None
         ds_detect_date = None
         ds_person_name = None
         ds_xn_val = None
@@ -759,7 +808,8 @@ def replace_company_signals():
                 else:
                     ceo_note = ""
                     ds_was_ceo = False
-
+                ds_start_date = person_sig.first_file_date
+                ds_end_date = person_sig.last_file_date
                 ds_detect_date = person_sig.signal_detect_date
                 ds_person_name = person_sig.reporting_person.person_name
                 ds_xn_val = person_sig.net_signal_value
@@ -776,12 +826,19 @@ def replace_company_signals():
 
         signal_dates = []
         signal_dates = appendif(signal_dates, bow_first_sig_detect_date)
+        signal_dates = appendif(signal_dates, cb_end_date)
         signal_dates = appendif(signal_dates, db_detect_date)
+
         signal_dates = appendif(signal_dates, sos_first_sig_detect_date)
+        signal_dates = appendif(signal_dates, cs_end_date)
         signal_dates = appendif(signal_dates, ds_detect_date)
         last_signal = None
         if len(signal_dates) != 0:
             last_signal = max(signal_dates)
+        if last_signal == date_of_any_new_filings:
+            signal_is_new = True
+        else:
+            signal_is_new = False
 
         total_transactions = DiscretionaryXnEvent.objects\
             .filter(issuer=issuer).count()
@@ -791,6 +848,8 @@ def replace_company_signals():
                        last_signal=last_signal,
                        buy_on_weakness=buy_on_weakness,
                        bow_plural_insiders=bow_plural_insiders,
+                       bow_start_date=bow_start_date,
+                       bow_end_date=bow_end_date,
                        bow_first_sig_detect_date=bow_first_sig_detect_date,
                        bow_person_name=bow_person_name,
                        bow_includes_ceo=bow_includes_ceo,
@@ -799,12 +858,16 @@ def replace_company_signals():
                        bow_first_pre_stock_perf=bow_first_pre_stock_perf,
                        bow_first_post_stock_perf=bow_first_post_stock_perf,
                        cluster_buy=cluster_buy,
+                       cb_start_date=cb_start_date,
+                       cb_end_date=cb_end_date,
                        cb_plural_insiders=cb_plural_insiders,
                        cb_buy_xns=cb_buy_xns,
                        cb_net_xn_value=cb_net_xn_value,
                        discretionary_buy=discretionary_buy,
                        db_large_xn_size=db_large_xn_size,
                        db_was_ceo=db_was_ceo,
+                       db_start_date=db_start_date,
+                       db_end_date=db_end_date,
                        db_detect_date=db_detect_date,
                        db_person_name=db_person_name,
                        db_xn_val=db_xn_val,
@@ -812,6 +875,8 @@ def replace_company_signals():
                        db_xn_pct_holdings=db_xn_pct_holdings,
                        sell_on_strength=sell_on_strength,
                        sos_plural_insiders=sos_plural_insiders,
+                       sos_start_date=sos_start_date,
+                       sos_end_date=sos_end_date,
                        sos_first_sig_detect_date=sos_first_sig_detect_date,
                        sos_person_name=sos_person_name,
                        sos_includes_ceo=sos_includes_ceo,
@@ -820,6 +885,8 @@ def replace_company_signals():
                        sos_first_pre_stock_perf=sos_first_pre_stock_perf,
                        sos_first_post_stock_perf=sos_first_post_stock_perf,
                        cluster_sell=cluster_sell,
+                       cs_start_date=cs_start_date,
+                       cs_end_date=cs_end_date,
                        cs_plural_insiders=cs_plural_insiders,
                        cs_sell_xns=cs_sell_xns,
                        cs_net_xn_value=cs_net_xn_value,
@@ -828,6 +895,8 @@ def replace_company_signals():
                        discretionary_sell=discretionary_sell,
                        ds_large_xn_size=ds_large_xn_size,
                        ds_was_ceo=ds_was_ceo,
+                       ds_start_date=ds_start_date,
+                       ds_end_date=ds_end_date,
                        ds_detect_date=ds_detect_date,
                        ds_person_name=ds_person_name,
                        ds_xn_val=ds_xn_val,
@@ -835,7 +904,7 @@ def replace_company_signals():
                        ds_xn_pct_holdings=ds_xn_pct_holdings,
                        total_transactions=total_transactions,
                        # mixed_signals=mixed_signals,
-                       signal_is_new=True)
+                       signal_is_new=signal_is_new)
 
         if buy_on_weakness is not None\
                 or cluster_buy is not None\
@@ -859,7 +928,22 @@ def replace_company_signals():
     return
 
 
+def updatewatchednames():
+    'Updating WatchedName last signal dates...'
+    '   finding entries to update...'
+    new_sigs = \
+        SigDisplay.objects.filter(signal_is_new=True)
+    '   updating...'
+    for sig in new_sigs:
+        issuer = sig.issuer
+        sig_watchnames = WatchedName.objects.filter(issuer=issuer)
+        if sig_watchnames.exists():
+            sig_watchnames.update(last_signal_sent=sig.last_signal)
+    '   done.'
+    return
+
 print 'Populating signals...'
 create_disc_xn_events()
 replace_person_signals()
 replace_company_signals()
+updatewatchednames()

@@ -7,7 +7,7 @@ from django.core.mail import send_mail
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, RequestContext
 
-from sdapp.models import SecurityPriceHist, Signal, WatchedName
+from sdapp.models import SecurityPriceHist, WatchedName, SigDisplay
 
 
 def login(request):
@@ -144,11 +144,11 @@ def managewatchlist(request):
             .filter(ticker_sym=found_ticker)[0]
         # Note that the issuer could be None if the sph hasn't been linked.
         issuer = found_sph.issuer
-        signals = Signal.objects.filter(issuer=issuer)
-        if signals.exists():
-            last_signal_sent = signals.latest('signal_date').signal_date
+        sig_disp_qs = SigDisplay.objects.filter(issuer=issuer)
+        if sig_disp_qs.exists():
+            last_signal = sig_disp_qs[0].last_signal
         else:
-            last_signal_sent = None
+            last_signal = None
         if issuer is None:
             messagetext = \
                 'Ticker could not be added! Contact customer support for help.'
@@ -163,7 +163,7 @@ def managewatchlist(request):
                         issuer=issuer,
                         securitypricehist=found_sph,
                         ticker_sym=found_sph.ticker_sym,
-                        last_signal_sent=last_signal_sent).save()
+                        last_signal_sent=last_signal).save()
     return render_to_response('managewatchlist.html',
                               {'username': request.user.username,
                                'already_exists': already_exists,
