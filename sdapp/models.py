@@ -321,7 +321,7 @@ class Form345Entry(models.Model):
                                              null=True)
     xn_acq_disp_code = models.CharField(max_length=2, null=True)
     expiration_date = models.DateField(null=True)
-    underlying_title = models.CharField(max_length=80, null=True)
+    scrubbed_underlying_title = models.CharField(max_length=80, null=True)
     scrubbed_underlying_title = models.CharField(max_length=80, null=True)
     underlying_shares = models.DecimalField(max_digits=15, decimal_places=4,
                                             null=True)

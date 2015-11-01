@@ -510,9 +510,18 @@ def link_underlying_securities():
     looplength = float(len(underlying_securities_to_link_list))
     counter = 0.0
     for cik, underlying_title in underlying_securities_to_link_list:
-        security_id = \
+        # Prefer for underlying to be non-deriv if there are
+        # both deriv and non_deriv securities with same title.
+        security_nd_qs =\
             Security.objects.filter(issuer=cik)\
-            .filter(short_sec_title=underlying_title)[0].id
+            .filter(deriv_or_nonderiv='N')\
+            .filter(short_sec_title=underlying_title)
+        if security_nd_qs.exists():
+            security_id = security_nd_qs[0].id
+        else:
+            security_id = \
+                Security.objects.filter(issuer=cik)\
+                .filter(short_sec_title=underlying_title)[0].id
         Form345Entry.objects.filter(deriv_or_nonderiv='D')\
             .filter(issuer_cik=cik)\
             .filter(underlying_security=None)\

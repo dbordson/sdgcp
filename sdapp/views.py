@@ -303,8 +303,6 @@ def watchlisttoggle(request, ticker):
     issuer = common_stock_security.issuer
     watchedname = WatchedName.objects.filter(issuer=issuer)\
         .filter(user__username=request.user.username)
-    print 'watchedname', watchedname
-    print 'watchedname.exists()', watchedname.exists()
     if watchedname.exists():
         watchedname.delete()
 
@@ -403,22 +401,12 @@ def searchsignals(request):
     ticker = None
     num_of_records = 0
 
-
-    # if 'selectbox' in request.POST\
-    #         and 'discretionarybuy' in request.POST.getlist('selectbox'):
-    #     signal_types.append('Discretionary Buy')
-
-    # if 'selectbox' in request.POST\
-    #         and 'buyonweakness' in request.POST.getlist('selectbox'):
-    #     signal_types.append('Discretionary Buy after a Decline')
-
     qs = SigDisplay.objects.none()
 
     if 'selectbox' in request.POST:
         # signals = [buy_on_weakness, cluster_buy, discretionary_buy,
             # sell_on_strength, cluster_sell, discretionary_sell]
         signal_count = 0
-        print request.POST.getlist('selectbox')
         if buy_on_weakness in request.POST.getlist('selectbox'):
             qs = qs | SigDisplay.objects.exclude(buy_on_weakness=None)
             signal_count += 1
@@ -440,7 +428,6 @@ def searchsignals(request):
 
         if signal_count == 0:
             qs = SigDisplay.objects.all()
-        print 'signal_count', signal_count
     if search_text == '':
         found_entries = qs
     elif ('search_text' in request.POST) and\
@@ -456,7 +443,6 @@ def searchsignals(request):
             qs.filter(issuer=issuer)
     else:
         found_entries = SigDisplay.objects.none()
-    print found_entries
     num_of_records = found_entries.count()
     return render_to_response('sdapp/ajax_search.html',
                               {'found_entries': found_entries,

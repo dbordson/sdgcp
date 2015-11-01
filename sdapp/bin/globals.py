@@ -35,4 +35,8 @@ sell_on_strength = "Selling in Response to Performance"
 cluster_sell = "Cluster Selling"
 discretionary_sell = "Plain Vanilla Selling"
 
+signal_disp_list = \
+    [buy_on_weakness, cluster_buy, discretionary_buy,
+     sell_on_strength, cluster_sell, discretionary_sell]
+
 app_url = 'http://127.0.0.1:8000/sdapp/'

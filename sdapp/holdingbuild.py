@@ -87,24 +87,15 @@ def pull_person_holdings(ticker, issuer, person_cik, person_name,
                      'reported_shares_following_xn', 'adjustment_factor',
                      'security__conversion_multiple')
 
-    # stock_deriv_values = person_forms\
-    #     .filter(underlying_security=ticker_security)\
-    #     .exclude(underlying_shares=None)\
-    #     .values_list('filedatetime', 'supersededdt',
-    #                  'underlying_shares', 'adjustment_factor',
-    #                  'security__conversion_multiple')
-    print all_values
     # all_values = list(stock_values) + list(stock_deriv_values)
     date_set = set()
     for f, s, r, a, c in all_values:
         date_set.add(f)
         date_set.add(s)
-    # Don't use this because want to keep "None" values in dict
-    # to represent current holdings
-    # if None in date_set:
-    #     date_set.remove(None)
 
-    # date_list = list(date_set)
+    # for values in all_values:
+    #     print values
+    #     print ''
 
     xn_dict = {}
     for filedt, superseddt, rep_shares, adj_factor, conv_mult in all_values:
@@ -121,22 +112,22 @@ def pull_person_holdings(ticker, issuer, person_cik, person_name,
             xn_dict[nd(superseddt)] =\
                 Decimal(-1) * Decimal(rep_shares) * Decimal(adj_factor)\
                 * Decimal(conv_mult)
-    # print xn_dict
+
     if None in xn_dict:
         currentshares = Decimal(-1) * xn_dict.pop(None, None)
     else:
         currentshares = Decimal(0)
     person_data = []
     person_data = [[js_readable_date(datetime.date.today()), currentshares]]
-    # print sorted(xn_dict.iteritems())
+
     for key, value in sorted(xn_dict.iteritems(), reverse=True):
-        # print 'old', key, value
         if key >= startdate:
             person_data.append([js_readable_date(key), currentshares])
             currentshares -= xn_dict[key]
             person_data.append([js_readable_date(key), currentshares])
     # The below line appends the initial holdings at the startdate
     # for the closeprice graph
+    # print person_data
     person_data.append([js_readable_date(firstpricedate), person_data[-1][1]])
     person_data = list(reversed(person_data))
     return person_data, person_name
@@ -161,7 +152,6 @@ def addholdingstograph(pl, ticker, issuer, persons_data, firstpricedate):
         # spacer = [None] * len(prices_json[0]) - 2
         spaced_data = []
         for date, holding in holding_data:
-            # print date
             a = [None] * spacer_width
             a.insert(0, date)
             a.append(holding)
