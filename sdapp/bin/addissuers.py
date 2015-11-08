@@ -41,7 +41,7 @@ def newciks():
     count = 0.0
     looplength = len(unlinked_tickers)
     for entry in unlinked_tickers:
-        print entry.ticker_sym,
+        # print entry.ticker_sym
         cik_num = int(CIKFind(str(entry.ticker_sym)))
         if not IssuerCIK.objects.filter(cik_num=cik_num).exists():
             new_issuer_cik = IssuerCIK(cik_num=cik_num)
@@ -67,7 +67,7 @@ def newciks():
 
 def newtickers():
     print 'Adding any new SecurityPriceHist objects...'
-    print '    Sorting and building...',
+    print '    Sorting and building...'
     tickers_to_add = []
     with open('sdapp/tickerstoadd.txt') as infile:
         for line in infile:
@@ -76,7 +76,7 @@ def newtickers():
                     .exists():
                 tickers_to_add.append(
                     SecurityPriceHist(ticker_sym=ticker_to_add))
-    print 'saving...',
+    print 'saving...'
     SecurityPriceHist.objects.bulk_create(tickers_to_add)
     print 'done.'
 

@@ -128,8 +128,12 @@ def calc_eq_shares_and_avg_conv_price(issuer, reporting_owner, security):
 
 
 def add_secondary_ticker(issuer, reporting_owner, ticker, primary_ticker,
-                         share_equivalents_held,
-                         average_conversion_price, equity_grant_rate):
+                         prim_share_eqs_held,
+                         prim_avg_conv_price,
+                         prim_eq_grant_rate):
+    comb_share_eqs_held = prim_share_eqs_held
+    comb_avg_conv_price = prim_avg_conv_price
+    comb_eq_grant_rate = prim_eq_grant_rate
     security = ticker.security
     primary_ticker_close_prices =\
         ClosePrice.objects.filter(securitypricehist=primary_ticker)
@@ -137,36 +141,55 @@ def add_secondary_ticker(issuer, reporting_owner, ticker, primary_ticker,
         ClosePrice.objects.filter(securitypricehist=ticker)
     if primary_ticker_close_prices.exists()\
             and ticker_close_prices.exists():
-        latest_primary_ticker_price =\
-            primary_ticker_close_prices.latest('close_date')
-        latest_ticker_price =\
-            ticker_close_prices.latest('close_date')
+        latest_prim_ticker_price =\
+            primary_ticker_close_prices.latest('close_date').adj_close_price
+        latest_sec_ticker_price =\
+            ticker_close_prices.latest('close_date').adj_close_price
+
+        # If the latest primary ticker price is zero, we ignore
+        # the secondary tickers because they can't be sensibly converted
+        # to a primary ticker multiple (division by zero).
+        if latest_prim_ticker_price <= Decimal(0)\
+                or latest_sec_ticker_price <= Decimal(0):
+            return comb_share_eqs_held, comb_avg_conv_price, comb_eq_grant_rate
+
         # This is the rate at which we convert units of
         # secondary ticker stock to primary ticker stock
-        conversion_from_ticker_to_primary_ticker = \
-            latest_ticker_price / latest_primary_ticker_price
-        share_eqs_held, avg_conv_price =\
+        share_conversion_mult_to_primary_ticker = \
+            latest_sec_ticker_price / latest_prim_ticker_price
+        sec_share_eqs_held, sec_avg_conv_price =\
             calc_eq_shares_and_avg_conv_price(issuer, reporting_owner,
                                               security)
-        eq_grant_rate =\
+        sec_eq_grant_rate =\
             calc_grants(issuer, reporting_owner, security)
-        if share_eqs_held != Decimal(0)\
-                and conversion_from_ticker_to_primary_ticker is not None:
+        if sec_share_eqs_held != Decimal(0):
             # Note that numerator omits conversion -- conv factors cancel
             # out when converting shares times conv_price to primary
-            average_conversion_price = \
-                (share_equivalents_held * average_conversion_price
-                 + (share_eqs_held * avg_conv_price))\
-                / (share_equivalents_held + share_eqs_held
-                    * conversion_from_ticker_to_primary_ticker)
-            share_equivalents_held += share_eqs_held\
-                * conversion_from_ticker_to_primary_ticker
-        if eq_grant_rate is not None:
-            equity_grant_rate += eq_grant_rate\
-                * conversion_from_ticker_to_primary_ticker
+            total_prim_conv_cost =\
+                prim_share_eqs_held * prim_avg_conv_price
+            total_sec_conv_cost =\
+                sec_share_eqs_held * sec_avg_conv_price
 
-    return share_equivalents_held, average_conversion_price,\
-        equity_grant_rate
+            comb_avg_conv_price = \
+                (total_prim_conv_cost + total_sec_conv_cost)\
+                / (prim_share_eqs_held + sec_share_eqs_held
+                    * share_conversion_mult_to_primary_ticker)
+            comb_share_eqs_held = prim_share_eqs_held\
+                + sec_share_eqs_held * share_conversion_mult_to_primary_ticker
+        # comb_eq_grant_rate set above to primary rate.
+        # if both rates are not none, we sum them.
+        # elif the primary rate is none, but not the secondary rate,
+        # we use the secondary rate instead.
+        if prim_eq_grant_rate is not None\
+                and sec_eq_grant_rate is not None:
+            comb_eq_grant_rate = prim_eq_grant_rate + sec_eq_grant_rate\
+                * share_conversion_mult_to_primary_ticker
+        elif prim_eq_grant_rate is None\
+                and sec_eq_grant_rate is not None:
+            comb_eq_grant_rate = sec_eq_grant_rate\
+                * share_conversion_mult_to_primary_ticker
+
+    return comb_share_eqs_held, comb_avg_conv_price, comb_eq_grant_rate
 
 
 def get_new_affiliation_form_data(issuer_and_rep_owner_list):
@@ -396,6 +419,7 @@ def update(affiliations_with_new_forms):
     print 'Updating affiliations with new form data...'
     get_new_affiliation_form_data(affiliations_with_new_forms)
     print '\n    Done.'
+    calc_percentiles()
     return
 
 
@@ -405,4 +429,5 @@ def replace():
         .values_list('issuer', 'reporting_owner')
     get_new_affiliation_form_data(affiliations_with_new_forms)
     print '\n    Done.'
+    calc_percentiles()
     return

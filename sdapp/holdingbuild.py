@@ -10,6 +10,7 @@ from django.db.models import Q
 
 from sdapp.models import (SecurityPriceHist, ClosePrice,
                           Form345Entry)
+from sdapp.bin.globals import today
 
 
 def mean(lst):
@@ -179,7 +180,10 @@ def buildgraphdata(issuer, ticker, persons_data):
     pricelist = pricelist_qs\
         .values_list('close_date', 'adj_close_price')
     # standard deviation calculator, shows as shadding around line.
-    firstpricedate = pricelist[0][0]
+    if len(pricelist) > 0:
+        firstpricedate = pricelist[0][0]
+    else:
+        firstpricedate = today
 
     # UNUSED CODE TO ADD STD DEVIATION FOR DYGRAPH ERROR BAR
     # [NOT STRAIGHTFORWARD TO WORK THESE BACK IN]
