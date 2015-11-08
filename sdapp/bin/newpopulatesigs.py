@@ -15,6 +15,7 @@ from sdapp.bin.globals import (signal_detect_lookback, significant_stock_move,
                                today, todaymid, buy, buy_response_to_perf,
                                sell, sell_response_to_perf, big_xn_amt,
                                date_of_any_new_filings)
+from sdapp.bin.update_affiliation_data import calc_grants
 
 
 def appendif(startlist, newitem):
@@ -138,46 +139,6 @@ def median(medlist):
     return median_number
 
 
-def calc_grants(issuer_cik, reporting_person_cik):
-    grants = Form345Entry.objects.filter(issuer_cik=issuer_cik)\
-        .filter(reporting_owner_cik=reporting_person_cik)\
-        .filter(transaction_code='A')\
-        .filter(transaction_date__gte=today - datetime.timedelta(735))\
-        .filter(filedatetime__gte=todaymid - datetime.timedelta(730))
-    grant_dates = \
-        list(grants.order_by('filedatetime')
-             .values_list('filedatetime', flat=True).distinct())
-    # Do not pass go if no grant info available
-    if len(grant_dates) == 0:
-        return None
-    # If you have only one grant, assume annual because that is typical
-    if len(grant_dates) == 1:
-        grants_per_year = 1
-    # Otherwise, figure out grants per year received based on spacing
-    else:
-        day_gaps = []
-        for first_date, second_date in zip(grant_dates, grant_dates[1:]):
-            day_gaps.append(Decimal((second_date - first_date).days))
-        median_day_gap = median(day_gaps)
-        day_gap_options = [Decimal(30), Decimal(45), Decimal(60),
-                           Decimal(91), Decimal(182), Decimal(365)]
-        estimated_day_gap = min(day_gap_options,
-                                key=lambda x: abs(x-median_day_gap))
-        grants_per_year = int(Decimal(365) / estimated_day_gap)
-    # Now get the latest adjusted shares granted
-    latest_grant_date = grant_dates[-1]
-    latest_grant_set = grants.filter(filedatetime=latest_grant_date)\
-        .values_list('transaction_shares', 'adjustment_factor',
-                     'security__conversion_multiple')
-    grant_shares_adjusted = Decimal(0)
-    for xn_shares, adj_factor, conv_mult in latest_grant_set:
-        grant_shares_adjusted += xn_shares * adj_factor * conv_mult
-    # Annualize latest grant
-    eq_annual_share_grants = grant_shares_adjusted * grants_per_year
-    #
-    return eq_annual_share_grants
-
-
 def create_disc_xn_events():
     #
     print 'Creating new discretionary transaction objects'
@@ -259,11 +220,14 @@ def replace_person_signals():
         aff_events = DiscretionaryXnEvent.objects.filter(issuer=issuer)\
             .filter(reporting_person=reporting_person)
         sec_price_hists = SecurityPriceHist.objects.filter(issuer=issuer)\
+            .filter(primary_ticker_sym=True)\
             .order_by('security__short_sec_title')
         if sec_price_hists.exists():
             sec_price_hist = sec_price_hists[0]
+            security = sec_price_hist.security
         else:
             sec_price_hist = None
+            security = None
         reporting_person_title = aff_events.latest('filedate').person_title
         #
         securities = aff_events.order_by('filedate')\
@@ -276,7 +240,8 @@ def replace_person_signals():
         last_file_date = entryfiledates[-1]
         transactions = len(entryfiledates)
         #
-        eq_annual_share_grants = calc_grants(issuer, reporting_person)
+        eq_annual_share_grants =\
+            calc_grants(issuer, reporting_person, security)
         #
         # Get holdings before form filed
         prior_holding_value =\

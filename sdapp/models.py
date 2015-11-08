@@ -26,7 +26,36 @@ class IssuerCIK(models.Model):
 class Affiliation(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
     reporting_owner = models.ForeignKey(ReportingPerson)
+
     person_name = models.CharField(max_length=80, null=True)
+    is_director = models.NullBooleanField(null=True)
+    is_officer = models.NullBooleanField(null=True)
+    is_ten_percent = models.NullBooleanField(null=True)
+    is_something_else = models.NullBooleanField(null=True)
+    reporting_owner_title = models.CharField(max_length=80, null=True)
+
+    share_equivalents_held =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    average_conversion_price =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    equity_grant_rate =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+
+    share_equivalents_value =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    conversion_to_price_ratio =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    equity_grant_value =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+
+    share_equivalents_value_percentile = \
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    average_conversion_price_ratio_percentile = \
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    equity_grant_value_percentile = \
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+
+    latest_form_dt = models.DateTimeField(null=True)
 
     def __unicode__(self):
         return unicode(self.person_name) or u''
@@ -47,7 +76,7 @@ class Security(models.Model):
 
 class SecurityPriceHist(models.Model):
     ticker_sym = models.CharField(max_length=10)
-    # primary_ticker_sym = models.BooleanField(default=True)
+    primary_ticker_sym = models.BooleanField(default=True)
 
     issuer = models.ForeignKey(IssuerCIK, null=True)
     security = models.ForeignKey(Security, null=True)
@@ -80,28 +109,26 @@ class SplitOrAdjustmentEvent(models.Model):
 
 class TransactionEvent(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
-    net_xn_val = models.DecimalField(max_digits=15, decimal_places=4,
-                                     null=True)
-    end_holding_val = models.DecimalField(max_digits=15, decimal_places=4,
-                                          null=True)
-    net_xn_pct = models.DecimalField(max_digits=15, decimal_places=4,
-                                     null=True)
+    net_xn_val = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    end_holding_val = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    net_xn_pct = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
     period_start = models.DateField(null=True)
     period_end = models.DateField(null=True)
-    price_at_period_end = models.DecimalField(max_digits=15, decimal_places=4,
-                                              null=True)
-    perf_at_91_days = models.DecimalField(max_digits=15, decimal_places=4,
-                                          null=True)
-    perf_at_182_days = models.DecimalField(max_digits=15, decimal_places=4,
-                                           null=True)
-    perf_at_274_days = models.DecimalField(max_digits=15, decimal_places=4,
-                                           null=True)
-    perf_at_365_days = models.DecimalField(max_digits=15,
-                                           decimal_places=4,
-                                           null=True)
-    perf_at_456_days = models.DecimalField(max_digits=15,
-                                           decimal_places=4,
-                                           null=True)
+    price_at_period_end = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    perf_at_91_days = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    perf_at_182_days = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    perf_at_274_days = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    perf_at_365_days = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    perf_at_456_days = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
 
     def __unicode__(self):
         return u"%s, %s, %s" % (str(self.issuer),
@@ -140,10 +167,10 @@ class ReportingPersonAtts(models.Model):
     b_perf_30 = models.DecimalField(max_digits=10, decimal_places=4, null=True)
     b_perf_60 = models.DecimalField(max_digits=10, decimal_places=4, null=True)
     b_perf_90 = models.DecimalField(max_digits=10, decimal_places=4, null=True)
-    b_perf_120 = models.DecimalField(max_digits=10,
-                                     decimal_places=4, null=True)
-    b_perf_150 = models.DecimalField(max_digits=10,
-                                     decimal_places=4, null=True)
+    b_perf_120 = \
+        models.DecimalField(max_digits=10, decimal_places=4, null=True)
+    b_perf_150 = \
+        models.DecimalField(max_digits=10, decimal_places=4, null=True)
 
     def __unicode__(self):
         return u"%s, %s, %s" % (str(self.reporting_person),
@@ -162,12 +189,12 @@ class YearlyReportingPersonAtts(models.Model):
     b_perf_30 = models.DecimalField(max_digits=10, decimal_places=4, null=True)
     b_perf_60 = models.DecimalField(max_digits=10, decimal_places=4, null=True)
     b_perf_90 = models.DecimalField(max_digits=10, decimal_places=4, null=True)
-    b_perf_120 = models.DecimalField(max_digits=10,
-                                     decimal_places=4, null=True)
-    b_perf_150 = models.DecimalField(max_digits=10,
-                                     decimal_places=4, null=True)
-    b_perf_180 = models.DecimalField(max_digits=10, decimal_places=4,
-                                     null=True)
+    b_perf_120 = \
+        models.DecimalField(max_digits=10, decimal_places=4, null=True)
+    b_perf_150 = \
+        models.DecimalField(max_digits=10, decimal_places=4, null=True)
+    b_perf_180 = \
+        models.DecimalField(max_digits=10, decimal_places=4, null=True)
 
     def __unicode__(self):
         return u"%s, %s, %s" % (str(self.reporting_person),
@@ -180,34 +207,30 @@ class SecurityView(models.Model):
     security = models.ForeignKey(Security)
     short_sec_title = models.CharField(max_length=80, null=True)
     ticker = models.CharField(max_length=10, null=True)
-    last_close_price = models.DecimalField(max_digits=15, decimal_places=4,
-                                           null=True)
+    last_close_price = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
     # security_title = models.CharField(max_length=80, null=True)
-    units_held = models.DecimalField(max_digits=15, decimal_places=4,
-                                     null=True)
+    units_held = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
     deriv_or_nonderiv = models.CharField(max_length=1, null=True)
     first_expiration_date = models.DateField(null=True)
     last_expiration_date = models.DateField(null=True)
     wavg_expiration_date = models.DateField(null=True)
-    min_conversion_price = models.DecimalField(max_digits=15,
-                                               decimal_places=4,
-                                               null=True)
-    max_conversion_price = models.DecimalField(max_digits=15,
-                                               decimal_places=4,
-                                               null=True)
-    wavg_conversion = models.DecimalField(max_digits=15, decimal_places=4,
-                                          null=True)
+    min_conversion_price = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    max_conversion_price = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    wavg_conversion = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
     # underlying_title = models.CharField(max_length=80, null=True)
     scrubbed_underlying_title = models.CharField(max_length=80, null=True)
     underlying_ticker = models.CharField(max_length=10, null=True)
-    underlying_shares_total = models.DecimalField(max_digits=15,
-                                                  decimal_places=4,
-                                                  null=True)
-    underlying_close_price = models.DecimalField(max_digits=15,
-                                                 decimal_places=4,
-                                                 null=True)
-    intrinsic_value = models.DecimalField(max_digits=16, decimal_places=4,
-                                          null=True)
+    underlying_shares_total = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    underlying_close_price = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    intrinsic_value = \
+        models.DecimalField(max_digits=16, decimal_places=4, null=True)
     first_xn = models.DateField(null=True)
     most_recent_xn = models.DateField(null=True)
     wavg_xn_date = models.DateField(null=True)
@@ -225,34 +248,30 @@ class PersonHoldingView(models.Model):
     affiliation = models.ForeignKey(Affiliation)
     short_sec_title = models.CharField(max_length=80, null=True)
     ticker = models.CharField(max_length=10, null=True)
-    last_close_price = models.DecimalField(max_digits=15, decimal_places=4,
-                                           null=True)
+    last_close_price = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
     # security_title = models.CharField(max_length=80, null=True)
-    units_held = models.DecimalField(max_digits=15, decimal_places=4,
-                                     null=True)
+    units_held = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
     deriv_or_nonderiv = models.CharField(max_length=1, null=True)
     first_expiration_date = models.DateField(null=True)
     last_expiration_date = models.DateField(null=True)
     wavg_expiration_date = models.DateField(null=True)
-    min_conversion_price = models.DecimalField(max_digits=15,
-                                               decimal_places=4,
-                                               null=True)
-    max_conversion_price = models.DecimalField(max_digits=15,
-                                               decimal_places=4,
-                                               null=True)
-    wavg_conversion = models.DecimalField(max_digits=15, decimal_places=4,
-                                          null=True)
+    min_conversion_price = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    max_conversion_price = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    wavg_conversion = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
     # underlying_title = models.CharField(max_length=80, null=True)
     scrubbed_underlying_title = models.CharField(max_length=80, null=True)
     underlying_ticker = models.CharField(max_length=10, null=True)
-    underlying_shares_total = models.DecimalField(max_digits=15,
-                                                  decimal_places=4,
-                                                  null=True)
-    underlying_close_price = models.DecimalField(max_digits=15,
-                                                 decimal_places=4,
-                                                 null=True)
-    intrinsic_value = models.DecimalField(max_digits=16, decimal_places=4,
-                                          null=True)
+    underlying_shares_total = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    underlying_close_price = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    intrinsic_value = \
+        models.DecimalField(max_digits=16, decimal_places=4, null=True)
     first_xn = models.DateField(null=True)
     most_recent_xn = models.DateField(null=True)
     wavg_xn_date = models.DateField(null=True)
@@ -311,25 +330,24 @@ class Form345Entry(models.Model):
     reporting_owner_title = models.CharField(max_length=80, null=True)
     security_title = models.CharField(max_length=80, null=True)
     short_sec_title = models.CharField(max_length=80, null=True)
-    conversion_price = models.DecimalField(max_digits=15, decimal_places=4,
-                                           null=True)
+    conversion_price = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
     transaction_date = models.DateField(null=True)
     transaction_code = models.CharField(max_length=2, null=True)
-    transaction_shares = models.DecimalField(max_digits=15, decimal_places=4,
-                                             null=True)
-    xn_price_per_share = models.DecimalField(max_digits=15, decimal_places=4,
-                                             null=True)
+    transaction_shares = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    xn_price_per_share = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
     xn_acq_disp_code = models.CharField(max_length=2, null=True)
     expiration_date = models.DateField(null=True)
     underlying_title = models.CharField(max_length=80, null=True)
     scrubbed_underlying_title = models.CharField(max_length=80, null=True)
-    underlying_shares = models.DecimalField(max_digits=15, decimal_places=4,
-                                            null=True)
-    shares_following_xn = models.DecimalField(max_digits=15, decimal_places=4,
-                                              null=True)
-    reported_shares_following_xn = models.DecimalField(max_digits=15,
-                                                       decimal_places=4,
-                                                       null=True)
+    underlying_shares = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    shares_following_xn = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    reported_shares_following_xn = \
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
     shares_following_xn_is_adjusted = models.BooleanField(default=False)
     direct_or_indirect = models.CharField(max_length=2, null=True)
     tenbfive_note = models.IntegerField(null=True)

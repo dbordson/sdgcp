@@ -46,6 +46,12 @@ def newciks():
         if not IssuerCIK.objects.filter(cik_num=cik_num).exists():
             new_issuer_cik = IssuerCIK(cik_num=cik_num)
             new_issuer_cik.save()
+        if SecurityPriceHist.objects.filter(issuer=cik_num)\
+                .filter(primary_ticker_sym=True).exists():
+            entry.primary_ticker_sym = False
+        else:
+            entry.primary_ticker_sym = True
+
         entry.issuer_id = cik_num
         entry.save()
         # Counter

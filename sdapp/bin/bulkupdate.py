@@ -2,6 +2,12 @@
 # First run "from sdapp.bin import initialdownload" in a local shell.
 # because heroku can't run "initialdownload.py", because indices not stored
 # in heroku.
-from sdapp.bin import formscraper, formparser,\
-    populateintermediate, supersedeinit, adjsharesremaining,\
-    grabmarketdata, populateformadjustments, populateviews, newpopulatesigs
+from sdapp.bin import formscraper, formparser, populateintermediate,\
+    supersedeinit, adjsharesremaining, grabmarketdata,\
+    populateformadjustments
+
+from sdapp.bin import update_affiliation_data
+
+update_affiliation_data.replace()
+
+from sdapp.bin import populateviews, newpopulatesigs

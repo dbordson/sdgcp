@@ -1,20 +1,17 @@
 import os
 import gc
 import sys
-import datetime
+# import datetime
 from decimal import Decimal
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
     import xml.etree.ElementTree as ET
 
-
 import django.db
 from django import forms
 
-
 from sdapp.models import Form345Entry, FullForm, IssuerCIK
-
 
 cwd = os.getcwd()
 

@@ -132,7 +132,7 @@ def update_affiliations():
 
     reporting_person_issuer_combinations =\
         set(Form345Entry.objects
-            .values_list('issuer_cik_num', 'reporting_owner_cik_num'))
+            .values_list('issuer_cik', 'reporting_owner_cik_num'))
 
     affiliations_cik_combinations_to_add =\
         reporting_person_issuer_combinations\
@@ -142,17 +142,16 @@ def update_affiliations():
     new_affiliations = []
     looplength = float(len(affiliations_cik_combinations_to_add))
     counter = 0.0
-    for cik_combination in affiliations_cik_combinations_to_add:
-        issuer_cik_num = cik_combination[0]
-        reporting_owner_cik_num = cik_combination[1]
+    for issuer_cik, reporting_owner_cik_num in \
+            affiliations_cik_combinations_to_add:
         latest_entry =\
             Form345Entry.objects\
-            .filter(issuer_cik_num=issuer_cik_num)\
+            .filter(issuer_cik=issuer_cik)\
             .filter(reporting_owner_cik_num=reporting_owner_cik_num)\
             .order_by('-filedatetime')[0]
 
         new_affiliation =\
-            Affiliation(issuer_id=issuer_cik_num,
+            Affiliation(issuer_id=issuer_cik,
                         reporting_owner_id=reporting_owner_cik_num,
                         person_name=latest_entry.reporting_owner_name)
         counter += 1.0
@@ -226,7 +225,8 @@ def link_security_and_security_price_hist(cik, title):
     print cik
     print title
     security_price_hist =\
-        SecurityPriceHist.objects.filter(issuer_id=cik)[0]
+        SecurityPriceHist.objects.filter(issuer_id=cik)\
+        .filter(primary_ticker_sym=True)[0]
     ticker = security_price_hist.ticker_sym
     print ticker
     security = \

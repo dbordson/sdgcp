@@ -12,8 +12,9 @@ from django.shortcuts import (render_to_response, redirect,
                               RequestContext, HttpResponseRedirect)
 from django.template.defaulttags import register
 
+from sdapp.bin import update_affiliation_data
 from sdapp.bin.globals import (perf_period_days_td, buy_on_weakness,
-                               cluster_buy, discretionary_buy,
+                               cluster_buy, discretionary_buy, today,
                                sell_on_strength, cluster_sell,
                                discretionary_sell)
 from sdapp.models import (Affiliation, Form345Entry, PersonHoldingView,
@@ -21,6 +22,11 @@ from sdapp.models import (Affiliation, Form345Entry, PersonHoldingView,
                           SecurityPriceHist, WatchedName)
 from sdapp.misc.filingcodes import filingcodes, acq_disp_codes
 from sdapp import holdingbuild
+
+
+@register.filter
+def multiply(a, b):
+    return a * b
 
 
 @register.filter
@@ -137,14 +143,18 @@ def options(request, ticker):
 
     perf_period = -perf_period_days_td.days
 
-    issuer_affiliations = Affiliation.objects.filter(issuer=issuer)
-    ann_affiliations = issuer_affiliations\
-        .annotate(intrinsic_value=Sum('personholdingview__intrinsic_value'))\
-        .exclude(intrinsic_value=None).order_by('-intrinsic_value')[:3]
+    issuer_affiliations = Affiliation.objects.filter(issuer=issuer)\
+        .exclude(share_equivalents_held=None)\
+        .order_by('-share_equivalents_held')[:3]
+    latest_price = update_affiliation_data.get_price(issuer, today)
+    # ann_affiliations = issuer_affiliations\
+    #     .annotate(intrinsic_value=Sum('personholdingview__intrinsic_value'))\
+    #     .exclude(intrinsic_value=None).order_by('-intrinsic_value')[:3]
 
     return render_to_response('sdapp/options.html',
-                              {'ann_affiliations': ann_affiliations,
+                              {'issuer_affiliations': issuer_affiliations,
                                'issuer_name': issuer_name,
+                               'latest_price': latest_price,
                                'graph_data_json': graph_data_json,
                                'perf_period': perf_period,
                                # 'rec': rec,
