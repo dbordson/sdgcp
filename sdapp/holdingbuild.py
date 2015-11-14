@@ -85,7 +85,7 @@ def pull_person_holdings(ticker, issuer, person_cik, person_name,
                 | Q(underlying_security=ticker_security))\
         .exclude(reported_shares_following_xn=None)\
         .values_list('filedatetime', 'supersededdt',
-                     'reported_shares_following_xn', 'adjustment_factor',
+                     'shares_following_xn', 'adjustment_factor',
                      'security__conversion_multiple')
 
     # all_values = list(stock_values) + list(stock_deriv_values)
@@ -204,5 +204,5 @@ def buildgraphdata(issuer, ticker, persons_data):
         addholdingstograph(pl, ticker, issuer, persons_data, firstpricedate)
     graph_json = json.dumps(list(graph), cls=DjangoJSONEncoder)
     titles_json = json.dumps(list(title_row), cls=DjangoJSONEncoder)
-    ymax = Decimal(maxholding) * Decimal(1.20)
+    ymax = Decimal(maxholding) * Decimal(1.30)
     return graph_json, titles_json, ymax

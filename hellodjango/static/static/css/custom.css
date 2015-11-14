@@ -2,17 +2,33 @@
 
 }
 
-.panel > .panel-heading {
-    background-image: none;
-    background-color: #94B8B8;
-
+/*GRAPHS*/
+#div_g_drilldown {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  top: 45px;
+  bottom: 25px;
 }
+
+#div_g_options {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  top: 45px;
+  bottom: 25px;
+}
+/*.many .dygraph-legend > span { display: none; }*/
+
+/*.many .dygraph-legend > span.highlight { display: inline; }*/
+
 
 /*.success {
     background: green;
     text-align: center;
 }*/
 
+/*FONTS*/
 h1, h2, h3, h4, h5, h6 {
     font-family: 'Ubuntu', Georgia, Times, serif;
 }
@@ -20,11 +36,11 @@ table, p, div {
     font-family: 'Vollkorn', Helvetica, Arial, sans-serif;
 }
 
+/*OTHER*/
 .glyphicon.glyphicon-new-window {
     font-size: 12px;
     line-height: 0px;
 }
-
 
 h1 { 
     text-shadow: 1px 1px 1px #ccc;
@@ -33,6 +49,13 @@ h1 {
     box-shadow: 0 0 .5em .5em #ccc;
 }
 
+.panel > .panel-heading {
+    background-image: none;
+    background-color: #94B8B8;
+
+}
+
+/*SPACERS*/
 .spacer10 { 
     height: 10px; width: 100%; font-size: 0; margin: 0; padding: 0; border: 0; display: block; 
 }

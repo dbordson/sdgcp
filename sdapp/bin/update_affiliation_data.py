@@ -109,7 +109,7 @@ def calc_eq_shares_and_avg_conv_price(issuer, reporting_owner, security):
         .filter(reporting_owner_cik=reporting_owner)\
         .filter(Q(security=security) | Q(underlying_security=security))\
         .filter(supersededdt=None)\
-        .values_list('transaction_shares', 'adjustment_factor',
+        .values_list('shares_following_xn', 'adjustment_factor',
                      'security__conversion_multiple', 'conversion_price')
     total_eq_shares = Decimal(0)
     conv_price_times_total_eq_shares = Decimal(0)
@@ -165,8 +165,12 @@ def add_secondary_ticker(issuer, reporting_owner, ticker, primary_ticker,
         if sec_share_eqs_held != Decimal(0):
             # Note that numerator omits conversion -- conv factors cancel
             # out when converting shares times conv_price to primary
+            if prim_avg_conv_price is None:
+                prim_avg_conv_price = Decimal(0)
             total_prim_conv_cost =\
                 prim_share_eqs_held * prim_avg_conv_price
+            if sec_avg_conv_price is None:
+                sec_avg_conv_price = Decimal(0)
             total_sec_conv_cost =\
                 sec_share_eqs_held * sec_avg_conv_price
 
@@ -284,9 +288,14 @@ def calc_percentiles():
                 or price_dict[affiliation.issuer.pk] is None:
             affiliation.share_equivalents_value = None
         else:
+            if affiliation.average_conversion_price is None:
+                conv_price = Decimal(0)
+            else:
+                conv_price = affiliation.average_conversion_price
             affiliation.share_equivalents_value =\
                 affiliation.share_equivalents_held *\
-                price_dict[affiliation.issuer.pk]
+                max(Decimal(0),
+                    (price_dict[affiliation.issuer.pk] - conv_price))
             changes = True
         # conversion_to_price_ratio
         if affiliation.average_conversion_price is None\
@@ -306,7 +315,6 @@ def calc_percentiles():
                 affiliation.equity_grant_rate *\
                 price_dict[affiliation.issuer.pk]
             changes = True
-        # print affiliation.share_equivalents_value, affiliation.conversion_to_price_ratio, affiliation.equity_grant_rate
         if changes is True:
             affiliation.save()
         counter += Decimal(1)
@@ -419,7 +427,6 @@ def update(affiliations_with_new_forms):
     print 'Updating affiliations with new form data...'
     get_new_affiliation_form_data(affiliations_with_new_forms)
     print '\n    Done.'
-    calc_percentiles()
     return
 
 
@@ -429,5 +436,4 @@ def replace():
         .values_list('issuer', 'reporting_owner')
     get_new_affiliation_form_data(affiliations_with_new_forms)
     print '\n    Done.'
-    calc_percentiles()
     return

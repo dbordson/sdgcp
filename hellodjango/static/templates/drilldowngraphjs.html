@@ -1,16 +1,16 @@
-<div id="div_g" ></div>
+<div id="div_g_drilldown" ></div>
 <script type="text/javascript">
 
 var titles = {{ titles_json|safe }};
-var div = document.getElementById("div_g")
+var div = document.getElementById("div_g_drilldown")
 div.className = "many";
 div.style.display = 'inline-block';
 var prices = {{ graph_data_json|safe }};
 var ymax = {{ ymax|safe }};
 var persons_with_data = {{ persons_with_data|safe }};
 var testval = 35432094321342455.32
-var n = testval.toExponential(2)
-console.log(n);
+// var n = testval.toExponential(2)
+// console.log(n);
 // document.write(prices);
 var signal_highlights = {{ sig_highlights|safe }};
 // document.write(signal_highlights);
@@ -29,9 +29,12 @@ if (persons_with_data != 0)
       maxNumberWidth: 20,
       // drawPoints: true,
       animatedZooms: true,
+      ylabel: 'Fully-diluted shares',
+      y2label: 'Stock Price',
+      
       highlightSeriesOpts: {
         strokeWidth: 2,
-        strokeBorderWidth: 1,
+        strokeBorderWidth: 2,
         highlightCircleSize: 2,
       },
       // axisLabelColor: "rgba(0,0,0, 0.2)",
@@ -55,9 +58,15 @@ if (persons_with_data != 0)
           },
           y:
           {
+            axisLabelWidth: 55,
             labelsKMB: true,
             // axisLabelWidth: 60,
             valueRange: [0, ymax],
+          },
+          y2:
+          {
+            axisLabelWidth: 60,
+            labelsKMB: true,
           }
         },
       // ylabel: 'Primary y-axis',

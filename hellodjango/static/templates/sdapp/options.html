@@ -8,19 +8,6 @@
   src="/../static/static/js/dygraph-combined-dev.js"></script>
 <script src="/../static/static/js/ajaxwatchedname.js"></script>
 
-<style type="text/css">
-#div_g {
-  position: absolute;
-  left: 0px;
-  right: 20px;
-  top: 45px;
-  bottom: 25px;
-}
-.many .dygraph-legend > span { display: none; }
-
-.many .dygraph-legend > span.highlight { display: inline; }
-</style>
-
 
 <div class="col-md-10">
     <h1>{{ issuer_name }} ({{ ticker }})</h1>
@@ -84,10 +71,13 @@
 <div class="col-md-6">
   <div class="panel panel-default">
     <div class="panel-heading">
-      <h3 class="panel-title">Background</h3>
+      <h3 class="panel-title">Takeaways and Background</h3>
     </div>
 
     <ul class="list-group" style="height:460px; overflow-y: scroll;">
+      <li class="list-group-item">
+        <p>[INSERT TAKEAWAYS]</p>
+      </li>
     {% if signal_entry != None %}
 
       {% include 'sdapp/signaldescriptions.html' %}
@@ -99,13 +89,59 @@
     {% endif %}
 
       <li class="list-group-item">
-        [INSERT GENERAL BACKGROUND ON EQUITY GRANT SIZE AND PRICING]
+        [WHAT ELSE SHOULD BE ADDED?]
       </li>
     </ul>
   </div>  
 </div>
 
 <div class="col-md-6">
+  <div class="col-md-12">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Top Equity Holdings</small></h3>
+      </div>
+
+      <div class="panel-body" style="height:200px; overflow-y: scroll;">
+
+      {% if issuer_affiliations.exists %}
+        <table class="table table-striped table-condensed">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th style="text-align:center">Name</th>
+              <th style="text-align:center">Shares</th>
+              <th style="text-align:center"><i>[% of shares outstanding]</i></th>
+              <th style="text-align:center">Economic Interest</th>
+            </tr>
+          </thead>  
+          <tbody>
+
+        {% for aff in issuer_affiliations %}
+            <tr>
+              <td>{% if aff.reporting_owner_title != None %}{{ aff.reporting_owner_title }}{% elif aff.is_director == True %}Director{% elif aff.is_ten_percent == True %}10% Holder{% endif %}</td>
+              <td>{{ aff.person_name }}</td>
+              
+              <td nowrap align="center">{{ aff.share_equivalents_held|floatformat:0|intword|intcomma}}</td>
+              <td align="center"><i>[__]</i></td>
+              
+              <td nowrap align="center">${{ aff.share_equivalents_value|floatformat:0|intword|intcomma}}</td>
+                          
+            </tr>
+        {% endfor %}
+
+          </tbody>
+        </table>
+        
+      {% else %}
+          <p>No holdings are available.</p>
+        
+      {% endif %}
+
+      </div>
+    </div>  
+  </div>
+
   <div class="col-md-12">
     <div class="panel panel-default">
       <div class="panel-heading">
@@ -121,53 +157,6 @@
         {% endif %}
 
       </div>  
-    </div>  
-  </div>
-
-  <div class="col-md-12">
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        <h3 class="panel-title">Top Equity Holdings</h3>
-      </div>
-
-      <div class="panel-body" style="height:200px; overflow-y: scroll;">
-
-      {% if issuer_affiliations.exists %}
-        <table class="table table-striped table-condensed">
-          <thead>
-            <tr>
-              <th>Top Holders</th>
-              <th align="center">Avg. Conv. Price</th>
-              <th align="center">Percentile</th>
-              <th align="center">Ann. Grants</th>
-              <th align="center">Percentile</th>
-              <th style="text-align:right">Value</th>
-              <th align="center">Percentile</th>
-            </tr>
-          </thead>  
-          <tbody>
-
-        {% for aff in issuer_affiliations %}
-            <tr>
-              <td>{{ aff.person_name }}</td>
-              <td align="center">${{ aff.average_conversion_price|floatformat:2|intcomma}}</td>
-              <td align="center">{{ aff.average_conversion_price_ratio_percentile|floatformat:1|intcomma}}%</td>
-              <td align="center">{{ aff.equity_grant_rate|floatformat:0|intcomma}}</td>
-              <td align="center">{{ aff.equity_grant_value_percentile|floatformat:1|intcomma}}%</td>
-              <td align="right">${{ aff.share_equivalents_value|floatformat:0|intcomma}}</td>
-              <td align="center">{{ aff.share_equivalents_value_percentile|floatformat:1|intcomma}}%</td>              
-            </tr>
-        {% endfor %}
-
-          </tbody>
-        </table>
-        
-      {% else %}
-          <p>No holdings are available.</p>
-        
-      {% endif %}
-
-      </div>
     </div>  
   </div>
 </div>

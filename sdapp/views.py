@@ -7,7 +7,7 @@ import time
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.context_processors import csrf
-from django.db.models import Sum
+# from django.db.models import Sum
 from django.shortcuts import (render_to_response, redirect,
                               RequestContext, HttpResponseRedirect)
 from django.template.defaulttags import register
@@ -140,16 +140,12 @@ def options(request, ticker):
         persons_data = []
     graph_data_json, titles_json, ymax =\
         holdingbuild.buildgraphdata(issuer, ticker, persons_data)
-
     perf_period = -perf_period_days_td.days
 
     issuer_affiliations = Affiliation.objects.filter(issuer=issuer)\
-        .exclude(share_equivalents_held=None)\
-        .order_by('-share_equivalents_held')[:3]
+        .exclude(share_equivalents_value=None)\
+        .order_by('-share_equivalents_value')[:3]
     latest_price = update_affiliation_data.get_price(issuer, today)
-    # ann_affiliations = issuer_affiliations\
-    #     .annotate(intrinsic_value=Sum('personholdingview__intrinsic_value'))\
-    #     .exclude(intrinsic_value=None).order_by('-intrinsic_value')[:3]
 
     return render_to_response('sdapp/options.html',
                               {'issuer_affiliations': issuer_affiliations,
@@ -157,10 +153,8 @@ def options(request, ticker):
                                'latest_price': latest_price,
                                'graph_data_json': graph_data_json,
                                'perf_period': perf_period,
-                               # 'rec': rec,
                                'sig_highlights': sig_highlights,
                                'signal_entry': signal_entry,
-                               # 'signals': signals,
                                'titles_json': titles_json,
                                'ticker': ticker,
                                'watchedname': watchedname,
@@ -197,7 +191,7 @@ def drilldown(request, ticker):
             [js_readable_date(sig_date + datetime.timedelta(-5)),
              js_readable_date(sig_date + datetime.timedelta(5))])
     now = datetime.datetime.now(pytz.UTC)
-    startdate = now - datetime.timedelta(270)
+    startdate = now - datetime.timedelta(730)
     person_include_date = now - datetime.timedelta(2 * 365)
     # Builds transaction queryset
     recententries_qs =\
@@ -229,9 +223,6 @@ def drilldown(request, ticker):
             .exclude(reporting_owner_cik=None)\
             .values_list('reporting_owner_cik', 'reporting_owner_name')\
             .distinct()
-        # persons_data =\
-        #     Affiliation.objects.filter(issuer=issuer)\
-        #     .values_list('reporting_owner', 'person_name')
     else:
         persons_data =\
             Affiliation.objects.filter(issuer=issuer)\
@@ -245,7 +236,6 @@ def drilldown(request, ticker):
     # builds graph data -- see housingbuild.py for logic
     graph_data_json, titles_json, ymax =\
         holdingbuild.buildgraphdata(issuer, ticker, persons_data)
-
     return render_to_response('sdapp/drilldown.html',
                               {'acq_disp_codes': acq_disp_codes,
                                'recententries': recententries,

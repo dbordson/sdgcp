@@ -1,10 +1,10 @@
 <!-- KEY USAGE NOTE.  THIS IS A 2 AXIS GRAPH IF THERE ARE SIGNAL HIGHLIGHTS AND A 1 AXIS GRAPH IF THERE ARE NOT.  THE IDEA IS THAT SIGNAL HIGHLIGHTS WILL ALWAYS TIE TO WHETHER HOLDINGS WILL SHOW UP.  WE DON'T WANT TO CLUTTER THE GRAPH IS NO SIGNALS SHOW.  IF THIS SHOULD CHANGE, THE BELOW JAVASCRIPT WILL NEED TO BE SUITABLY CHANGED. -->
 
-<div id="div_g" ></div>
+<div id="div_g_options" ></div>
 <script type="text/javascript">
 
 var titles = {{ titles_json|safe }};
-var div = document.getElementById("div_g")
+var div = document.getElementById("div_g_options")
 div.className = "many";
 div.style.display = 'inline-block';
 var prices = {{ graph_data_json|safe }};
@@ -25,11 +25,14 @@ if (0 != signal_highlights_len)
     {
       labels: titles,
       connectSeparatedPoints: true,
+      maxNumberWidth: 20,
       // drawPoints: true,
       animatedZooms: true,
+      ylabel: 'Fully-diluted shares',
+      y2label: 'Stock Price',
       highlightSeriesOpts: {
         strokeWidth: 2,
-        strokeBorderWidth: 1,
+        strokeBorderWidth: 2,
         highlightCircleSize: 2,
       },
       // axisLabelColor: "rgba(0,0,0, 0.2)",
@@ -55,13 +58,14 @@ if (0 != signal_highlights_len)
           {
             labelsKMB: true,
             // logscale: true,
-            // axisLabelWidth: 60,
             valueRange: [0, ymax],
+            axisLabelWidth: 55,
           },
           y2:
           {
             labelsKMB: true,
             valueRange: [null, null],
+            axisLabelWidth: 60,
           }
         },
       // ylabel: 'Primary y-axis',
