@@ -57,7 +57,11 @@
 
 <div class="col-md-10">
   <h1>{{ issuer_name }} ({{ ticker }})</h1>
-  <a href="{% url 'options' ticker %}">(Return to smart view)</a>
+  <ul class="nav nav-pills">
+    <li role="presentation"><a href="{% url 'options' ticker %}?{{ sel_person_id }}={{ selected_person }}">Home</a></li>
+    <li role="presentation" class="active"><a href="#">Transaction Detail</a></li>
+    <li role="presentation"><a href="{% url 'bigchart' ticker %}?{{ sel_person_id }}={{ selected_person }}">Chart</a></li>
+  </ul>
   <div class="spacer10"></div>
 </div>
 <div class="col-md-2">
@@ -79,51 +83,6 @@
 <div class="row">
 
 
-<div class="col-md-12">
-  <div class="panel panel-default">
-    <div class="panel-heading">
-      <h3 class="panel-title">Stock Price Chart</h3>
-    </div>
-    <div class="panel-body" style="height:350px; overflow-y: scroll;">
-      
-      {% if graph_data_json != "????" %} <!-- We should set up an inequality that works to disable the graph when it would be empty, if it is the case that it could throw an error (not sure) -->
-      {% include 'drilldowngraphjs.html' %}
-    </div>
-    {% else %}
-      <p>No price information available.</p>
-    {% endif %}
-  </div>  
-</div>
-<!-- Note that the below </div> tag is unmatched and closes a row opened in base.html.  The row following it is closed in the base.html file-->
-</div>
-<div class="row">
-
-
-<div class="col-md-12">
-  <div class="panel panel-default">
-    <div class="panel-heading">
-      <h3 class="panel-title">Background</h3>
-    </div>
-  
-    <ul class="list-group" >
-    {% if signal_entry != None %}
-
-      {% include 'sdapp/signaldescriptions.html' %}
-
-    {% else %}
-      <li class="list-group-item">
-        <p>No signals detected.</p>
-      </li>
-    {% endif %}
-
-      <li class="list-group-item">
-        [INSERT GENERAL BACKGROUND ON EQUITY GRANT SIZE AND PRICING]
-      </li>
-    </ul>
-  </div>  
-</div>
-
-
 
 <!-- This has been moved down from the header because it causes problems with dygraphs if it is called before the graph is rendered -->
 
@@ -137,7 +96,7 @@
       <form method="get">
         <div class="btn-group-vertical btn-block" role="group" aria-label="...">
           <button type="submit" class="btn btn-default 
-          {% ifequal selected_person None %}active{% endifequal %}" name="persons" value="clear" href="#filter">
+          {% ifequal selected_person None %}active{% endifequal %}" name="persons" value="clear">
           All
           </button>
         
@@ -146,7 +105,7 @@
       
     {% for person in persons_for_radio %}
         
-          <button type="submit" class="btn btn-default {% ifequal selected_person person.reporting_owner %}active{% endifequal %}" name="person_cik" type="submit" value="{{ person.reporting_owner }}" onclick="window.location.hash = 'filter';">{{ person.reporting_owner__person_name }}</button>
+          <button type="submit" class="btn btn-default {% ifequal selected_person person.reporting_owner %}active{% endifequal %}" name="{{ sel_person_id }}" type="submit" value="{{ person.reporting_owner }}">{{ person.reporting_owner__person_name }}</button>
       
       
     {% empty %}

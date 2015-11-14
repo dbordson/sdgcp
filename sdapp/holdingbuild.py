@@ -88,6 +88,7 @@ def pull_person_holdings(ticker, issuer, person_cik, person_name,
                      'shares_following_xn', 'adjustment_factor',
                      'security__conversion_multiple')
 
+    # print 'all_values', all_values
     # all_values = list(stock_values) + list(stock_deriv_values)
     date_set = set()
     for f, s, r, a, c in all_values:
@@ -146,6 +147,7 @@ def addholdingstograph(pl, ticker, issuer, persons_data, firstpricedate):
         holding_data, person_name = \
             pull_person_holdings(ticker, issuer,
                                  person_cik, person_name, firstpricedate)
+
         # builds 'spacer' array of None entries to for new signal value column
         # spacer_length = len(datelist)
         title_row.append(person_name + ' Fully Diluted Shares')

@@ -11,7 +11,11 @@
 
 <div class="col-md-10">
     <h1>{{ issuer_name }} ({{ ticker }})</h1>
-  <a href="{% url 'drilldown' ticker %}">(Click for transaction detail)</a>
+  <ul class="nav nav-pills">
+    <li role="presentation" class="active"><a href="#">Home</a></li>
+    <li role="presentation"><a href="{% url 'drilldown' ticker %}?{{ sel_person_id }}={{ selected_person }}">Transaction Detail</a></li>
+    <li role="presentation"><a href="{% url 'bigchart' ticker %}?{{ sel_person_id }}={{ selected_person }}">Chart</a></li>
+  </ul>
   <div class="spacer10"></div>
 </div>
 

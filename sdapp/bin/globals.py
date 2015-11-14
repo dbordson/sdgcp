@@ -27,6 +27,10 @@ buy_response_to_perf = "Buy Responsive to Performance"
 sell = "Sell"
 sell_response_to_perf = "Sell Responsive to Performance"
 
+
+# View global variables
+sel_person_id = 'person_cik'
+
 # Signal Display names
 buy_on_weakness = "Buying in Response to Performance"
 cluster_buy = "Cluster Buying"

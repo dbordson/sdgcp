@@ -16,7 +16,7 @@ from sdapp.bin import update_affiliation_data
 from sdapp.bin.globals import (perf_period_days_td, buy_on_weakness,
                                cluster_buy, discretionary_buy, today,
                                sell_on_strength, cluster_sell,
-                               discretionary_sell)
+                               discretionary_sell, sel_person_id)
 from sdapp.models import (Affiliation, Form345Entry, PersonHoldingView,
                           PersonSignal, Security, SecurityView, SigDisplay,
                           SecurityPriceHist, WatchedName)
@@ -146,6 +146,13 @@ def options(request, ticker):
         .exclude(share_equivalents_value=None)\
         .order_by('-share_equivalents_value')[:3]
     latest_price = update_affiliation_data.get_price(issuer, today)
+    # This only exists to preserve selected persons when the user
+    # clicks back and forth among tabs with a person selected
+    if sel_person_id in request.GET \
+            and request.GET[sel_person_id] != 'None':
+        selected_person = int(request.GET[sel_person_id])
+    else:
+        selected_person = None
 
     return render_to_response('sdapp/options.html',
                               {'issuer_affiliations': issuer_affiliations,
@@ -153,6 +160,8 @@ def options(request, ticker):
                                'latest_price': latest_price,
                                'graph_data_json': graph_data_json,
                                'perf_period': perf_period,
+                               'sel_person_id': sel_person_id,
+                               'selected_person': selected_person,
                                'sig_highlights': sig_highlights,
                                'signal_entry': signal_entry,
                                'titles_json': titles_json,
@@ -193,17 +202,23 @@ def drilldown(request, ticker):
     now = datetime.datetime.now(pytz.UTC)
     startdate = now - datetime.timedelta(730)
     person_include_date = now - datetime.timedelta(2 * 365)
+
     # Builds transaction queryset
-    recententries_qs =\
-        Form345Entry.objects.filter(issuer_cik=issuer)\
-        .filter(filedatetime__gte=startdate)
-    # Creates variable to be used to filter by person
-    if 'person_cik' in request.GET:
-        selected_person = int(request.GET['person_cik'])
+    if sel_person_id in request.GET \
+            and request.GET[sel_person_id] != 'None':
+        # print request.GET[sel_person_id]
+
+        selected_person = int(request.GET[sel_person_id])
         recententries_qs =\
-            recententries_qs.filter(reporting_owner_cik=selected_person)
+            Form345Entry.objects.filter(issuer_cik=issuer)\
+            .filter(filedatetime__gte=startdate)\
+            .filter(reporting_owner_cik=selected_person)
     else:
         selected_person = None
+        recententries_qs =\
+            Form345Entry.objects.filter(issuer_cik=issuer)\
+            .filter(filedatetime__gte=startdate)
+
     recententries =\
         recententries_qs\
         .order_by('-filedatetime', 'transaction_number')\
@@ -228,15 +243,25 @@ def drilldown(request, ticker):
             Affiliation.objects.filter(issuer=issuer)\
             .filter(reporting_owner=selected_person)\
             .values_list('reporting_owner', 'person_name')
+
     persons_for_radio =\
         Affiliation.objects.filter(issuer=issuer)\
+        .filter(latest_form_dt__gte=person_include_date)\
         .values('reporting_owner__person_name', 'reporting_owner')\
         .order_by('reporting_owner__person_name').distinct()
     persons_with_data = len(persons_data)
     # builds graph data -- see housingbuild.py for logic
     graph_data_json, titles_json, ymax =\
         holdingbuild.buildgraphdata(issuer, ticker, persons_data)
-    return render_to_response('sdapp/drilldown.html',
+
+    # Pick the template to use based on which url is passed
+    template_location = 'sdapp/drilldown.html'
+    if 'PATH_INFO' in request.META:
+        if 'bigchart' in request.META['PATH_INFO']:
+            template_location = 'sdapp/bigchart.html'
+    # if 'drilldown' in request.GET.
+
+    return render_to_response(template_location,
                               {'acq_disp_codes': acq_disp_codes,
                                'recententries': recententries,
                                'filingcodes': filingcodes,
@@ -244,6 +269,7 @@ def drilldown(request, ticker):
                                'issuer_name': issuer_name,
                                'persons_for_radio': persons_for_radio,
                                'persons_with_data': persons_with_data,
+                               'sel_person_id': sel_person_id,
                                'selected_person': selected_person,
                                'sig_highlights': sig_highlights,
                                'signal_entry': signal_entry,

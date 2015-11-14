@@ -18,7 +18,7 @@ urlpatterns = \
         url(r'^search/', searchsignals),
         url(r'^(?P<ticker>\w+)/$', options, name='options'),
         url(r'^(?P<ticker>\w+)/drilldown$', drilldown, name='drilldown'),
-
+        url(r'^(?P<ticker>\w+)/bigchart$', drilldown, name='bigchart'),
         url(r'^(?P<ticker>\w+)/formentries$', formentrydetail,
             name='formentrydetail'),
         url(r'^(?P<ticker>\w+)/holdings$', holdingdetail,
