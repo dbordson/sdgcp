@@ -56,6 +56,7 @@ class Affiliation(models.Model):
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
 
     latest_form_dt = models.DateTimeField(null=True)
+    is_active = models.BooleanField(default=True)
 
     def __unicode__(self):
         return unicode(self.person_name) or u''

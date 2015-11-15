@@ -35,43 +35,6 @@
 </div>
 <div class="row">
 
-<!--
-<div class="col-md-6">
-  <div class="panel panel-default">
-    <div class="panel-heading">
-      <h3 class="panel-title">Sentiment</h3>
-    </div>
-    <div class="panel-body" style="height:200px; overflow-y: scroll;">
-    {% if rec != None %}
-      -->
-      <!-- Colors based on confidence --><!--
-      {% if rec.confidence = "Strong" %}
-      <h1 class="text-info" align="center">{{rec.confidence}}</h1>
-      {% elif rec.confidence = "Moderate" %}
-      <h2 class="text-default" align="center">{{rec.confidence}}</h2>
-      {% elif rec.confidence = "Weak" %}
-      <h2 class="text-muted" align="center">{{rec.confidence}}</h2>
-      {% endif %}
-
-      <h3 align="center">and</h3>  -->
-      <!-- Colors based on sentiment --> <!--
-      {% if rec.sentiment = "Bullish" %}
-      <h2 class="text-success" align="center">{{rec.sentiment}}</h2>
-      {% elif rec.sentiment = "Bearish" %}
-      <h2 class="text-danger" align="center">{{rec.sentiment}}</h2>
-      {% else %}
-      <h2 class="text-info" align="center">{{rec.sentiment}}</h2>
-      {% endif %}
-
-    {% else %}
-      <p>No recommendation at this time.</p>
-
-    {% endif %}
-
-    </div>
-  </div>  
-</div> -->
-
 <div class="col-md-6">
   <div class="panel panel-default">
     <div class="panel-heading">
@@ -108,7 +71,7 @@
 
       <div class="panel-body" style="height:200px; overflow-y: scroll;">
 
-      {% if issuer_affiliations.exists %}
+      {% if holding_affiliations.exists %}
         <table class="table table-striped table-condensed">
           <thead>
             <tr>
@@ -117,19 +80,21 @@
               <th style="text-align:center">Shares</th>
               <th style="text-align:center"><i>[% of shares outstanding]</i></th>
               <th style="text-align:center">Economic Interest</th>
+              <th style="text-align:center">Behavior</th>
             </tr>
           </thead>  
           <tbody>
 
-        {% for aff in issuer_affiliations %}
+        {% for aff in holding_affiliations %}
             <tr>
-              <td>{% if aff.reporting_owner_title != None %}{{ aff.reporting_owner_title }}{% elif aff.is_director == True %}Director{% elif aff.is_ten_percent == True %}10% Holder{% endif %}</td>
+              <td>{% if aff.is_officer == True %}{{ aff.reporting_owner_title }}{% elif aff.is_director == True %}Director{% elif aff.is_ten_percent == True %}10% Holder{% endif %}</td>
               <td>{{ aff.person_name }}</td>
               
               <td nowrap align="center">{{ aff.share_equivalents_held|floatformat:0|intword|intcomma}}</td>
               <td align="center"><i>[__]</i></td>
               
               <td nowrap align="center">${{ aff.share_equivalents_value|floatformat:0|intword|intcomma}}</td>
+              <td align="center">[__]</td>
                           
             </tr>
         {% endfor %}

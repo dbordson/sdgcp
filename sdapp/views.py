@@ -1,13 +1,13 @@
 import datetime
 from decimal import Decimal
 from math import sqrt
-import pytz
 import time
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.context_processors import csrf
 # from django.db.models import Sum
+from django.db.models import Q
 from django.shortcuts import (render_to_response, redirect,
                               RequestContext, HttpResponseRedirect)
 from django.template.defaulttags import register
@@ -16,7 +16,7 @@ from sdapp.bin import update_affiliation_data
 from sdapp.bin.globals import (perf_period_days_td, buy_on_weakness,
                                cluster_buy, discretionary_buy, today,
                                sell_on_strength, cluster_sell,
-                               discretionary_sell, sel_person_id)
+                               discretionary_sell, now, sel_person_id)
 from sdapp.models import (Affiliation, Form345Entry, PersonHoldingView,
                           PersonSignal, Security, SecurityView, SigDisplay,
                           SecurityPriceHist, WatchedName)
@@ -130,22 +130,29 @@ def options(request, ticker):
             [js_readable_date(sig_date + datetime.timedelta(-5)),
              js_readable_date(sig_date + datetime.timedelta(5))])
     if len(sig_highlights) != 0:
-        persons_data = \
-            PersonSignal.objects.filter(issuer=issuer)\
-            .filter(significant=True)\
-            .exclude(reporting_person=None)\
-            .values_list('reporting_person', 'reporting_person__person_name')\
-            .distinct()
+        sig_persons = \
+            list(PersonSignal.objects.filter(issuer=issuer)
+                 .filter(significant=True)
+                 .exclude(reporting_person=None)
+                 .values_list('reporting_person',
+                              'reporting_person__person_name')
+                 .distinct())
     else:
-        persons_data = []
+        sig_persons = []
+    holding_affiliations = Affiliation.objects.filter(issuer=issuer)\
+        .exclude(share_equivalents_value=None)\
+        .filter(is_active=True)\
+        .order_by('-share_equivalents_value')[:3]
+    persons_data =\
+        list(holding_affiliations
+             .values_list('reporting_owner', 'person_name'))\
+        + sig_persons
     graph_data_json, titles_json, ymax =\
         holdingbuild.buildgraphdata(issuer, ticker, persons_data)
     perf_period = -perf_period_days_td.days
 
-    issuer_affiliations = Affiliation.objects.filter(issuer=issuer)\
-        .exclude(share_equivalents_value=None)\
-        .order_by('-share_equivalents_value')[:3]
     latest_price = update_affiliation_data.get_price(issuer, today)
+
     # This only exists to preserve selected persons when the user
     # clicks back and forth among tabs with a person selected
     if sel_person_id in request.GET \
@@ -155,10 +162,10 @@ def options(request, ticker):
         selected_person = None
 
     return render_to_response('sdapp/options.html',
-                              {'issuer_affiliations': issuer_affiliations,
+                              {'graph_data_json': graph_data_json,
+                               'holding_affiliations': holding_affiliations,
                                'issuer_name': issuer_name,
                                'latest_price': latest_price,
-                               'graph_data_json': graph_data_json,
                                'perf_period': perf_period,
                                'sel_person_id': sel_person_id,
                                'selected_person': selected_person,
@@ -199,14 +206,11 @@ def drilldown(request, ticker):
         sig_highlights.append(
             [js_readable_date(sig_date + datetime.timedelta(-5)),
              js_readable_date(sig_date + datetime.timedelta(5))])
-    now = datetime.datetime.now(pytz.UTC)
-    startdate = now - datetime.timedelta(730)
-    person_include_date = now - datetime.timedelta(2 * 365)
+    startdate = now - datetime.timedelta(365)
 
     # Builds transaction queryset
     if sel_person_id in request.GET \
             and request.GET[sel_person_id] != 'None':
-        # print request.GET[sel_person_id]
 
         selected_person = int(request.GET[sel_person_id])
         recententries_qs =\
@@ -233,11 +237,9 @@ def drilldown(request, ticker):
     # Creates variable to filter graph by person
     if selected_person is None:
         persons_data =\
-            Form345Entry.objects.filter(issuer_cik=issuer)\
-            .filter(filedatetime__gte=person_include_date)\
-            .exclude(reporting_owner_cik=None)\
-            .values_list('reporting_owner_cik', 'reporting_owner_name')\
-            .distinct()
+            Affiliation.objects.filter(issuer=issuer)\
+            .filter(is_active=True)\
+            .values_list('reporting_owner', 'person_name')
     else:
         persons_data =\
             Affiliation.objects.filter(issuer=issuer)\
@@ -246,7 +248,7 @@ def drilldown(request, ticker):
 
     persons_for_radio =\
         Affiliation.objects.filter(issuer=issuer)\
-        .filter(latest_form_dt__gte=person_include_date)\
+        .filter(is_active=True)\
         .values('reporting_owner__person_name', 'reporting_owner')\
         .order_by('reporting_owner__person_name').distinct()
     persons_with_data = len(persons_data)

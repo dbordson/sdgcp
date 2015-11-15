@@ -11,3 +11,47 @@ classa.ticker = 'V'
 classa.save()
 a.security = classa
 a.save()
+
+
+These two forms must be superseded as of their filedatetime: 
+"[<Form345Entry: 2005-05-26 13:39:54Z-1288776-1295231-D-2-4>, <Form345Entry: 2005-05-26 13:39:54Z-1288776-1295231-D-1-4>]"
+Run this:
+from sdapp.models import Form345Entry
+list_of_forms_to_supersede = ["2005-05-26 13:39:54Z-1288776-1295231-D-2-4", "2005-05-26 13:39:54Z-1288776-1295231-D-1-4"]
+a = Form345Entry.objects.filter(entry_internal_id__in=list_of_forms_to_supersede)
+fdt = a[0].filedatetime
+a.update(supersededdt=fdt)
+
+
+{# DOERR FORMS NEED CLEAN UP -- NOTE THAT sec_id will change if DB is rebuilt #}
+from sdapp.models import Form345Entry, Affiliation
+from sdapp.bin.globals import now
+import datetime
+sec_id = 484
+rep_cik = 1032455
+issuer_cik = 1288776
+aff = Affiliation.objects.get(reporting_owner=1032455, issuer=1288776)
+a = Form345Entry.objects.filter(affiliation=aff).filter(security=sec_id).filter(filedatetime__gte=now-datetime.timedelta(1*365)).order_by('filedatetime')
+firstfdt = a[0].filedatetime
+b = Form345Entry.objects.filter(affiliation=aff).filter(security=484).filter(filedatetime=firstfdt).order_by('filedatetime')
+for item in b:
+    item.shares_following_xn = item.reported_shares_following_xn
+    item.save()
+
+a = Form345Entry.objects.filter(affiliation=aff).filter(security=484).filter(filedatetime__gt=firstfdt).order_by('filedatetime')
+for item in a:
+    item.shares_following_xn = item.reported_shares_following_xn
+    item.shares_following_xn_is_adjusted = False
+    item.save()
+
+{# Get rid of preferred stock securities naming convention only used in 2005/2004 #}
+from sdapp.models import Security, Form345Entry, SecurityPriceHist
+from django.db.models import Q
+badones = Security.objects.filter(issuer=1288776).filter(Q(short_sec_title='series b preferred stock', scrubbed_underlying_title='class b common stock') | Q(short_sec_title='series d preferred stock'))
+realb = Security.objects.get(issuer=1288776, short_sec_title='class b common stock', scrubbed_underlying_title='class a common stock')
+underlying = SecurityPriceHist.objects.get(issuer=1288776, ticker_sym='GOOGL').security
+Form345Entry.objects.filter(security__in=badones).update(security=realb, short_sec_title=realb.short_sec_title, scrubbed_underlying_title=realb.scrubbed_underlying_title, underlying_security=underlying, supersededdt=None)
+badones.delete()
+
+from sdapp.bin import adjsharesremaining
+

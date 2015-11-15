@@ -4,7 +4,7 @@ import sys
 
 from django.db.models import Q
 
-from sdapp.bin.globals import today, todaymid
+from sdapp.bin.globals import now, today, todaymid
 from sdapp.models import (Affiliation, ClosePrice, Form345Entry,
                           IssuerCIK, SecurityPriceHist)
 
@@ -105,8 +105,23 @@ def calc_grants(issuer_cik, reporting_person_cik, security):
 
 
 def calc_eq_shares_and_avg_conv_price(issuer, reporting_owner, security):
+    # This evaluates holdings and conversion prices
+    #
+    # The reason we pull other ticker securities and exclude consideration
+    # of holdings convertible into these securities is that elsewhere in the
+    # script, these holdings will be considered on a direct basis, as the
+    # script iterates through all tickers.
+    #
+    # The embedded assumption is that it is better to price a convertible
+    # security that trades on an exchange directly rather than on an
+    # as-converted basis.
+    other_ticker_securities = SecurityPriceHist.objects\
+        .filter(issuer=issuer).exclude(security=security)\
+        .exclude(security=None)\
+        .values_list('security', flat=True)
     holdings = Form345Entry.objects.filter(issuer_cik=issuer)\
         .filter(reporting_owner_cik=reporting_owner)\
+        .exclude(security__in=other_ticker_securities)\
         .filter(Q(security=security) | Q(underlying_security=security))\
         .filter(supersededdt=None)\
         .values_list('shares_following_xn', 'adjustment_factor',
@@ -139,8 +154,8 @@ def add_secondary_ticker(issuer, reporting_owner, ticker, primary_ticker,
         ClosePrice.objects.filter(securitypricehist=primary_ticker)
     ticker_close_prices =\
         ClosePrice.objects.filter(securitypricehist=ticker)
-    if primary_ticker_close_prices.exists()\
-            and ticker_close_prices.exists():
+    if primary_ticker_close_prices.exists() and ticker_close_prices.exists()\
+            and security is not None:
         latest_prim_ticker_price =\
             primary_ticker_close_prices.latest('close_date').adj_close_price
         latest_sec_ticker_price =\
@@ -149,6 +164,7 @@ def add_secondary_ticker(issuer, reporting_owner, ticker, primary_ticker,
         # If the latest primary ticker price is zero, we ignore
         # the secondary tickers because they can't be sensibly converted
         # to a primary ticker multiple (division by zero).
+        # This should probably never happen.
         if latest_prim_ticker_price <= Decimal(0)\
                 or latest_sec_ticker_price <= Decimal(0):
             return comb_share_eqs_held, comb_avg_conv_price, comb_eq_grant_rate
@@ -214,7 +230,6 @@ def get_new_affiliation_form_data(issuer_and_rep_owner_list):
         affiliation.is_something_else = latest_form.is_something_else
         affiliation.reporting_owner_title = latest_form.reporting_owner_title
         affiliation.latest_form_dt = latest_form.filedatetime
-
         primary_tickers = SecurityPriceHist.objects.filter(issuer=issuer)\
             .filter(primary_ticker_sym=True)
         if primary_tickers.exists():
@@ -257,6 +272,24 @@ def get_new_affiliation_form_data(issuer_and_rep_owner_list):
         sys.stdout.write("\r%s / %s affiliation to update: %.2f%%" %
                          (int(counter), int(looplength), percentcomplete))
         sys.stdout.flush()
+    print '\n   ...determining who is active...'
+    general_include_date = now - datetime.timedelta(3 * 365)
+    no_shares_include_date = now - datetime.timedelta(365)
+    officer_include_date = now - datetime.timedelta(400)
+    Affiliation.objects.filter(is_active=True)\
+        .filter(is_officer=True)\
+        .filter(latest_form_dt__lte=officer_include_date)\
+        .update(is_active=False)
+    Affiliation.objects.filter(is_active=True)\
+        .filter(~Q(is_officer=True))\
+        .filter(share_equivalents_held__gt=Decimal(0))\
+        .filter(latest_form_dt__lte=general_include_date)\
+        .update(is_active=False)
+    Affiliation.objects.filter(is_active=True)\
+        .filter(~Q(is_officer=True))\
+        .exclude(share_equivalents_held__gt=Decimal(0))\
+        .filter(latest_form_dt__lte=no_shares_include_date)\
+        .update(is_active=False)
     return
 
 
@@ -418,7 +451,6 @@ def calc_percentiles():
         sys.stdout.write("\r%s / %s equity grant rate percentiles: %.2f%%" %
                          (int(counter), int(looplength), percentcomplete))
         sys.stdout.flush()
-
     print '\n    Done.'
     return
 

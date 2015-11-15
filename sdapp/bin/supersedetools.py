@@ -5,6 +5,7 @@ import sys
 import django.db
 from django.db.models import Max
 
+from sdapp.bin.globals import now, today
 from sdapp.models import Form345Entry, Affiliation
 
 
@@ -37,7 +38,7 @@ def set_supersededdt(pk, supersededdt):
 
 
 def calc_max_superseded_xn_date(chain_entries_incl_superseded):
-    # Here we get teh max superseded xn date to determine whether the early
+    # Here we get the max superseded xn date to determine whether the early
     # unsuperseded filings were stale when filed.
     last_superseded_xn_date_in_chain =\
         chain_entries_incl_superseded.exclude(supersededdt=None)\
@@ -77,7 +78,6 @@ def calc_supersededdts_for_chains(affiliation,
     # because of expiration; the +5 gives time delay for filing form 4
     # recording exercise / forfeiture due to expiration.
     if chain_entries_incl_superseded.count() == 1:
-        today = datetime.date.today()
         if expiration_date is not None\
                 and expiration_date + datetime.timedelta(5) < today:
             pk = chain_entries_incl_superseded[0].pk
@@ -122,7 +122,6 @@ def calc_supersededdts_for_chains(affiliation,
     if len(reverse_chrono_sequential_list) > 0:
         # sets succeeding_filedatetime to most recent entry
         succeeding_filedatetime = reverse_chrono_sequential_list[0][1]
-        today = datetime.date.today()
     # determines whether should be superseded because of expiration;
     # the +5 gives time delay for filing form 4 recording exercise /
     # forfeiture due to expiration.
@@ -151,7 +150,6 @@ def calc_supersededdts_for_chains(affiliation,
 
 
 def supersede_stale_entries(cutoff_years, is_officer):
-    today = datetime.date.today()
     cutoffdatetime =\
         today - datetime.timedelta(cutoff_years * 365)
     staleness_delay = datetime.timedelta(cutoff_years * 365)
@@ -187,3 +185,25 @@ def supersede_stale_entries(cutoff_years, is_officer):
                          (int(counter), int(looplength), percentcomplete))
         sys.stdout.flush()
     return
+
+
+def supersede_very_old_entries(cutoff_years):
+    # The reason we have this script as well as the above is that
+    # sometimes active officers have old mistaken entries that are
+    # never cleared out.  Esp with startups (e.g. Google) this can
+    # create problems, where an exec owned a bunch of stock and it was
+    # recorded in a peculiar way.
+    cutoffdatetime =\
+        now - datetime.timedelta(cutoff_years * 365)
+    very_old_entries = Form345Entry.objects.filter(supersededdt=None)\
+        .filter(filedatetime__lt=cutoffdatetime)
+    looplength = float(len(very_old_entries))
+    counter = 0.0
+    for entry in very_old_entries:
+        entry.supersededdt = entry.filedatetime
+        entry.save()
+        counter += 1.0
+        percentcomplete = round(counter / looplength * 100, 2)
+        sys.stdout.write("\r%s / %s possible dormant filers : %.2f%%" %
+                         (int(counter), int(looplength), percentcomplete))
+        sys.stdout.flush()

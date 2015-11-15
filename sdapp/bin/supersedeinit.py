@@ -51,4 +51,11 @@ is_officer = False
 st.supersede_stale_entries(nonofficercutoffyears, is_officer)
 print ''
 print '...Done with nonofficers...'
+
+print 'Now superseding very old entries...'
+veryoldcutoffyears = 10
+st.supersede_very_old_entries(veryoldcutoffyears)
+print '\n'
+print '...Done...'
+
 print '...Done with superseded dates script.'
