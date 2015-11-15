@@ -9,13 +9,14 @@ div.className = "many";
 div.style.display = 'inline-block';
 var prices = {{ graph_data_json|safe }};
 var ymax = {{ ymax|safe }};
+var persons_data_len = {{ persons_data_len|safe }};
 // console.log(prices);
 // document.write(prices);
 var signal_highlights = {{ sig_highlights|safe }};
 // document.write(signal_highlights);
 var signal_highlights_len = signal_highlights.length;
 // The below if / else draws a more complex chart is signals are present.  
-if (0 != signal_highlights_len) 
+if (0 != persons_data_len) 
 {
 
   $(document).ready(function () 

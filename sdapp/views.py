@@ -160,12 +160,13 @@ def options(request, ticker):
         selected_person = int(request.GET[sel_person_id])
     else:
         selected_person = None
-
+    persons_data_len = len(persons_data)
     return render_to_response('sdapp/options.html',
                               {'graph_data_json': graph_data_json,
                                'holding_affiliations': holding_affiliations,
                                'issuer_name': issuer_name,
                                'latest_price': latest_price,
+                               'persons_data_len': persons_data_len,
                                'perf_period': perf_period,
                                'sel_person_id': sel_person_id,
                                'selected_person': selected_person,
