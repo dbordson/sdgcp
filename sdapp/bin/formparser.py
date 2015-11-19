@@ -1,7 +1,6 @@
 import os
 import gc
 import sys
-# import datetime
 from decimal import Decimal
 try:
     import xml.etree.cElementTree as ET

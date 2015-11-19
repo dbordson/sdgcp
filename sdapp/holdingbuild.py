@@ -157,7 +157,7 @@ def addholdingstograph(pl, ticker, issuer, persons_data, firstpricedate):
         for date, holding in holding_data:
             a = [None] * spacer_width
             a.insert(0, date)
-            a.append(holding)
+            a.append(round(holding, 2))
             spaced_data.append(a)
             maxholding = max(maxholding, holding)
         graph += spaced_data

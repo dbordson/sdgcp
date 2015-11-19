@@ -12,15 +12,15 @@ EST = pytz.timezone('America/New_York')
 now = datetime.datetime.now(EST)
 # THIS TIME ASSUMES THE SCRIPT WILL NOT RUN BTW 2 am and 3 am EST
 if now.time().hour >= 3:
-    delta = datetime.timedelta(1)
+    delta = datetime.timedelta(-1)
 else:
-    delta = datetime.timedelta(0)
+    delta = datetime.timedelta(-2)
 today = datetime.date.today()
 # todaymid is midnight for the most recent filing index
 todaymid = datetime.datetime(today.year, today.month, today.day,
                              0, 0, 0, 0, tzinfo=EST)\
            + delta
-date_of_any_new_filings = today + delta + datetime.timedelta(-2)
+date_of_any_new_filings = today + delta
 # Person Signal names
 buy = "Buy"
 buy_response_to_perf = "Buy Responsive to Performance"
