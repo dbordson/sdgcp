@@ -230,6 +230,7 @@ def get_new_affiliation_form_data(issuer_and_rep_owner_list):
         affiliation.is_something_else = latest_form.is_something_else
         affiliation.reporting_owner_title = latest_form.reporting_owner_title
         affiliation.latest_form_dt = latest_form.filedatetime
+        affiliation.is_active = True
         primary_tickers = SecurityPriceHist.objects.filter(issuer=issuer)\
             .filter(primary_ticker_sym=True)
         if primary_tickers.exists():
@@ -276,15 +277,24 @@ def get_new_affiliation_form_data(issuer_and_rep_owner_list):
     general_include_date = now - datetime.timedelta(3 * 365)
     no_shares_include_date = now - datetime.timedelta(365)
     officer_include_date = now - datetime.timedelta(400)
+    # If officer and not 10%, use officer date.
     Affiliation.objects.filter(is_active=True)\
-        .filter(is_officer=True)\
+        .filter(is_officer=True).exclude(is_ten_percent=True)\
         .filter(latest_form_dt__lte=officer_include_date)\
         .update(is_active=False)
+    # If officer and 10%, use gen include date (big owners may not
+    # get annual stock grants, so give more time between transactions)
+    Affiliation.objects.filter(is_active=True)\
+        .filter(is_officer=True).filter(is_ten_percent=True)\
+        .filter(latest_form_dt__lte=general_include_date)\
+        .update(is_active=False)
+    # If not an officer and have shares, just get general date
     Affiliation.objects.filter(is_active=True)\
         .filter(~Q(is_officer=True))\
         .filter(share_equivalents_held__gt=Decimal(0))\
         .filter(latest_form_dt__lte=general_include_date)\
         .update(is_active=False)
+    # If not an officer and have no shares, get less time
     Affiliation.objects.filter(is_active=True)\
         .filter(~Q(is_officer=True))\
         .exclude(share_equivalents_held__gt=Decimal(0))\
