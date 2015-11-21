@@ -19,7 +19,7 @@ today = datetime.date.today()
 # todaymid is midnight for the most recent filing index
 todaymid = datetime.datetime(today.year, today.month, today.day,
                              0, 0, 0, 0, tzinfo=EST)\
-           + delta
+           + datetime.timedelta(1)
 date_of_any_new_filings = today + delta
 # Person Signal names
 buy = "Buy"

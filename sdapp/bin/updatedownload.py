@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from sdapp.models import IssuerCIK, FTPFileList, SECDayIndex
 from sdapp.bin import addissuers
+from sdapp.bin.globals import date_of_any_new_filings
 
 cwd = os.getcwd()
 
@@ -79,7 +80,7 @@ def filepathfinder(line):
     return line[filepathstart:filepathend].rstrip()
 
 
-def updatedownload():
+def updatedownload(latest_dayindex_name):
     print "Connecting to SEC FTP site..."
     ftp = ftplogin()
 
@@ -102,9 +103,10 @@ def updatedownload():
     indexdaylist.sort(reverse=True)
     indexesfordownload = []
     if latest_dayindex_name is None:
-        indexesfordownload = [indexdaylist[0]]
+        indexesfordownload = indexdaylist[:10]
     else:
-        for indexname in indexdaylist[:5]:
+        # pull up to 10 most recent indexes.
+        for indexname in indexdaylist[:10]:
             if indexname > latest_dayindex_name:
                 indexesfordownload.append(indexname)
     if len(indexesfordownload) == 0:
@@ -134,10 +136,7 @@ def updatedownload():
     for indexname in indexesfordownload:
         indexcontents = SECDayIndex.objects.get(indexname=indexname)\
             .indexcontents.split('\n')
-        print '... ' + indexname,
-        # THIS WON'T WORK, FIGURE OUT HOW TO MAKE IT WORK
-        # WILL ITERATE BY CHARACTER
-        # FIND RIGHT WAY TO ITERATE BY LINE or SAVE TO LOCAL ENV AND READ THERE
+        print '...' + indexname + '...'
         for line in indexcontents:
             if 'edgar/data/' in line\
                     and line[:3] in searchformlist\
@@ -166,19 +165,26 @@ dindexdirectory = cwd
 # CHECK THIS
 dindexbasepath = "/edgar/daily-index"
 
-latest_dayindex_date_time =\
-    SECDayIndex.objects.aggregate(Max('timestamp'))['timestamp__max']
+# latest_dayindex_date_time =\
+#     SECDayIndex.objects.aggregate(Max('timestamp'))['timestamp__max']
 secdayindexobjects =\
     SECDayIndex.objects.order_by('-indexname')
 if secdayindexobjects.exists():
     latest_dayindex_name = secdayindexobjects[0].indexname
+    if latest_dayindex_name[:5] == 'form.' \
+            and latest_dayindex_name[13:] == '.idx':
+        datetstring = latest_dayindex_name[5:13]
+        latest_db_index_date =\
+            datetime.datetime.strptime(datetstring, '%Y%m%d').date()
+    else:
+        latest_db_index_date = None
 else:
     latest_dayindex_name = None
-twelve_hours_earlier = timezone.now() - datetime.timedelta(.5)
-if latest_dayindex_date_time is not None\
-        and twelve_hours_earlier < latest_dayindex_date_time:
-    print "Last index created at:", latest_dayindex_date_time
+    latest_db_index_date = None
+if latest_db_index_date is not None\
+        and date_of_any_new_filings <= latest_db_index_date:
+    print "Last index created at:", latest_db_index_date
     print 'FTPFileList already up to date. No update indices to download.'
 else:
-    updatedownload()
+    updatedownload(latest_dayindex_name)
     print 'Done'
