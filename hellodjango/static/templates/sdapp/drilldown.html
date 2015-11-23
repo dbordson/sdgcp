@@ -56,7 +56,7 @@
 
 
 <div class="col-md-10">
-  <h1>{{ issuer_name }} ({{ ticker }})</h1>
+  <h1>{{ issuer_name }} ({{ ticker }}) {% for other_ticker in other_tickers %}{% if forloop.first %}<small> See also: {% endif %}<a href="{% url 'options' other_ticker %}">{{ other_ticker }}</a>{% if not forloop.last %}, {% endif %}{% if forloop.last %}</small>{% endif %}{% endfor %}</h1>
   <ul class="nav nav-pills">
     <li role="presentation"><a href="{% url 'options' ticker %}?{{ sel_person_id }}={{ selected_person }}">Home</a></li>
     <li role="presentation" class="active"><a href="#">Transaction Detail</a></li>

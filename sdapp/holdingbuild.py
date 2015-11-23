@@ -139,6 +139,7 @@ def addholdingstograph(pl, ticker, issuer, persons_data, firstpricedate):
     graph = pl
     title_row = ['Date', 'Close Price']
     maxholding = 0
+    print persons_data
     for person_cik, person_name in persons_data:
         # Builds adds empty row to right of price_json
         graph = [row + [None] for row in graph]
@@ -151,7 +152,10 @@ def addholdingstograph(pl, ticker, issuer, persons_data, firstpricedate):
         # builds 'spacer' array of None entries to for new signal value column
         # spacer_length = len(datelist)
         title_row.append(person_name + ' Fully Diluted Shares')
-        spacer_width = len(graph[0]) - 2
+        if len(graph) >= 2:
+            spacer_width = len(graph[0]) - 2
+        else:
+            spacer_width = 1
         # spacer = [None] * len(prices_json[0]) - 2
         spaced_data = []
         for date, holding in holding_data:
@@ -182,10 +186,10 @@ def buildgraphdata(issuer, ticker, persons_data):
     pricelist = pricelist_qs\
         .values_list('close_date', 'adj_close_price')
     # standard deviation calculator, shows as shadding around line.
-    if len(pricelist) > 0:
-        firstpricedate = pricelist[0][0]
-    else:
-        firstpricedate = today
+    # if len(pricelist) > 0:
+    #     firstpricedate = pricelist[0][0]
+    # else:
+    firstpricedate = datetime.date.today() - datetime.timedelta(270)
 
     # UNUSED CODE TO ADD STD DEVIATION FOR DYGRAPH ERROR BAR
     # [NOT STRAIGHTFORWARD TO WORK THESE BACK IN]

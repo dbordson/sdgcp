@@ -106,10 +106,21 @@ def index(request):
 
 @login_required()
 def options(request, ticker):
-    ticker = ticker.upper()
-    common_stock_security = \
-        Security.objects.get(ticker=ticker)
-    issuer = common_stock_security.issuer
+    ticker_sym = ticker.upper()
+    ticker_obj = SecurityPriceHist.objects.filter(ticker_sym=ticker_sym)[0]
+    if ticker_obj.primary_ticker_sym is False:
+        issuer = ticker_obj.issuer
+        primary_ticker =\
+            SecurityPriceHist.objects.get(issuer=issuer,
+                                          primary_ticker_sym=True)
+        diff_prim_tkr = primary_ticker.ticker_sym
+    else:
+        primary_ticker = ticker_obj
+        issuer = ticker_obj.issuer
+        diff_prim_tkr = None
+
+    other_tickers = SecurityPriceHist.objects.filter(issuer=issuer)\
+        .exclude(ticker_sym=ticker_sym).values_list('ticker_sym', flat=True)
     issuer_name = issuer.name
     # Pulls whether this stock is on the user's watch list
     watchedname = WatchedName.objects.filter(issuer=issuer)\
@@ -147,8 +158,10 @@ def options(request, ticker):
         list(holding_affiliations
              .values_list('reporting_owner', 'person_name'))\
         + sig_persons
+    # print sig_persons
     graph_data_json, titles_json, ymax =\
-        holdingbuild.buildgraphdata(issuer, ticker, persons_data)
+        holdingbuild.buildgraphdata(issuer, primary_ticker.ticker_sym,
+                                    persons_data)
     perf_period = -perf_period_days_td.days
 
     latest_price = update_affiliation_data.get_price(issuer, today)
@@ -161,11 +174,16 @@ def options(request, ticker):
     else:
         selected_person = None
     persons_data_len = len(persons_data)
+    graph_data_json_len = len(graph_data_json)
+    ticker = ticker_sym
     return render_to_response('sdapp/options.html',
-                              {'graph_data_json': graph_data_json,
+                              {'diff_prim_tkr': diff_prim_tkr,
+                               'graph_data_json_len': graph_data_json_len,
+                               'graph_data_json': graph_data_json,
                                'holding_affiliations': holding_affiliations,
                                'issuer_name': issuer_name,
                                'latest_price': latest_price,
+                               'other_tickers': other_tickers,
                                'persons_data_len': persons_data_len,
                                'perf_period': perf_period,
                                'sel_person_id': sel_person_id,
@@ -183,10 +201,20 @@ def options(request, ticker):
 
 @login_required()
 def drilldown(request, ticker):
-    ticker = ticker.upper()
-    common_stock_security = \
-        Security.objects.get(ticker=ticker)
-    issuer = common_stock_security.issuer
+    ticker_sym = ticker.upper()
+    ticker_obj = SecurityPriceHist.objects.filter(ticker_sym=ticker_sym)[0]
+    if ticker_obj.primary_ticker_sym is False:
+        issuer = ticker_obj.issuer
+        primary_ticker =\
+            SecurityPriceHist.objects.get(issuer=issuer,
+                                          primary_ticker_sym=True)
+        diff_prim_tkr = primary_ticker.ticker_sym
+    else:
+        primary_ticker = ticker_obj
+        issuer = ticker_obj.issuer
+        diff_prim_tkr = None
+    other_tickers = SecurityPriceHist.objects.filter(issuer=issuer)\
+        .exclude(ticker_sym=ticker_sym).values_list('ticker_sym', flat=True)
     issuer_name = issuer.name
     # Pulls whether this stock is on the user's watch list
     watchedname = WatchedName.objects.filter(issuer=issuer)\
@@ -255,23 +283,25 @@ def drilldown(request, ticker):
     persons_with_data = len(persons_data)
     # builds graph data -- see housingbuild.py for logic
     graph_data_json, titles_json, ymax =\
-        holdingbuild.buildgraphdata(issuer, ticker, persons_data)
+        holdingbuild.buildgraphdata(issuer, primary_ticker.ticker_sym,
+                                    persons_data)
 
     # Pick the template to use based on which url is passed
     template_location = 'sdapp/drilldown.html'
     if 'PATH_INFO' in request.META:
         if 'bigchart' in request.META['PATH_INFO']:
             template_location = 'sdapp/bigchart.html'
-    # if 'drilldown' in request.GET.
-
+    ticker = ticker_sym
     return render_to_response(template_location,
                               {'acq_disp_codes': acq_disp_codes,
-                               'recententries': recententries,
+                               'diff_prim_tkr': diff_prim_tkr,
                                'filingcodes': filingcodes,
                                'graph_data_json': graph_data_json,
                                'issuer_name': issuer_name,
+                               'other_tickers': other_tickers,
                                'persons_for_radio': persons_for_radio,
                                'persons_with_data': persons_with_data,
+                               'recententries': recententries,
                                'sel_person_id': sel_person_id,
                                'selected_person': selected_person,
                                'sig_highlights': sig_highlights,

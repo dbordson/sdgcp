@@ -7,11 +7,12 @@ from sdapp.models import SecurityPriceHist, ClosePrice, SplitOrAdjustmentEvent
 
 
 def savetickerinfo(SPH_id, ticker, security_id):
+    rp_tkr = ticker.replace('.', '-')
     yrs_of_pricing = 10
     yrs_of_adj = 10
     enddate = date.today()
     tickerdata =\
-        DataReader(ticker, "yahoo", datetime(enddate.year-yrs_of_adj,
+        DataReader(rp_tkr, "yahoo", datetime(enddate.year-yrs_of_adj,
                                              enddate.month,
                                              enddate.day))
     tickerdata['Adj Factor'] =\
@@ -26,21 +27,22 @@ def savetickerinfo(SPH_id, ticker, security_id):
     # The data_to_cp does not need to exit if we are not limited on rows
     # to the extent we need past prices for the full period,
     # we may collapse these two calls into one DataFrame
-    data_to_cp =\
-        DataReader(ticker, "yahoo", datetime(enddate.year-yrs_of_pricing,
-                                             enddate.month,
-                                             enddate.day))
-    data_to_cp['Adj Factor'] =\
-        data_to_cp['Close'].divide(data_to_cp['Adj Close'])
+    if yrs_of_pricing != yrs_of_adj:
+        data_to_cp =\
+            DataReader(rp_tkr, "yahoo", datetime(enddate.year-yrs_of_pricing,
+                                                 enddate.month,
+                                                 enddate.day))
+        data_to_cp['Adj Factor'] =\
+            data_to_cp['Close'].divide(data_to_cp['Adj Close'])
 
-    data_to_cp['Adj Factor Shifted'] =\
-        data_to_cp['Adj Factor'].shift(1)
+        data_to_cp['Adj Factor Shifted'] =\
+            data_to_cp['Adj Factor'].shift(1)
 
-    data_to_cp['Adj Factor Old/New'] =\
-        data_to_cp['Adj Factor Shifted'].divide(data_to_cp['Adj Factor'])
+        data_to_cp['Adj Factor Old/New'] =\
+            data_to_cp['Adj Factor Shifted'].divide(data_to_cp['Adj Factor'])
+    else:
+        data_to_cp = tickerdata
 
-    ClosePrice.objects.filter(securitypricehist_id=SPH_id)\
-        .delete()
     closepricesforsave = []
     for a in data_to_cp.itertuples():
         newcloseprice = ClosePrice(close_price=a[4],
@@ -48,6 +50,8 @@ def savetickerinfo(SPH_id, ticker, security_id):
                                    close_date=str(datetime.date(a[0])),
                                    securitypricehist_id=SPH_id)
         closepricesforsave.append(newcloseprice)
+    ClosePrice.objects.filter(securitypricehist_id=SPH_id)\
+        .delete()
     ClosePrice.objects.bulk_create(closepricesforsave)
 
     splitrecords = tickerdata.loc[tickerdata['Adj Factor Old/New'] >= 1.1]

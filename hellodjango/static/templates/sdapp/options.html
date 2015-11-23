@@ -10,7 +10,7 @@
 
 
 <div class="col-md-10">
-    <h1>{{ issuer_name }} ({{ ticker }})</h1>
+    <h1>{{ issuer_name }} ({{ ticker }}) {% for other_ticker in other_tickers %}{% if forloop.first %}<small> See also: {% endif %}<a href="{% url 'options' other_ticker %}">{{ other_ticker }}</a>{% if not forloop.last %}, {% endif %}{% if forloop.last %}</small>{% endif %}{% endfor %}</h1>
   <ul class="nav nav-pills">
     <li role="presentation" class="active"><a href="#">Home</a></li>
     <li role="presentation"><a href="{% url 'drilldown' ticker %}?{{ sel_person_id }}={{ selected_person }}">Transaction Detail</a></li>
@@ -114,11 +114,11 @@
   <div class="col-md-12">
     <div class="panel panel-default">
       <div class="panel-heading">
-        <h3 class="panel-title">Stock Price Chart</h3>
+        <h3 class="panel-title">Stock Price Chart <i>{% if diff_prim_tkr %}(holdings in {{ diff_prim_tkr }} share equivalents){% endif %}</i></h3>
       </div>
       <div class="panel-body" style="height:200px; overflow-y: scroll;">
         
-        {% if graph_data_json != "????" %} <!-- We could set up an inequality that works to disable the graph when it would be empty, not sure if an empty graph would throw an error, but it might -->
+        {% if graph_data_json_len != 0 %}<!-- We could set up an inequality that works to disable the graph when it would be empty, not sure if an empty graph would throw an error, but it might -->
         {% include 'optionsgraphjs.html' %}
 
         {% else %}
