@@ -139,7 +139,6 @@ def addholdingstograph(pl, ticker, issuer, persons_data, firstpricedate):
     graph = pl
     title_row = ['Date', 'Close Price']
     maxholding = 0
-    print persons_data
     for person_cik, person_name in persons_data:
         # Builds adds empty row to right of price_json
         graph = [row + [None] for row in graph]
