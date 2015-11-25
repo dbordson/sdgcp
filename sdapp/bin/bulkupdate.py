@@ -3,8 +3,8 @@
 # because heroku can't run "initialdownload.py", because indices not stored
 # in heroku.
 from sdapp.bin import formscraper, formparser, populateintermediate,\
-    supersedeinit, adjsharesremaining, grabmarketdata,\
-    populateformadjustments
+    grabmarketdata,\
+    populateformadjustments, supersedeinit, adjsharesremaining, 
 
 from sdapp.bin import update_affiliation_data
 

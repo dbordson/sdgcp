@@ -62,7 +62,7 @@ def newciks():
                           percentcomplete))
         sys.stdout.flush()
 
-    print 'done.'
+    print '\ndone.'
 
 
 def newtickers():

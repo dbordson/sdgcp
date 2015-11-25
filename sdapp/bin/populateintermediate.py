@@ -535,34 +535,6 @@ def link_underlying_securities():
     print '\ndone.'
 
 
-def populate_conversion_factors():
-    print 'Replacing conversion factors...'
-    latest_conv_list = Form345Entry.objects.filter(transaction_code='M')\
-        .filter(deriv_or_nonderiv='D')\
-        .exclude(underlying_security__ticker=None)\
-        .values_list('security_id', flat=True).distinct()
-    looplength = float(len(latest_conv_list))
-    counter = 0.0
-    for security_id in latest_conv_list:
-        sampleentries =\
-            Form345Entry.objects.filter(security=security_id)\
-            .filter(transaction_code='M')\
-            .exclude(underlying_shares=None)\
-            .exclude(transaction_shares=None)\
-            .order_by('filedatetime')[:10]\
-            .values_list('underlying_shares', 'transaction_shares')
-        conversion_multiples = [p / q for p, q in sampleentries]
-        conversion_multiple = median(conversion_multiples)
-        Security.objects.filter(id=security_id)\
-            .update(conversion_multiple=conversion_multiple)
-        counter += 1.0
-        percentcomplete = round(counter / looplength * 100, 2)
-        sys.stdout.write("\r%s / %s conversion factors to replace: %.2f%%" %
-                         (int(counter), int(looplength), percentcomplete))
-        sys.stdout.flush()
-    print '\ndone.'
-
-
 updatetitles.update_short_titles()
 add_new_issuer_names()
 update_reportingpersons()
@@ -572,4 +544,3 @@ update_securities()
 link_form_objects_to_securities()
 check_securitypricehist()
 link_underlying_securities()
-populate_conversion_factors()
