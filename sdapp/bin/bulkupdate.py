@@ -4,7 +4,7 @@
 # in heroku.
 from sdapp.bin import formscraper, formparser, populateintermediate,\
     grabmarketdata,\
-    populateformadjustments, supersedeinit, adjsharesremaining, 
+    populateformadjustments, supersedeinit, adjsharesremaining
 
 from sdapp.bin import update_affiliation_data
 
