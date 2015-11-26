@@ -49,9 +49,20 @@ h1 {
     box-shadow: 0 0 .5em .5em #ccc;
 }
 
-.panel > .panel-heading {
+/*.panel > .panel-heading {
     background-image: none;
     background-color: #94B8B8;
+
+}*/
+
+.panel {
+    border: 0;
+
+}
+
+.panel > .panel-heading {
+    color: #476c6c;
+    background-color: transparent;
 
 }
 
