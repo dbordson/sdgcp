@@ -58,6 +58,8 @@ class Affiliation(models.Model):
     latest_form_dt = models.DateTimeField(null=True)
     is_active = models.BooleanField(default=True)
 
+    behavior = models.CharField(max_length=15, null=True)
+
     def __unicode__(self):
         return unicode(self.person_name) or u''
 

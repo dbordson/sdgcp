@@ -76,8 +76,8 @@ def calc_holdings(securities, issuer, reporting_person, hist_price_dict):
     person_forms =\
         Form345Entry.objects.filter(issuer_cik=issuer)\
         .filter(reporting_owner_cik=reporting_person)\
-        .filter(Q(supersededdt__gt=first_filing_dt)
-                | Q(supersededdt=None))\
+        .filter(Q(supersededdt__gt=first_filing_dt) |
+                Q(supersededdt=None))\
         .exclude(filedatetime__gt=first_filing_dt)
     stock_values = person_forms\
         .filter(security=ticker_security)\
@@ -108,8 +108,8 @@ def calc_perf(later_price, earlier_price):
             and earlier_price is not None:
         stock_perf =\
             Decimal(round((later_price /
-                          earlier_price)
-                          - Decimal(1), 4))\
+                          earlier_price) -
+                          Decimal(1), 4))\
             * Decimal(100)
     return stock_perf
 
@@ -155,8 +155,8 @@ def create_disc_xn_events():
     a =\
         Form345Entry.objects\
         .filter(filedatetime__gte=todaymid + signal_detect_lookback)\
-        .filter(transaction_date__gte=F('filedatetime')
-                + datetime.timedelta(-5))\
+        .filter(transaction_date__gte=F('filedatetime') +
+                datetime.timedelta(-10))\
         .exclude(transaction_date=None)\
         .exclude(xn_price_per_share=None)\
         .exclude(transaction_shares=None)\

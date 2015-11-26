@@ -2,9 +2,9 @@ import datetime
 from decimal import Decimal
 import sys
 
-from django.db.models import Q
+from django.db.models import F, Q
 
-from sdapp.bin.globals import now, today, todaymid
+from sdapp.bin.globals import now, today, todaymid, signal_detect_lookback
 from sdapp.models import (Affiliation, ClosePrice, Form345Entry,
                           IssuerCIK, SecurityPriceHist)
 
@@ -56,6 +56,36 @@ def get_price(issuer, today):
     else:
         laxer_price = laxer_start_price(sec_price_hist, today)
         return laxer_price
+
+
+def calc_disc_xn_shares(issuer, reporting_owner, security):
+    other_ticker_securities = SecurityPriceHist.objects\
+        .filter(issuer=issuer).exclude(security=security)\
+        .exclude(security=None)\
+        .values_list('security', flat=True)
+    a = Form345Entry.objects.filter(issuer_cik=issuer)\
+        .filter(reporting_owner_cik=reporting_owner)\
+        .exclude(security__in=other_ticker_securities)\
+        .filter(Q(security=security) | Q(underlying_security=security))\
+        .filter(Q(transaction_code='P') | Q(transaction_code='S'))\
+        .filter(transaction_date__gte=F('filedatetime') +
+                datetime.timedelta(-10))\
+        .filter(transaction_date__gte=today + signal_detect_lookback)\
+        .exclude(transaction_shares=None)\
+        .exclude(xn_acq_disp_code=None)
+    net_xn_shares = Decimal(0)
+    for item in a:
+        if item.xn_acq_disp_code == 'D':
+            sign_transaction_shares = \
+                Decimal(-1) * item.transaction_shares * item.adjustment_factor\
+                * item.security.conversion_multiple
+        else:
+            sign_transaction_shares = \
+                item.transaction_shares * item.adjustment_factor\
+                * item.security.conversion_multiple
+        net_xn_shares += sign_transaction_shares
+
+    return net_xn_shares
 
 
 def calc_grants(issuer_cik, reporting_person_cik, security):
@@ -145,10 +175,12 @@ def calc_eq_shares_and_avg_conv_price(issuer, reporting_owner, security):
 def add_secondary_ticker(issuer, reporting_owner, ticker, primary_ticker,
                          prim_share_eqs_held,
                          prim_avg_conv_price,
-                         prim_eq_grant_rate):
+                         prim_eq_grant_rate,
+                         net_xn_shares):
     comb_share_eqs_held = prim_share_eqs_held
     comb_avg_conv_price = prim_avg_conv_price
     comb_eq_grant_rate = prim_eq_grant_rate
+    comb_net_xn_shares = net_xn_shares
     security = ticker.security
     primary_ticker_close_prices =\
         ClosePrice.objects.filter(securitypricehist=primary_ticker)
@@ -192,8 +224,8 @@ def add_secondary_ticker(issuer, reporting_owner, ticker, primary_ticker,
 
             comb_avg_conv_price = \
                 (total_prim_conv_cost + total_sec_conv_cost)\
-                / (prim_share_eqs_held + sec_share_eqs_held
-                    * share_conversion_mult_to_primary_ticker)
+                / (prim_share_eqs_held + sec_share_eqs_held *
+                    share_conversion_mult_to_primary_ticker)
             comb_share_eqs_held = prim_share_eqs_held\
                 + sec_share_eqs_held * share_conversion_mult_to_primary_ticker
         # comb_eq_grant_rate set above to primary rate.
@@ -209,7 +241,12 @@ def add_secondary_ticker(issuer, reporting_owner, ticker, primary_ticker,
             comb_eq_grant_rate = sec_eq_grant_rate\
                 * share_conversion_mult_to_primary_ticker
 
-    return comb_share_eqs_held, comb_avg_conv_price, comb_eq_grant_rate
+    if security is not None:
+        comb_net_xn_shares += \
+            calc_disc_xn_shares(issuer, reporting_owner, security)
+
+    return comb_share_eqs_held, comb_avg_conv_price, comb_eq_grant_rate,\
+        comb_net_xn_shares
 
 
 def get_new_affiliation_form_data(issuer_and_rep_owner_list):
@@ -233,6 +270,7 @@ def get_new_affiliation_form_data(issuer_and_rep_owner_list):
         affiliation.is_active = True
         primary_tickers = SecurityPriceHist.objects.filter(issuer=issuer)\
             .filter(primary_ticker_sym=True)
+
         if primary_tickers.exists():
             primary_ticker = primary_tickers[0]
             primary_security = primary_ticker.security
@@ -240,6 +278,8 @@ def get_new_affiliation_form_data(issuer_and_rep_owner_list):
             share_equivalents_held, average_conversion_price =\
                 calc_eq_shares_and_avg_conv_price(issuer, reporting_owner,
                                                   primary_security)
+            net_xn_shares = \
+                calc_disc_xn_shares(issuer, reporting_owner, primary_security)
             equity_grant_rate =\
                 calc_grants(issuer, reporting_owner, primary_security)
             other_tickers = SecurityPriceHist.objects.filter(issuer=issuer)\
@@ -247,12 +287,34 @@ def get_new_affiliation_form_data(issuer_and_rep_owner_list):
             # See if any other tickers have useful data
             for ticker in other_tickers:
                 share_equivalents_held, average_conversion_price,\
-                    equity_grant_rate =\
+                    equity_grant_rate, net_xn_shares =\
                     add_secondary_ticker(issuer, reporting_owner, ticker,
                                          primary_ticker,
                                          share_equivalents_held,
                                          average_conversion_price,
-                                         equity_grant_rate)
+                                         equity_grant_rate,
+                                         net_xn_shares)
+
+            # Placeholder behavior calculation
+            # print '\n net_xn_shares', net_xn_shares, equity_grant_rate
+            if net_xn_shares > Decimal(0):
+                behavior = "Buyer"
+                # print 'buyer'
+            elif net_xn_shares == Decimal(0):
+                behavior = None
+                # print 'none'
+            elif equity_grant_rate is not None\
+                    and Decimal(-1) * net_xn_shares <= equity_grant_rate:
+                behavior = None
+                # print 'none bc /eq grants'
+            else:
+                behavior = "Seller"
+                # print 'seller'
+
+            affiliation.share_equivalents_held = share_equivalents_held
+            affiliation.average_conversion_price = average_conversion_price
+            affiliation.equity_grant_rate = equity_grant_rate
+            affiliation.behavior = behavior
 
         # HOW THE ABOVE WORKS:
         #    If stock has just a primary ticker, use that one,
@@ -261,12 +323,7 @@ def get_new_affiliation_form_data(issuer_and_rep_owner_list):
         #       adds converted equivalent shares of secondary to primary
         #       ticker using multiplier
         #       Also converts conversion prices, equity grant rates
-        else:
-            share_equivalents_held, average_conversion_price,\
-                equity_grant_rate = None, None, None
-        affiliation.share_equivalents_held = share_equivalents_held
-        affiliation.average_conversion_price = average_conversion_price
-        affiliation.equity_grant_rate = equity_grant_rate
+
         affiliation.save()
         counter += 1.0
         percentcomplete = round(counter / looplength * 100, 2)
@@ -321,7 +378,7 @@ def calc_percentiles():
     print '\n'
     # print price_dict
     all_affiliations = Affiliation.objects.all()
-    print '   ...adding holding, conversion and grant value attributes...'
+    print '   ...adding holding, conversion, grant and behavior attributes...'
     counter = Decimal(0)
     looplength = Decimal(all_affiliations.count())
     for affiliation in all_affiliations:
@@ -362,7 +419,7 @@ def calc_percentiles():
             affiliation.save()
         counter += Decimal(1)
         percentcomplete = round(counter / looplength * 100, 2)
-        sys.stdout.write("\r%s / %s ratios: %.2f%%" %
+        sys.stdout.write("\r%s / %s affiliations: %.2f%%" %
                          (int(counter), int(looplength), percentcomplete))
         sys.stdout.flush()
     print '\n'
@@ -379,8 +436,8 @@ def calc_percentiles():
     print '   ...now handling active affiliations...'
     # Active affiliations
     active_affiliations = Affiliation.objects\
-        .filter(Q(share_equivalents_value__gt=Decimal(0))
-                | Q(latest_form_dt__gte=start_dt))
+        .filter(Q(share_equivalents_value__gt=Decimal(0)) |
+                Q(latest_form_dt__gte=start_dt))
 
     # average_conversion_price_ratio_percentile
     print '   ...adding conversion_to_price_ratio percentiles...'

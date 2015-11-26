@@ -94,7 +94,7 @@
               <td align="center"><i>[__]</i></td>
               
               <td nowrap align="center">${{ aff.share_equivalents_value|floatformat:0|intword|intcomma}}</td>
-              <td align="center">[__]</td>
+              <td align="center">{% if aff.behavior != None %}{{ aff.behavior }}{% endif %}</td>
                           
             </tr>
         {% endfor %}
