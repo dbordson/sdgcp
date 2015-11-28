@@ -53,5 +53,16 @@ underlying = SecurityPriceHist.objects.get(issuer=1288776, ticker_sym='GOOGL').s
 Form345Entry.objects.filter(security__in=badones).update(security=realb, short_sec_title=realb.short_sec_title, scrubbed_underlying_title=realb.scrubbed_underlying_title, underlying_security=underlying, supersededdt=None)
 badones.delete()
 
-from sdapp.bin import adjsharesremaining
+{# fix forward contract issues with expedia and liberty interactive #}
+
+from sdapp.models import *
+a = Security.objects.filter(issuer=1324424, short_sec_title__contains='forward sale contract')
+b = Form345Entry.objects.filter(security__in=a)
+for item in b:
+    item.supersededdt = item.filedatetime
+    item.security = a[0]
+    item.save()
+
+a[1].delete()
+a.update(conversion_multiple=1)
 

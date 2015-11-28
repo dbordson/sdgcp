@@ -52,7 +52,6 @@ def nd(dt):
 def pull_person_holdings(ticker, issuer, person_cik, person_name,
                          firstpricedate):
     now = datetime.datetime.now(pytz.UTC)
-    today = now.date()
     startdate = today - datetime.timedelta(270)
     startdt = now - datetime.timedelta(270)
     ticker_security =\
@@ -81,8 +80,8 @@ def pull_person_holdings(ticker, issuer, person_cik, person_name,
     #     + dotproduct(current_stock_deriv_values)
 
     all_values = person_forms\
-        .filter(Q(security=ticker_security)
-                | Q(underlying_security=ticker_security))\
+        .filter(Q(security=ticker_security) |
+                Q(underlying_security=ticker_security))\
         .exclude(reported_shares_following_xn=None)\
         .values_list('filedatetime', 'supersededdt',
                      'shares_following_xn', 'adjustment_factor',

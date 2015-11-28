@@ -48,12 +48,21 @@ class Affiliation(models.Model):
     equity_grant_value =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
 
-    share_equivalents_value_percentile = \
+    prior_share_equivalents_held =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
-    average_conversion_price_ratio_percentile = \
+    prior_average_conversion_price =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
-    equity_grant_value_percentile = \
+    prior_share_equivalents_value =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    prior_conversion_to_price_ratio =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+
+    # share_equivalents_value_percentile = \
+    #     models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    # average_conversion_price_ratio_percentile = \
+    #     models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    # equity_grant_value_percentile = \
+    #     models.DecimalField(max_digits=15, decimal_places=2, null=True)
 
     latest_form_dt = models.DateTimeField(null=True)
     is_active = models.BooleanField(default=True)
@@ -446,7 +455,7 @@ class SigDisplay(models.Model):
     last_signal = models.DateField(null=True)
 
     # Buy on Weakness
-    buy_on_weakness = models.CharField(max_length=500, null=True)
+    buyonweakness = models.BooleanField(default=False)
     bow_plural_insiders = models.NullBooleanField(null=True)
     bow_start_date = models.DateField(null=True)
     bow_end_date = models.DateField(null=True)
@@ -462,7 +471,7 @@ class SigDisplay(models.Model):
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
 
     # Cluster Buy
-    cluster_buy = models.CharField(max_length=500, null=True)
+    clusterbuy = models.BooleanField(default=False)
     cb_start_date = models.DateField(null=True)
     cb_end_date = models.DateField(null=True)
     cb_plural_insiders = models.NullBooleanField(null=True)
@@ -471,7 +480,7 @@ class SigDisplay(models.Model):
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
 
     # Discretionary Buy
-    discretionary_buy = models.CharField(max_length=500, null=True)
+    discretionarybuy = models.BooleanField(default=False)
     db_large_xn_size = models.NullBooleanField(null=True)
     db_was_ceo = models.NullBooleanField(null=True)
     db_start_date = models.DateField(null=True)
@@ -484,7 +493,7 @@ class SigDisplay(models.Model):
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
 
     # Sell on Strength
-    sell_on_strength = models.CharField(max_length=500, null=True)
+    sellonstrength = models.BooleanField(default=False)
     sos_plural_insiders = models.NullBooleanField(null=True)
     sos_start_date = models.DateField(null=True)
     sos_end_date = models.DateField(null=True)
@@ -500,7 +509,7 @@ class SigDisplay(models.Model):
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
 
     # Cluster Sell
-    cluster_sell = models.CharField(max_length=500, null=True)
+    clustersell = models.BooleanField(default=False)
     cs_start_date = models.DateField(null=True)
     cs_end_date = models.DateField(null=True)
     cs_plural_insiders = models.NullBooleanField(null=True)
@@ -511,8 +520,9 @@ class SigDisplay(models.Model):
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
     cs_net_shares =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
+
     # Discretionary Sell
-    discretionary_sell = models.CharField(max_length=500, null=True)
+    discretionarysell = models.BooleanField(default=False)
     ds_large_xn_size = models.NullBooleanField(null=True)
     ds_was_ceo = models.NullBooleanField(null=True)
     ds_start_date = models.DateField(null=True)
@@ -524,7 +534,58 @@ class SigDisplay(models.Model):
     ds_xn_pct_holdings =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
 
-    total_transactions = models.IntegerField(max_length=15)
+    # Sale of all shares
+    saleofall = models.BooleanField(default=False)
+    soa_detect_date = models.DateField(null=True)
+    soa_start_date = models.DateField(null=True)
+    soa_end_date = models.DateField(null=True)
+    soa_primary_affiliation = models.ForeignKey(Affiliation, null=True)
+    soa_inc_ceo = models.NullBooleanField(null=True)
+    soa_people_count = models.IntegerField(max_length=15, null=True)
+    soa_biggest_value = \
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    soa_total_value = \
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+
+    # Factors
+    total_transactions = models.IntegerField(max_length=15, null=True)
+    active_insiders = models.IntegerField(max_length=15, null=True)
+    sellers = models.IntegerField(max_length=15, null=True)
+    insiders_reduced_holdings = models.IntegerField(max_length=15, null=True)
+    average_holding_reduction = \
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+
+    number_of_recent_shares_sold =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    value_of_recent_shares_sold =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    historical_selling_rate_shares =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    historical_selling_rate_value =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    percent_change_in_shares_historical_to_recent =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    percent_change_in_value_historical_to_recent =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    percent_options_converted_to_expire_in_current_year =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    percent_shares_sold_under_10b5_1_plans =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    recent_share_sell_rate_for_10b5_1_plans =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    historical_share_sell_rate_for_10b5_1_plans =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    sell_price_trigger_detected = models.NullBooleanField(null=True)
+    trigger_price =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    trigger_date =\
+        models.DateField(null=True)
+    trigger_subs_performance =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    # Source this one from a trigger sale model
+    avg_prior_trigger_performance =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+
     # mixed_signals = models.BooleanField()
     signal_is_new = models.BooleanField()
 

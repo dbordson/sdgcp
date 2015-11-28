@@ -3,6 +3,8 @@ import pytz
 from decimal import Decimal
 
 signal_detect_lookback = datetime.timedelta(-180)
+recent_sale_period = datetime.timedelta(-91)
+start_hist_lookback = datetime.timedelta(-91-365)
 significant_stock_move = Decimal(10)  # percent
 abs_sig_min = Decimal(10 * 1000)
 rel_sig_min = Decimal(.1)
@@ -42,5 +44,9 @@ discretionary_sell = "Plain Vanilla Selling"
 signal_disp_list = \
     [buy_on_weakness, cluster_buy, discretionary_buy,
      sell_on_strength, cluster_sell, discretionary_sell]
+
+# Affiliation behavior options
+seller = "Seller"
+buyer = "Buyer"
 
 app_url = 'http://127.0.0.1:8000/sdapp/'

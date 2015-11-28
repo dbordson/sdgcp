@@ -12,7 +12,7 @@ from django.shortcuts import (render_to_response, redirect,
                               RequestContext, HttpResponseRedirect)
 from django.template.defaulttags import register
 
-from sdapp.bin import update_affiliation_data
+# from sdapp.bin import update_affiliation_data
 from sdapp.bin.globals import (perf_period_days_td, buy_on_weakness,
                                cluster_buy, discretionary_buy, today,
                                sell_on_strength, cluster_sell,
@@ -135,6 +135,7 @@ def options(request, ticker):
         sig_dates = appendif(sig_dates, signal_entry.db_detect_date)
         sig_dates = appendif(sig_dates, signal_entry.sos_first_sig_detect_date)
         sig_dates = appendif(sig_dates, signal_entry.ds_detect_date)
+        sig_dates = appendif(sig_dates, signal_entry.soa_detect_date)
     sig_highlights = []
     for sig_date in sig_dates:
         sig_highlights.append(
@@ -164,7 +165,7 @@ def options(request, ticker):
                                     persons_data)
     perf_period = -perf_period_days_td.days
 
-    latest_price = update_affiliation_data.get_price(issuer, today)
+    # latest_price = update_affiliation_data.get_price(primary_ticker, today)
 
     # This only exists to preserve selected persons when the user
     # clicks back and forth among tabs with a person selected
@@ -182,7 +183,7 @@ def options(request, ticker):
                                'graph_data_json': graph_data_json,
                                'holding_affiliations': holding_affiliations,
                                'issuer_name': issuer_name,
-                               'latest_price': latest_price,
+                               # 'latest_price': latest_price,
                                'other_tickers': other_tickers,
                                'persons_data_len': persons_data_len,
                                'perf_period': perf_period,
@@ -467,22 +468,22 @@ def searchsignals(request):
             # sell_on_strength, cluster_sell, discretionary_sell]
         signal_count = 0
         if buy_on_weakness in request.POST.getlist('selectbox'):
-            qs = qs | SigDisplay.objects.exclude(buy_on_weakness=None)
+            qs = qs | SigDisplay.objects.exclude(buy_on_weakness=False)
             signal_count += 1
         if cluster_buy in request.POST.getlist('selectbox'):
-            qs = qs | SigDisplay.objects.exclude(cluster_buy=None)
+            qs = qs | SigDisplay.objects.exclude(cluster_buy=False)
             signal_count += 1
         if discretionary_buy in request.POST.getlist('selectbox'):
-            qs = qs | SigDisplay.objects.exclude(discretionary_buy=None)
+            qs = qs | SigDisplay.objects.exclude(discretionary_buy=False)
             signal_count += 1
         if sell_on_strength in request.POST.getlist('selectbox'):
-            qs = qs | SigDisplay.objects.exclude(sell_on_strength=None)
+            qs = qs | SigDisplay.objects.exclude(sell_on_strength=False)
             signal_count += 1
         if cluster_sell in request.POST.getlist('selectbox'):
-            qs = qs | SigDisplay.objects.exclude(cluster_sell=None)
+            qs = qs | SigDisplay.objects.exclude(cluster_sell=False)
             signal_count += 1
         if discretionary_sell in request.POST.getlist('selectbox'):
-            qs = qs | SigDisplay.objects.exclude(discretionary_sell=None)
+            qs = qs | SigDisplay.objects.exclude(discretionary_sell=False)
             signal_count += 1
 
         if signal_count == 0:
