@@ -23,7 +23,7 @@ fdt = a[0].filedatetime
 a.update(supersededdt=fdt)
 
 
-{# DOERR FORMS NEED CLEAN UP -- NOTE THAT sec_id will change if DB is rebuilt #}
+{# DOERR FORMS NEED CLEAN UP -- FIX ISSUE WHERE sec_id will change if DB is rebuilt switch ID with name researching transactions from like 2004 #}
 from sdapp.models import Form345Entry, Affiliation
 from sdapp.bin.globals import now
 import datetime

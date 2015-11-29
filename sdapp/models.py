@@ -25,6 +25,7 @@ class IssuerCIK(models.Model):
 
 class Affiliation(models.Model):
     issuer = models.ForeignKey(IssuerCIK)
+    issuer_name = models.CharField(max_length=80, null=True)
     reporting_owner = models.ForeignKey(ReportingPerson)
 
     person_name = models.CharField(max_length=80, null=True)
@@ -57,6 +58,36 @@ class Affiliation(models.Model):
     prior_conversion_to_price_ratio =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
 
+    quarters_with_sales_since_beg_2012 = models.IntegerField(null=True)
+    quarter_count_3_mo_decline = models.IntegerField(null=True)
+    quarter_count_6_mo_decline = models.IntegerField(null=True)
+    quarter_count_9_mo_decline = models.IntegerField(null=True)
+    quarter_count_12_mo_decline = models.IntegerField(null=True)
+    post_sale_perf_3mo =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    post_sale_perf_6mo =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    post_sale_perf_9mo =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    post_sale_perf_12mo =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+
+    quarters_with_10b_sales_since_beg_2012 = models.IntegerField(null=True)
+    quarter_count_3_mo_decline_10b = models.IntegerField(null=True)
+    quarter_count_6_mo_decline_10b = models.IntegerField(null=True)
+    quarter_count_9_mo_decline_10b = models.IntegerField(null=True)
+    quarter_count_12_mo_decline_10b = models.IntegerField(null=True)
+    post_sale_perf_10b_3mo =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    post_sale_perf_10b_6mo =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    post_sale_perf_10b_9mo =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    post_sale_perf_10b_12mo =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+
+    annualized_perf_from_beg_2012_to_today =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
     # share_equivalents_value_percentile = \
     #     models.DecimalField(max_digits=15, decimal_places=2, null=True)
     # average_conversion_price_ratio_percentile = \
