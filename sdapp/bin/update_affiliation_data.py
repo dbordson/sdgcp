@@ -385,7 +385,7 @@ def calc_equity_grants(issuer, reporting_owner, sec_ids, primary_sec_id,
         if sec_id != primary_sec_id:
             grant_sec_price = get_price(ticker_sec_dict[sec_id],
                                         g['transaction_date'], price_dict)
-            prim_price = get_price(ticker_sec_dict[sec_id],
+            prim_price = get_price(ticker_sec_dict[primary_sec_id],
                                    g['transaction_date'], price_dict)
             if grant_sec_price is None or prim_price is None or\
                     prim_price == Decimal(0):
@@ -440,7 +440,7 @@ def calc_disc_xns(issuer, reporting_owner, sec_ids, primary_sec_id,
                 x['underlying_security'] != primary_sec_id:
             sec_price = get_price(ticker_sec_dict[sec_id],
                                   x['transaction_date'], price_dict)
-            prim_price = get_price(ticker_sec_dict[sec_id],
+            prim_price = get_price(ticker_sec_dict[primary_sec_id],
                                    x['transaction_date'], price_dict)
             if sec_price is None or prim_price is None or\
                     prim_price == Decimal(0):
