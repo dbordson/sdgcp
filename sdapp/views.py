@@ -468,22 +468,22 @@ def searchsignals(request):
             # sell_on_strength, cluster_sell, discretionary_sell]
         signal_count = 0
         if buy_on_weakness in request.POST.getlist('selectbox'):
-            qs = qs | SigDisplay.objects.exclude(buy_on_weakness=False)
+            qs = qs | SigDisplay.objects.exclude(buyonweakness=False)
             signal_count += 1
         if cluster_buy in request.POST.getlist('selectbox'):
-            qs = qs | SigDisplay.objects.exclude(cluster_buy=False)
+            qs = qs | SigDisplay.objects.exclude(clusterbuy=False)
             signal_count += 1
         if discretionary_buy in request.POST.getlist('selectbox'):
-            qs = qs | SigDisplay.objects.exclude(discretionary_buy=False)
+            qs = qs | SigDisplay.objects.exclude(discretionarybuy=False)
             signal_count += 1
         if sell_on_strength in request.POST.getlist('selectbox'):
-            qs = qs | SigDisplay.objects.exclude(sell_on_strength=False)
+            qs = qs | SigDisplay.objects.exclude(sellonstrength=False)
             signal_count += 1
         if cluster_sell in request.POST.getlist('selectbox'):
-            qs = qs | SigDisplay.objects.exclude(cluster_sell=False)
+            qs = qs | SigDisplay.objects.exclude(clustersell=False)
             signal_count += 1
         if discretionary_sell in request.POST.getlist('selectbox'):
-            qs = qs | SigDisplay.objects.exclude(discretionary_sell=False)
+            qs = qs | SigDisplay.objects.exclude(discretionarysell=False)
             signal_count += 1
 
         if signal_count == 0:
@@ -504,6 +504,8 @@ def searchsignals(request):
     else:
         found_entries = SigDisplay.objects.none()
     num_of_records = found_entries.count()
+    # print found_entries.filter(sec_price_hist__ticker_sym__contains='K')\
+    #    .values('issuer__name', 'sec_price_hist__ticker_sym')
     return render_to_response('sdapp/ajax_search.html',
                               {'found_entries': found_entries,
                                'num_of_records': num_of_records,

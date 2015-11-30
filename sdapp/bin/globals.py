@@ -5,6 +5,7 @@ from decimal import Decimal
 signal_detect_lookback = datetime.timedelta(-180)
 recent_sale_period = datetime.timedelta(-91)
 start_hist_lookback = datetime.timedelta(-91-365)
+grant_period_calc_lookback = datetime.timedelta(-730)
 significant_stock_move = Decimal(10)  # percent
 abs_sig_min = Decimal(10 * 1000)
 rel_sig_min = Decimal(.1)

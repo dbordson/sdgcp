@@ -39,14 +39,14 @@ class Affiliation(models.Model):
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
     average_conversion_price =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
-    equity_grant_rate =\
-        models.DecimalField(max_digits=15, decimal_places=2, null=True)
-
     share_equivalents_value =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
     conversion_to_price_ratio =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
-    equity_grant_value =\
+
+    equity_grant_rate =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    avg_grant_conv_price =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
 
     prior_share_equivalents_held =\
