@@ -58,6 +58,22 @@ class Affiliation(models.Model):
     prior_conversion_to_price_ratio =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
 
+    increase_in_10b5_1_selling =\
+        models.BooleanField(default=False)
+    selling_date =\
+        models.DateField(null=True)
+    selling_price =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    price_trigger_detected =\
+        models.BooleanField(default=False)
+    selling_prior_performance =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    selling_subs_performance =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    # Source this one from a trigger sale model
+    avg_avg_prior_trigger_performance =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+
     quarters_with_sales_since_beg_2012 = models.IntegerField(null=True)
     quarter_count_3_mo_decline = models.IntegerField(null=True)
     quarter_count_6_mo_decline = models.IntegerField(null=True)
@@ -95,6 +111,7 @@ class Affiliation(models.Model):
     # equity_grant_value_percentile = \
     #     models.DecimalField(max_digits=15, decimal_places=2, null=True)
 
+    first_form_dt = models.DateTimeField(null=True)
     latest_form_dt = models.DateTimeField(null=True)
     is_active = models.BooleanField(default=True)
 
@@ -600,21 +617,11 @@ class SigDisplay(models.Model):
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
     percent_options_converted_to_expire_in_current_year =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
-    percent_shares_sold_under_10b5_1_plans =\
+    percent_recent_shares_sold_under_10b5_1_plans =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
     recent_share_sell_rate_for_10b5_1_plans =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
     historical_share_sell_rate_for_10b5_1_plans =\
-        models.DecimalField(max_digits=15, decimal_places=2, null=True)
-    sell_price_trigger_detected = models.NullBooleanField(null=True)
-    trigger_price =\
-        models.DecimalField(max_digits=15, decimal_places=2, null=True)
-    trigger_date =\
-        models.DateField(null=True)
-    trigger_subs_performance =\
-        models.DecimalField(max_digits=15, decimal_places=2, null=True)
-    # Source this one from a trigger sale model
-    avg_prior_trigger_performance =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
 
     # mixed_signals = models.BooleanField()

@@ -5,9 +5,11 @@ import sys
 import django.db
 from django.db.models import F, Q
 
-from sdapp.bin.globals import (buyer,
-                               grant_period_calc_lookback, now, seller,
-                               signal_detect_lookback, today, todaymid)
+from sdapp.bin.globals import (buyer, grant_period_calc_lookback,
+                               hist_sale_period,
+                               min_day_gap_for_10b51_trigger_sell_rate, now,
+                               price_trigger_lookback, seller,
+                               recent_sale_period, today, todaymid)
 from sdapp.models import (Affiliation, ClosePrice, Form345Entry,
                           IssuerCIK, SecurityPriceHist)
 
@@ -414,18 +416,27 @@ def calc_equity_grants(issuer, reporting_owner, sec_ids, primary_sec_id,
 
 
 def calc_disc_xns(issuer, reporting_owner, sec_ids, primary_sec_id,
-                  price_dict, ticker_sec_dict):
+                  price_dict, ticker_sec_dict, startdate, enddate,
+                  only_10b5_1):
     disc_xns = Form345Entry.objects.filter(issuer_cik=issuer)\
         .filter(reporting_owner_cik=reporting_owner)\
         .filter(Q(security__in=sec_ids) |
                 Q(underlying_security__in=sec_ids))\
         .filter(Q(transaction_code='P') | Q(transaction_code='S'))\
-        .filter(transaction_date__gte=today + signal_detect_lookback)\
-        .exclude(transaction_shares=None)\
+        .filter(transaction_date__gte=startdate)\
+        .filter(transaction_date__lte=enddate)\
+        .exclude(transaction_shares=None)
+    if only_10b5_1 is True:
+        disc_xns = disc_xns.filter(tenbfive_note=True)
+
+    disc_xns = disc_xns\
         .values('transaction_shares', 'adjustment_factor',
                 'security__conversion_multiple', 'security',
                 'underlying_security', 'transaction_date', 'transaction_code',)
+    if len(disc_xns) is 0:
+        return Decimal(0), Decimal(0)
     net_xn_shares = Decimal(0)
+    net_xn_value = Decimal(0)
     xn_sign = {'S': Decimal(-1), 'P': Decimal(1)}
     for x in disc_xns:
         # Do we price security directly or underlying?
@@ -449,13 +460,70 @@ def calc_disc_xns(issuer, reporting_owner, sec_ids, primary_sec_id,
                 sec_price / prim_price
         else:
             share_conversion_mult_to_primary_ticker = Decimal(1)
+        price = get_price(ticker_sec_dict[sec_id],
+                          x['transaction_date'], price_dict)
+        if price is None:
+            continue
         prim_eq_shares = x['transaction_shares'] * x['adjustment_factor'] *\
             underlying_conversion_mult *\
             xn_sign[x['transaction_code']] *\
             share_conversion_mult_to_primary_ticker
         net_xn_shares += prim_eq_shares
+        net_xn_value += prim_eq_shares * price
 
-    return net_xn_shares
+    return net_xn_shares, net_xn_value
+
+
+def sale_clusters_in_hist_10b5_1(issuer, reporting_owner, sec_ids,
+                                 primary_sec_id, price_dict, ticker_sec_dict,
+                                 startdate, enddate):
+    sales = Form345Entry.objects.filter(issuer_cik=issuer)\
+        .filter(reporting_owner_cik=reporting_owner)\
+        .filter(Q(security__in=sec_ids) |
+                Q(underlying_security__in=sec_ids))\
+        .filter(transaction_code='S')\
+        .exclude(transaction_shares=None)\
+        .filter(transaction_date__gte=startdate)\
+        .filter(transaction_date__lte=enddate)\
+        .filter(tenbfive_note=True)
+    grant_dates = \
+        list(sales.order_by('transaction_date')
+             .values_list('transaction_date', flat=True).distinct())
+    # Do not pass go if no grant info available
+    if len(grant_dates) == 0:
+        sales_per_year = 0
+        transaction_date_price_info = [(None, None)]
+    # If you have only one grant, assume annual because that is typical
+    elif len(grant_dates) == 1:
+        sales_per_year = 1
+        date = grant_dates[0]
+        transaction_date_price_info =\
+            [(date,
+              get_price(ticker_sec_dict[primary_sec_id],
+                        date, price_dict))]
+    # Otherwise, figure out grants per year received based on spacing
+    else:
+        day_gaps = []
+        transaction_date_price_info = []
+        for first_date, second_date in zip(grant_dates, grant_dates[1:]):
+            gap = Decimal((second_date - first_date).days)
+            if gap > min_day_gap_for_10b51_trigger_sell_rate:
+                day_gaps.append(gap)
+                date = first_date
+                price = get_price(ticker_sec_dict[primary_sec_id],
+                                  date, price_dict)
+                transaction_date_price_info.append((date, price))
+
+        if len(day_gaps) == 0:
+            return None, (None, None)
+        median_day_gap = median(day_gaps)
+        day_gap_options = [Decimal(30), Decimal(45), Decimal(60),
+                           Decimal(91), Decimal(182), Decimal(365)]
+        estimated_day_gap = min(day_gap_options,
+                                key=lambda x: abs(x-median_day_gap))
+        sales_per_year = int(round(Decimal(365) / estimated_day_gap, 0))
+
+    return sales_per_year, transaction_date_price_info
 
 
 def calc_person_affiliation(issuer, reporting_owner, price_dict):
@@ -498,7 +566,7 @@ def calc_person_affiliation(issuer, reporting_owner, price_dict):
         calc_holdings(issuer, reporting_owner, ticker_sec_ids,
                       prim_security.pk, todaymid, price_dict, ticker_sec_dict)
 
-    prior_datetime = todaymid + signal_detect_lookback
+    prior_datetime = todaymid + recent_sale_period
     aff.prior_share_equivalents_held, aff.prior_average_conversion_price,\
         aff.prior_share_equivalents_value,\
         aff.prior_conversion_to_price_ratio =\
@@ -510,17 +578,124 @@ def calc_person_affiliation(issuer, reporting_owner, price_dict):
     aff.equity_grant_rate, aff.avg_grant_conv_price =\
         calc_equity_grants(issuer, reporting_owner, ticker_sec_ids,
                            prim_security.pk, price_dict, ticker_sec_dict)
+    # Recent / hist sale data
+    recent_period_start = today + recent_sale_period
+    hist_period_start = today + hist_sale_period
 
-    net_xn_shares =\
+    number_of_recent_shares_sold, value_of_recent_shares_sold =\
         calc_disc_xns(issuer, reporting_owner, ticker_sec_ids,
-                      prim_security.pk, price_dict, ticker_sec_dict)
+                      prim_security.pk, price_dict, ticker_sec_dict,
+                      recent_period_start,
+                      today, False)
+    aff.number_of_recent_shares_sold, aff.value_of_recent_shares_sold =\
+        number_of_recent_shares_sold, value_of_recent_shares_sold
+
+    historical_selling_rate_shares, historical_selling_rate_value =\
+        calc_disc_xns(issuer, reporting_owner, ticker_sec_ids,
+                      prim_security.pk, price_dict, ticker_sec_dict,
+                      hist_period_start,
+                      recent_period_start, False)
+    aff.historical_selling_rate_shares, aff.historical_selling_rate_value =\
+        historical_selling_rate_shares, historical_selling_rate_value
+
+    recent_share_sell_rate_for_10b5_1_plans, recent_10b5_1_xn_value =\
+        calc_disc_xns(issuer, reporting_owner, ticker_sec_ids,
+                      prim_security.pk, price_dict, ticker_sec_dict,
+                      recent_period_start,
+                      today, True)
+    aff.recent_share_sell_rate_for_10b5_1_plans =\
+        recent_share_sell_rate_for_10b5_1_plans
+
+    historical_share_sell_rate_for_10b5_1_plans, hist_10b5_1_xn_value =\
+        calc_disc_xns(issuer, reporting_owner, ticker_sec_ids,
+                      prim_security.pk, price_dict, ticker_sec_dict,
+                      hist_period_start,
+                      recent_period_start, True)
+    aff.historical_share_sell_rate_for_10b5_1_plans =\
+        historical_share_sell_rate_for_10b5_1_plans
+
+    if number_of_recent_shares_sold < Decimal(0) and\
+            historical_selling_rate_shares < Decimal(0):
+
+        len_hist_over_len_recent =\
+            (recent_period_start - hist_period_start).days /\
+            (today - recent_period_start).days
+
+        aff.percent_change_in_shares_hist_to_recent =\
+            (number_of_recent_shares_sold * len_hist_over_len_recent) /\
+            historical_selling_rate_shares - 1
+
+        aff.percent_change_in_value_hist_to_recent =\
+            (number_of_recent_shares_sold * len_hist_over_len_recent) /\
+            historical_selling_rate_shares - 1
+
+        aff.percent_recent_shares_sold_under_10b5_1_plans =\
+            recent_share_sell_rate_for_10b5_1_plans /\
+            number_of_recent_shares_sold
+
+    # Detect 10b5-1 rises
+
+    clusters_in_hist_period, transaction_date_price_info =\
+        sale_clusters_in_hist_10b5_1(issuer, reporting_owner, ticker_sec_ids,
+                                     prim_security.pk, price_dict,
+                                     ticker_sec_dict, hist_period_start,
+                                     recent_period_start)
+    if number_of_recent_shares_sold < Decimal(0) and\
+            historical_selling_rate_shares < Decimal(0) and\
+            clusters_in_hist_period is not None:
+        recent = recent_share_sell_rate_for_10b5_1_plans
+        hist = historical_share_sell_rate_for_10b5_1_plans
+        len_hist_over_len_recent =\
+            (recent_period_start - hist_period_start).days /\
+            (today - recent_period_start).days
+        # Note that the signs are flipped below because we are looking
+        # for the most negative quantities.
+
+        recent_10b5_1s = Form345Entry.objects\
+            .filter(issuer_cik=issuer)\
+            .filter(reporting_owner_cik=reporting_owner)\
+            .filter(Q(security__in=ticker_sec_ids) |
+                    Q(underlying_security__in=ticker_sec_ids))\
+            .filter(transaction_code='S')\
+            .exclude(transaction_shares=None)\
+            .filter(transaction_date__gte=recent_period_start)\
+            .filter(tenbfive_note=True)
+        if hist is not None and clusters_in_hist_period is not None and\
+                clusters_in_hist_period is not 0 and\
+                recent < min(hist / len_hist_over_len_recent,
+                             hist / clusters_in_hist_period) and\
+                recent_10b5_1s.exists():
+            increase_in_10b5_1 = True
+            aff.increase_in_10b5_1_selling = increase_in_10b5_1
+            for date, price in transaction_date_price_info:
+                trigger_10b5_1_price_perf =\
+                    price_perf(prim_security.pk,
+                               date - price_trigger_lookback,
+                               price_trigger_lookback, price_dict)
+                recent_10b5_1_price_perf =\
+                    price_perf(prim_security.pk,
+                               date + recent_sale_period,
+                               -recent_sale_period, price_dict)
+                if increase_in_10b5_1 is True and\
+                        trigger_10b5_1_price_perf > Decimal(0) and\
+                        recent_10b5_1_price_perf > Decimal(0):
+                    aff.price_trigger_detected = True
+                aff.selling_price = price
+                aff.selling_date = date
+                aff.selling_prior_performance = trigger_10b5_1_price_perf
+                aff.selling_subs_performance =\
+                    price_perf(prim_security.pk,
+                               date,
+                               today - date, price_dict)
+
     # Placeholder behavior calculation
-    if net_xn_shares > Decimal(0):
+    if number_of_recent_shares_sold > Decimal(0):
         behavior = buyer
-    elif net_xn_shares == Decimal(0):
+    elif number_of_recent_shares_sold == Decimal(0):
         behavior = None
     elif aff.equity_grant_rate is not None\
-            and Decimal(-1) * net_xn_shares <= aff.equity_grant_rate:
+            and Decimal(-1) * number_of_recent_shares_sold\
+            <= aff.equity_grant_rate:
         behavior = None
     else:
         behavior = seller

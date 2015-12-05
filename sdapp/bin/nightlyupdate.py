@@ -11,6 +11,4 @@ from sdapp.bin import populateintermediate, grabmarketdata,\
 
 from sdapp.bin import update_affiliation_data
 
-update_affiliation_data.update(affiliations_to_update)
-
 from sdapp.bin import populateviews, newpopulatesigs
