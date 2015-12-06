@@ -2,16 +2,16 @@ import datetime
 import pytz
 from decimal import Decimal
 
-signal_detect_lookback = datetime.timedelta(-180)
-recent_sale_period = datetime.timedelta(-91)
-hist_sale_period = datetime.timedelta(-91-365)
-grant_period_calc_lookback = datetime.timedelta(-730)
+signal_detect_lookback = datetime.timedelta(180)
+recent_sale_period = datetime.timedelta(91)
+hist_sale_period = datetime.timedelta(91+365)
+grant_period_calc_lookback = datetime.timedelta(730)
 min_day_gap_for_10b51_trigger_sell_rate = 10
 price_trigger_lookback = datetime.timedelta(30)
 significant_stock_move = Decimal(10)  # percent
 abs_sig_min = Decimal(10 * 1000)
 rel_sig_min = Decimal(.1)
-perf_period_days_td = datetime.timedelta(-90)
+perf_period_days_td = datetime.timedelta(90)
 big_xn_amt = Decimal(100 * 1000)
 EST = pytz.timezone('America/New_York')
 now = datetime.datetime.now(EST)

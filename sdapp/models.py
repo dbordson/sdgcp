@@ -60,6 +60,8 @@ class Affiliation(models.Model):
 
     increase_in_10b5_1_selling =\
         models.BooleanField(default=False)
+    expected_recent_10b5_1_sale_amount =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
     selling_date =\
         models.DateField(null=True)
     selling_price =\
@@ -70,9 +72,13 @@ class Affiliation(models.Model):
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
     selling_subs_performance =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
-    # Source this one from a trigger sale model
-    avg_avg_prior_trigger_performance =\
+
+    avg_prior_trigger_perf =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    num_in_avg_prior_trigger_perf = models.IntegerField(null=True)
+    avg_prior_10b5_1_trigger_perf =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    num_in_avg_prior_10b5_1_trigger_perf = models.IntegerField(null=True)
 
     quarters_with_sales_since_beg_2012 = models.IntegerField(null=True)
     quarter_count_3_mo_decline = models.IntegerField(null=True)

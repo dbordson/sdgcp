@@ -15,7 +15,7 @@ from sdapp.bin.globals import (abs_sig_min, big_xn_amt, buy,
                                perf_period_days_td, rel_sig_min,
                                recent_sale_period, sell, sell_response_to_perf,
                                seller, signal_detect_lookback,
-                               significant_stock_move, start_hist_lookback,
+                               significant_stock_move, hist_sale_period,
                                today, todaymid)
 from sdapp.bin.update_affiliation_data import calc_grants
 
@@ -166,7 +166,7 @@ def create_disc_xn_events():
     #              Q(security__in=equity_securities)))
 
     a = Form345Entry.objects\
-        .filter(filedatetime__gte=todaymid + start_hist_lookback)\
+        .filter(filedatetime__gte=todaymid - hist_sale_period)\
         .filter(transaction_date__gte=F('filedatetime') +
                 datetime.timedelta(-10))\
         .exclude(transaction_date=None)\
@@ -221,7 +221,7 @@ def replace_person_signals():
     print '    sorting...'
     a =\
         DiscretionaryXnEvent.objects\
-        .filter(filedate__gte=today + signal_detect_lookback)\
+        .filter(filedate__gte=today - signal_detect_lookback)\
         .values_list('reporting_person', 'issuer').distinct()
     newpersonsignals = []
     print '    interpreting...'
@@ -232,7 +232,7 @@ def replace_person_signals():
         # When primary ticker concept is added, adjust filter accordingly.
         aff_events = DiscretionaryXnEvent.objects.filter(issuer=issuer)\
             .filter(reporting_person=reporting_person)\
-            .filter(filedate__gte=today + signal_detect_lookback)
+            .filter(filedate__gte=today - signal_detect_lookback)
         sec_price_hists = SecurityPriceHist.objects.filter(issuer=issuer)\
             .filter(primary_ticker_sym=True)\
             .order_by('security__short_sec_title')
@@ -323,7 +323,7 @@ def replace_person_signals():
             signal_detect_date = last_file_date
         # Function checks if stock price stored in RAM; otherwise call from DB.
         stock_price_for_perf_lookback =\
-            get_price(sec_price_hist, filedate + perf_period_days_td,
+            get_price(sec_price_hist, filedate - perf_period_days_td,
                       issuer, hist_price_dict)
         stock_price_at_detection =\
             get_price(sec_price_hist, filedate, issuer, hist_price_dict)
@@ -536,7 +536,7 @@ def replace_company_signals():
         if weakness_buys.count() <= 1:
             issuer_xns =\
                 DiscretionaryXnEvent.objects.filter(issuer=issuer)\
-                .filter(filedate__gte=today + signal_detect_lookback)
+                .filter(filedate__gte=today - signal_detect_lookback)
             buy_xns = issuer_xns.filter(xn_acq_disp_code='A').count()
             net_xn_value =\
                 issuer_xns.aggregate(Sum('xn_val'))['xn_val__sum']
@@ -764,7 +764,7 @@ def replace_company_signals():
         else:
             signal_is_new = False
         total_transactions = DiscretionaryXnEvent.objects\
-            .filter(filedate__gte=today + signal_detect_lookback)\
+            .filter(filedate__gte=today - signal_detect_lookback)\
             .filter(issuer=issuer).count()
         issuer_affiliations = Affiliation.objects.filter(issuer=issuer)
         active_insiders = issuer_affiliations.filter(is_active=True).count()
@@ -786,17 +786,17 @@ def replace_company_signals():
             average_holding_reduction = None
         # Assign recent selling and historical selling numbers
         number_of_recent_shares_sold, value_of_recent_shares_sold =\
-            agg_selling_activity(issuer, today + recent_sale_period, today)
+            agg_selling_activity(issuer, today - recent_sale_period, today)
         historical_shares_sold, value_of_hist_shares_sold =\
-            agg_selling_activity(issuer, today + start_hist_lookback,
-                                 today + recent_sale_period)
+            agg_selling_activity(issuer, today - hist_sale_period,
+                                 today - recent_sale_period)
         historical_selling_rate_shares =\
             historical_shares_sold * Decimal(recent_sale_period.days) /\
-            Decimal(start_hist_lookback.days)
+            Decimal(hist_sale_period.days)
 
         historical_selling_rate_value =\
             value_of_hist_shares_sold * Decimal(recent_sale_period.days) /\
-            Decimal(start_hist_lookback.days)
+            Decimal(hist_sale_period.days)
 
         sigtoappend =\
             SigDisplay(issuer_id=issuer,

@@ -10,106 +10,12 @@ from sdapp.bin.globals import (buyer, grant_period_calc_lookback,
                                min_day_gap_for_10b51_trigger_sell_rate, now,
                                price_trigger_lookback, seller,
                                recent_sale_period, today, todaymid)
-from sdapp.models import (Affiliation, ClosePrice, Form345Entry,
+from sdapp.bin.sdapptools import (
+    median, rep_none_with_zero, get_price, price_decline, price_perf,
+    post_sale_perf
+)
+from sdapp.models import (Affiliation, Form345Entry,
                           IssuerCIK, SecurityPriceHist)
-
-
-def median(medlist):
-    if len(medlist) == 0:
-        return Decimal(1)
-    medlist.sort()
-    i = len(medlist)/2
-    if len(medlist) % 2 == 0:
-        median_number = (medlist[i] + medlist[i-1])/2
-    else:
-        median_number = medlist[i]
-    return median_number
-
-
-def rep_none_with_zero(inputvar):
-    if inputvar is not None:
-        return inputvar
-    else:
-        return Decimal(0)
-
-
-def laxer_start_price(sec_price_hist, pricedate):
-    wkd_td = datetime.timedelta(5)
-    close_prices = \
-        ClosePrice.objects.filter(securitypricehist=sec_price_hist)
-    price_list = \
-        close_prices.filter(close_date__gte=pricedate-wkd_td)\
-        .filter(close_date__lte=pricedate).order_by('close_date')
-    if price_list.exists():
-        return price_list[0].adj_close_price
-    else:
-        return None
-
-
-def get_price(sph_obj, pricedate, price_dict):
-    if sph_obj is None:
-        return None, price_dict
-    if type(sph_obj) is int:
-        sph_pk = sph_obj
-    else:
-        sph_pk = sph_obj.pk
-    if (sph_pk, pricedate) in price_dict:
-        return price_dict[sph_pk, pricedate]
-    close_price = \
-        ClosePrice.objects.filter(securitypricehist=sph_pk)\
-        .filter(close_date=pricedate)
-    if close_price.exists():
-        price_dict[sph_pk, pricedate] = close_price[0].adj_close_price
-        return close_price[0].adj_close_price
-    else:
-        laxer_price = laxer_start_price(sph_pk, pricedate)
-        price_dict[sph_pk, pricedate] = laxer_price
-        return laxer_price
-
-
-def price_decline(sph_obj, date, timedelta, sp_dict):
-    earlier_price =\
-        get_price(sph_obj, date, sp_dict)
-    later_price =\
-        get_price(sph_obj, date + timedelta, sp_dict)
-    if earlier_price > later_price:
-        return True
-    else:
-        return False
-
-
-def price_perf(sph_obj, date, timedelta, sp_dict):
-    earlier_price =\
-        get_price(sph_obj, date, sp_dict)
-    later_price =\
-        get_price(sph_obj, date + timedelta, sp_dict)
-    if earlier_price is None or later_price is None\
-            or earlier_price is Decimal(0):
-        return None
-    else:
-        return (later_price / earlier_price) - Decimal(1)
-
-
-def post_sale_perf(forms, sph_obj, timedelta, sp_dict):
-    perf_l = []
-    shares_l = []
-    for form in forms:
-        xn_price_perf =\
-            price_perf(sph_obj, form.transaction_date, timedelta, sp_dict)
-        xn_shares = form.transaction_shares
-        adj_factor = form.adjustment_factor
-        if xn_price_perf is not None\
-                and xn_shares is not None:
-            perf_l.append(xn_price_perf)
-            shares_l.append(xn_shares * adj_factor)
-    if len(perf_l) == 1:
-        return perf_l[0]
-    if len(perf_l) > 1:
-        post_sale_perf =\
-            sum(x * y for x, y in zip(perf_l, shares_l)) / sum(shares_l)
-        return post_sale_perf
-    else:
-        return None
 
 
 def sale_perf_attributes(issuer, reporting_owner):
@@ -338,9 +244,9 @@ def calc_equity_grants(issuer, reporting_owner, sec_ids, primary_sec_id,
         .filter(transaction_code='A')\
         .exclude(transaction_shares=None)\
         .exclude(transaction_date=None)\
-        .filter(transaction_date__gte=today + grant_period_calc_lookback +
-                datetime.timedelta(-5))\
-        .filter(filedatetime__gte=todaymid + grant_period_calc_lookback)
+        .filter(transaction_date__gte=today - grant_period_calc_lookback -
+                datetime.timedelta(5))\
+        .filter(filedatetime__gte=todaymid - grant_period_calc_lookback)
     grant_dates = \
         list(grants.order_by('transaction_date')
              .values_list('transaction_date', flat=True).distinct())
@@ -428,7 +334,6 @@ def calc_disc_xns(issuer, reporting_owner, sec_ids, primary_sec_id,
         .exclude(transaction_shares=None)
     if only_10b5_1 is True:
         disc_xns = disc_xns.filter(tenbfive_note=True)
-
     disc_xns = disc_xns\
         .values('transaction_shares', 'adjustment_factor',
                 'security__conversion_multiple', 'security',
@@ -470,13 +375,14 @@ def calc_disc_xns(issuer, reporting_owner, sec_ids, primary_sec_id,
             share_conversion_mult_to_primary_ticker
         net_xn_shares += prim_eq_shares
         net_xn_value += prim_eq_shares * price
-
     return net_xn_shares, net_xn_value
 
 
-def sale_clusters_in_hist_10b5_1(issuer, reporting_owner, sec_ids,
-                                 primary_sec_id, price_dict, ticker_sec_dict,
-                                 startdate, enddate):
+def hist_10b5_1_sales_per_year(
+        issuer, reporting_owner, sec_ids,
+        primary_sec_id, price_dict, ticker_sec_dict,
+        startdate, enddate
+):
     sales = Form345Entry.objects.filter(issuer_cik=issuer)\
         .filter(reporting_owner_cik=reporting_owner)\
         .filter(Q(security__in=sec_ids) |
@@ -486,44 +392,74 @@ def sale_clusters_in_hist_10b5_1(issuer, reporting_owner, sec_ids,
         .filter(transaction_date__gte=startdate)\
         .filter(transaction_date__lte=enddate)\
         .filter(tenbfive_note=True)
-    grant_dates = \
+    sale_dates = \
         list(sales.order_by('transaction_date')
              .values_list('transaction_date', flat=True).distinct())
     # Do not pass go if no grant info available
-    if len(grant_dates) == 0:
+    if len(sale_dates) == 0:
         sales_per_year = 0
-        transaction_date_price_info = [(None, None)]
     # If you have only one grant, assume annual because that is typical
-    elif len(grant_dates) == 1:
+    elif len(sale_dates) == 1:
         sales_per_year = 1
-        date = grant_dates[0]
-        transaction_date_price_info =\
-            [(date,
-              get_price(ticker_sec_dict[primary_sec_id],
-                        date, price_dict))]
     # Otherwise, figure out grants per year received based on spacing
     else:
         day_gaps = []
-        transaction_date_price_info = []
-        for first_date, second_date in zip(grant_dates, grant_dates[1:]):
+        for first_date, second_date in zip(sale_dates, sale_dates[1:]):
             gap = Decimal((second_date - first_date).days)
             if gap > min_day_gap_for_10b51_trigger_sell_rate:
                 day_gaps.append(gap)
-                date = first_date
-                price = get_price(ticker_sec_dict[primary_sec_id],
-                                  date, price_dict)
-                transaction_date_price_info.append((date, price))
-
         if len(day_gaps) == 0:
-            return None, (None, None)
+            return None
         median_day_gap = median(day_gaps)
         day_gap_options = [Decimal(30), Decimal(45), Decimal(60),
                            Decimal(91), Decimal(182), Decimal(365)]
         estimated_day_gap = min(day_gap_options,
                                 key=lambda x: abs(x-median_day_gap))
         sales_per_year = int(round(Decimal(365) / estimated_day_gap, 0))
+    return sales_per_year
 
-    return sales_per_year, transaction_date_price_info
+
+def recent_10b5_1_dates_prices(issuer, reporting_owner, sec_ids,
+                               primary_sec_id, price_dict, ticker_sec_dict,
+                               startdate, enddate):
+    sales = Form345Entry.objects.filter(issuer_cik=issuer)\
+        .filter(reporting_owner_cik=reporting_owner)\
+        .filter(Q(security__in=sec_ids) |
+                Q(underlying_security__in=sec_ids))\
+        .filter(transaction_code='S')\
+        .exclude(transaction_shares=None)\
+        .filter(transaction_date__gte=startdate)\
+        .filter(transaction_date__lte=enddate)\
+        .filter(tenbfive_note=True)
+    sale_dates = \
+        list(sales.order_by('transaction_date')
+             .values_list('transaction_date', flat=True).distinct())
+    # Do not pass go if no grant info available
+    if len(sale_dates) == 0:
+        transaction_date_price_info = [(None, None)]
+    # If you have only one grant, assume annual because that is typical
+    elif len(sale_dates) == 1:
+        date = sale_dates[0]
+        transaction_date_price_info =\
+            [(date,
+              get_price(ticker_sec_dict[primary_sec_id],
+                        date, price_dict))]
+    # Otherwise, figure out grants per year received based on spacing
+    else:
+        transaction_date_price_info = []
+        for first_date, second_date in zip(sale_dates, sale_dates[1:]):
+            gap = Decimal((second_date - first_date).days)
+            if gap > min_day_gap_for_10b51_trigger_sell_rate:
+                date = first_date
+                price = get_price(ticker_sec_dict[primary_sec_id],
+                                  date, price_dict)
+                transaction_date_price_info.append((date, price))
+        last_date = sale_dates[-1]
+        last_price = get_price(ticker_sec_dict[primary_sec_id],
+                               last_date, price_dict)
+        transaction_date_price_info.append((last_date, last_price))
+
+    return transaction_date_price_info
 
 
 def calc_person_affiliation(issuer, reporting_owner, price_dict):
@@ -542,6 +478,8 @@ def calc_person_affiliation(issuer, reporting_owner, price_dict):
     aff.is_something_else = latest_form.is_something_else
     aff.reporting_owner_title = latest_form.reporting_owner_title
     aff.latest_form_dt = latest_form.filedatetime
+    first_form = affiliation_forms.earliest('filedatetime')
+    aff.first_form_dt = first_form.filedatetime
     aff.is_active = True
     ticker_list = SecurityPriceHist.objects.filter(issuer=issuer)\
         .exclude(security=None).values_list('security', 'pk')
@@ -566,7 +504,7 @@ def calc_person_affiliation(issuer, reporting_owner, price_dict):
         calc_holdings(issuer, reporting_owner, ticker_sec_ids,
                       prim_security.pk, todaymid, price_dict, ticker_sec_dict)
 
-    prior_datetime = todaymid + recent_sale_period
+    prior_datetime = todaymid - recent_sale_period
     aff.prior_share_equivalents_held, aff.prior_average_conversion_price,\
         aff.prior_share_equivalents_value,\
         aff.prior_conversion_to_price_ratio =\
@@ -579,8 +517,8 @@ def calc_person_affiliation(issuer, reporting_owner, price_dict):
         calc_equity_grants(issuer, reporting_owner, ticker_sec_ids,
                            prim_security.pk, price_dict, ticker_sec_dict)
     # Recent / hist sale data
-    recent_period_start = today + recent_sale_period
-    hist_period_start = today + hist_sale_period
+    recent_period_start = today - recent_sale_period
+    hist_period_start = today - hist_sale_period
 
     number_of_recent_shares_sold, value_of_recent_shares_sold =\
         calc_disc_xns(issuer, reporting_owner, ticker_sec_ids,
@@ -635,13 +573,17 @@ def calc_person_affiliation(issuer, reporting_owner, price_dict):
 
     # Detect 10b5-1 rises
 
-    clusters_in_hist_period, transaction_date_price_info =\
-        sale_clusters_in_hist_10b5_1(issuer, reporting_owner, ticker_sec_ids,
-                                     prim_security.pk, price_dict,
-                                     ticker_sec_dict, hist_period_start,
-                                     recent_period_start)
-    if number_of_recent_shares_sold < Decimal(0) and\
-            historical_selling_rate_shares < Decimal(0) and\
+    clusters_in_hist_period =\
+        hist_10b5_1_sales_per_year(issuer, reporting_owner, ticker_sec_ids,
+                                   prim_security.pk, price_dict,
+                                   ticker_sec_dict, hist_period_start,
+                                   recent_period_start)
+    transaction_date_price_info = \
+        recent_10b5_1_dates_prices(issuer, reporting_owner, ticker_sec_ids,
+                                   prim_security.pk, price_dict,
+                                   ticker_sec_dict, recent_period_start, today)
+    if recent_share_sell_rate_for_10b5_1_plans < Decimal(0) and\
+            historical_share_sell_rate_for_10b5_1_plans < Decimal(0) and\
             clusters_in_hist_period is not None:
         recent = recent_share_sell_rate_for_10b5_1_plans
         hist = historical_share_sell_rate_for_10b5_1_plans
@@ -650,43 +592,46 @@ def calc_person_affiliation(issuer, reporting_owner, price_dict):
             (today - recent_period_start).days
         # Note that the signs are flipped below because we are looking
         # for the most negative quantities.
-
-        recent_10b5_1s = Form345Entry.objects\
-            .filter(issuer_cik=issuer)\
-            .filter(reporting_owner_cik=reporting_owner)\
-            .filter(Q(security__in=ticker_sec_ids) |
-                    Q(underlying_security__in=ticker_sec_ids))\
-            .filter(transaction_code='S')\
-            .exclude(transaction_shares=None)\
-            .filter(transaction_date__gte=recent_period_start)\
-            .filter(tenbfive_note=True)
         if hist is not None and clusters_in_hist_period is not None and\
                 clusters_in_hist_period is not 0 and\
                 recent < min(hist / len_hist_over_len_recent,
                              hist / clusters_in_hist_period) and\
-                recent_10b5_1s.exists():
+                len(transaction_date_price_info) != 0:
             increase_in_10b5_1 = True
             aff.increase_in_10b5_1_selling = increase_in_10b5_1
+            aff.expected_recent_10b5_1_sale_amount =\
+                min(hist / len_hist_over_len_recent,
+                    hist / clusters_in_hist_period)
+            trigger_detected = False
             for date, price in transaction_date_price_info:
                 trigger_10b5_1_price_perf =\
-                    price_perf(prim_security.pk,
+                    price_perf(ticker_sec_dict[prim_security.pk],
                                date - price_trigger_lookback,
                                price_trigger_lookback, price_dict)
-                recent_10b5_1_price_perf =\
-                    price_perf(prim_security.pk,
-                               date + recent_sale_period,
-                               -recent_sale_period, price_dict)
+                # recent_10b5_1_price_perf =\
+                #     price_perf(prim_security.pk,
+                #                date - recent_sale_period,
+                #                -recent_sale_period, price_dict)
                 if increase_in_10b5_1 is True and\
-                        trigger_10b5_1_price_perf > Decimal(0) and\
-                        recent_10b5_1_price_perf > Decimal(0):
+                        trigger_10b5_1_price_perf > Decimal(0):
                     aff.price_trigger_detected = True
-                aff.selling_price = price
-                aff.selling_date = date
-                aff.selling_prior_performance = trigger_10b5_1_price_perf
-                aff.selling_subs_performance =\
-                    price_perf(prim_security.pk,
-                               date,
-                               today - date, price_dict)
+                    trigger_detected = False
+                    aff.selling_price = price
+                    aff.selling_date = date
+                    aff.selling_prior_performance = trigger_10b5_1_price_perf
+                    aff.selling_subs_performance =\
+                        price_perf(prim_security.pk,
+                                   date,
+                                   today - date, price_dict)
+                if increase_in_10b5_1 is True and\
+                        trigger_detected is False:
+                    aff.selling_price = price
+                    aff.selling_date = date
+                    aff.selling_prior_performance = trigger_10b5_1_price_perf
+                    aff.selling_subs_performance =\
+                        price_perf(prim_security.pk,
+                                   date,
+                                   today - date, price_dict)
 
     # Placeholder behavior calculation
     if number_of_recent_shares_sold > Decimal(0):
@@ -796,10 +741,8 @@ def annotatestats():
             sale_perf_attributes(issuer, reporting_owner)
         counter += 1.0
         percentcomplete = round(counter / looplength * 100, 2)
-        sys.stdout.write("\r%s / %s affiliation to update: %.2f%%" %
+        sys.stdout.write("\r%s / %s affiliations to update: %.2f%%" %
                          (int(counter), int(looplength), percentcomplete))
         sys.stdout.flush()
         django.db.reset_queries()
     return
-
-upd()

@@ -163,7 +163,7 @@ def options(request, ticker):
     graph_data_json, titles_json, ymax =\
         holdingbuild.buildgraphdata(issuer, primary_ticker.ticker_sym,
                                     persons_data)
-    perf_period = -perf_period_days_td.days
+    perf_period = perf_period_days_td.days
 
     # latest_price = update_affiliation_data.get_price(primary_ticker, today)
 
@@ -232,10 +232,10 @@ def drilldown(request, ticker):
         sig_dates = appendif(sig_dates, signal_entry.sos_first_sig_detect_date)
         sig_dates = appendif(sig_dates, signal_entry.ds_detect_date)
     sig_highlights = []
-    for sig_date in sig_dates:
-        sig_highlights.append(
-            [js_readable_date(sig_date + datetime.timedelta(-5)),
-             js_readable_date(sig_date + datetime.timedelta(5))])
+    # for sig_date in sig_dates:
+    #     sig_highlights.append(
+    #         [js_readable_date(sig_date + datetime.timedelta(-5)),
+    #          js_readable_date(sig_date + datetime.timedelta(5))])
     startdate = now - datetime.timedelta(365)
 
     # Builds transaction queryset
