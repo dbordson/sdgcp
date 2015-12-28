@@ -58,27 +58,33 @@ class Affiliation(models.Model):
     prior_conversion_to_price_ratio =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
 
-    increase_in_10b5_1_selling =\
+    increase_in_selling_10b5_1 =\
         models.BooleanField(default=False)
-    expected_recent_10b5_1_sale_amount =\
+    expected_recent_share_sale_amount_10b5_1 =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
-    selling_date =\
+    recent_share_sale_amount_10b5_1 =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    selling_date_10b5_1 =\
         models.DateField(null=True)
-    selling_price =\
+    selling_close_price_10b5_1 =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
-    price_trigger_detected =\
+    price_trigger_detected_10b5_1 =\
         models.BooleanField(default=False)
-    selling_prior_performance =\
+    selling_prior_performance_10b5_1 =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
-    selling_subs_performance =\
+    selling_subs_performance_10b5_1 =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    # Below is the number of selling days in the recent signal.  The point is
+    # so we know whether one big xn on this day or prior/subsequent activity
+    # and just detected on this day.
+    xn_days_10b5_1 = models.IntegerField(null=True)
 
-    avg_prior_trigger_perf =\
+    avg_prior_trigger_perf_10b5_1 =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
-    num_in_avg_prior_trigger_perf = models.IntegerField(null=True)
-    avg_prior_10b5_1_trigger_perf =\
+    num_in_avg_prior_trigger_perf_10b5_1 = models.IntegerField(null=True)
+    avg_prior_trigger_perf_10b5_1 =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
-    num_in_avg_prior_10b5_1_trigger_perf = models.IntegerField(null=True)
+    num_in_avg_prior_trigger_perf_10b5_1 = models.IntegerField(null=True)
 
     quarters_with_sales_since_beg_2012 = models.IntegerField(null=True)
     quarter_count_3_mo_decline = models.IntegerField(null=True)

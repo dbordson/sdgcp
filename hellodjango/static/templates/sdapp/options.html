@@ -78,7 +78,6 @@
               <th>Title</th>
               <th style="text-align:center">Name</th>
               <th style="text-align:center">Shares</th>
-              <th style="text-align:center"><i>[% of shares outstanding]</i></th>
               <th style="text-align:center">Economic Interest</th>
               <th style="text-align:center">Behavior</th>
             </tr>
@@ -91,7 +90,6 @@
               <td>{{ aff.person_name }}</td>
               
               <td nowrap align="center">{{ aff.share_equivalents_held|floatformat:0|intword|intcomma}}</td>
-              <td align="center"><i>[__]</i></td>
               
               <td nowrap align="center">${{ aff.share_equivalents_value|floatformat:0|intword|intcomma}}</td>
               <td align="center">{% if aff.behavior != None %}{{ aff.behavior }}{% endif %}</td>

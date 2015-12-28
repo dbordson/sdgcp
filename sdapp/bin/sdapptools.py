@@ -23,6 +23,15 @@ def rep_none_with_zero(inputvar):
         return Decimal(0)
 
 
+def is_none_or_zero(inputvar):
+    if inputvar is None:
+        return True
+    elif inputvar == Decimal(0):
+        return True
+    else:
+        return False
+
+
 def laxer_start_price(sec_price_hist, pricedate):
     wkd_td = datetime.timedelta(5)
     close_prices = \

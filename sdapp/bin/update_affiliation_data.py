@@ -11,8 +11,8 @@ from sdapp.bin.globals import (buyer, grant_period_calc_lookback,
                                price_trigger_lookback, seller,
                                recent_sale_period, today, todaymid)
 from sdapp.bin.sdapptools import (
-    median, rep_none_with_zero, get_price, price_decline, price_perf,
-    post_sale_perf
+    get_price, median, is_none_or_zero, post_sale_perf, price_decline,
+    price_perf, rep_none_with_zero
 )
 from sdapp.models import (Affiliation, Form345Entry,
                           IssuerCIK, SecurityPriceHist)
@@ -434,32 +434,98 @@ def recent_10b5_1_dates_prices(issuer, reporting_owner, sec_ids,
     sale_dates = \
         list(sales.order_by('transaction_date')
              .values_list('transaction_date', flat=True).distinct())
-    # Do not pass go if no grant info available
+    # Do not pass go if no 10b5-1 info available
     if len(sale_dates) == 0:
         transaction_date_price_info = [(None, None)]
-    # If you have only one grant, assume annual because that is typical
-    elif len(sale_dates) == 1:
-        date = sale_dates[0]
-        transaction_date_price_info =\
-            [(date,
-              get_price(ticker_sec_dict[primary_sec_id],
-                        date, price_dict))]
-    # Otherwise, figure out grants per year received based on spacing
     else:
         transaction_date_price_info = []
-        for first_date, second_date in zip(sale_dates, sale_dates[1:]):
-            gap = Decimal((second_date - first_date).days)
-            if gap > min_day_gap_for_10b51_trigger_sell_rate:
-                date = first_date
-                price = get_price(ticker_sec_dict[primary_sec_id],
-                                  date, price_dict)
-                transaction_date_price_info.append((date, price))
-        last_date = sale_dates[-1]
-        last_price = get_price(ticker_sec_dict[primary_sec_id],
-                               last_date, price_dict)
-        transaction_date_price_info.append((last_date, last_price))
+        for date in sale_dates:
+            price = get_price(ticker_sec_dict[primary_sec_id],
+                              date, price_dict)
+            transaction_date_price_info.append((date, price))
 
     return transaction_date_price_info
+
+
+def calc_increase_in_xns(
+        acq_or_disp, aff, expected_recent_xn_amount, is_10b5_1, issuer,
+        price_dict, prim_security, recent, reporting_owner, ticker_sec_dict,
+        ticker_sec_ids, transaction_date_price_info):
+
+    if acq_or_disp == 'D':
+        xn_sign = Decimal(-1)
+    elif acq_or_disp == 'A':
+        xn_sign = Decimal(1)
+    else:
+        print 'error acq_or_disp is invalid value'
+        raise ValueError
+    # Determine if expected sale rate exceeded.
+    # Remember considerations regarding sign -- sales are negative.
+    if expected_recent_xn_amount is not None and\
+            recent * xn_sign > Decimal(0) and\
+            len(transaction_date_price_info) != 0 and\
+            recent * xn_sign > expected_recent_xn_amount * xn_sign:
+        increase_in_xns = True
+        xn_days = len(transaction_date_price_info)
+        total_net_xn_shares = Decimal(0)
+        for date, price in transaction_date_price_info:
+            trigger_price_perf =\
+                price_perf(
+                    ticker_sec_dict[prim_security.pk],
+                    date - price_trigger_lookback, price_trigger_lookback,
+                    price_dict
+                )
+            startdate = date
+            enddate = date
+            net_xn_shares, net_xn_value =\
+                calc_disc_xns(
+                    issuer, reporting_owner, ticker_sec_ids,
+                    prim_security.pk, price_dict, ticker_sec_dict,
+                    startdate, enddate, is_10b5_1
+                )
+            total_net_xn_shares += net_xn_shares
+            # We tie the signal performance to the first transaction
+            # to exceed the expected period sales.  This serves purposes
+            # of consistency with any backtesting criteria and is more
+            # logically defensible than first or last xns in period.
+            if total_net_xn_shares * xn_sign >\
+                    expected_recent_xn_amount * xn_sign:
+                selling_date = date
+                selling_price = price
+                selling_prior_performance =\
+                    price_perf(
+                        ticker_sec_dict[prim_security.pk],
+                        date - price_trigger_lookback, price_trigger_lookback,
+                        price_dict
+                    )
+                selling_subs_performance =\
+                    price_perf(
+                        prim_security.pk, date, today - date, price_dict
+                    )
+
+                if trigger_price_perf > Decimal(0):
+                    price_trigger_detected = True
+                else:
+                    price_trigger_detected = False
+                break
+            else:
+                price_trigger_detected = False
+                selling_date = None
+                selling_price = None
+                selling_prior_performance = None
+                selling_subs_performance = None
+
+    else:
+        increase_in_xns = False
+        price_trigger_detected = False
+        selling_date = None
+        selling_price = None
+        selling_prior_performance = None
+        selling_subs_performance = None
+        xn_days = None
+    return increase_in_xns, price_trigger_detected,\
+        selling_date, selling_price, selling_prior_performance,\
+        selling_subs_performance, xn_days
 
 
 def calc_person_affiliation(issuer, reporting_owner, price_dict):
@@ -582,57 +648,46 @@ def calc_person_affiliation(issuer, reporting_owner, price_dict):
         recent_10b5_1_dates_prices(issuer, reporting_owner, ticker_sec_ids,
                                    prim_security.pk, price_dict,
                                    ticker_sec_dict, recent_period_start, today)
-    if recent_share_sell_rate_for_10b5_1_plans < Decimal(0) and\
+    # First determine if there is enough data to know expected selling rate.
+    # Note that if historical selling rate is zero, we do not proceed.  The
+    # idea is that if no historical 10b5_1 selling, we don't count an increase
+    #  -- in this case an increase in overall selling is relevant but not entry
+    # into a 10b5_1 plan.  (Otherwise captures innocuous new plans)
+    if not is_none_or_zero(recent_share_sell_rate_for_10b5_1_plans) and\
+            not is_none_or_zero(clusters_in_hist_period) and\
             historical_share_sell_rate_for_10b5_1_plans < Decimal(0) and\
-            clusters_in_hist_period is not None:
+            not is_none_or_zero(historical_share_sell_rate_for_10b5_1_plans):
         recent = recent_share_sell_rate_for_10b5_1_plans
         hist = historical_share_sell_rate_for_10b5_1_plans
         len_hist_over_len_recent =\
             (recent_period_start - hist_period_start).days /\
             (today - recent_period_start).days
-        # Note that the signs are flipped below because we are looking
-        # for the most negative quantities.
-        if hist is not None and clusters_in_hist_period is not None and\
-                clusters_in_hist_period is not 0 and\
-                recent < min(hist / len_hist_over_len_recent,
-                             hist / clusters_in_hist_period) and\
-                len(transaction_date_price_info) != 0:
-            increase_in_10b5_1 = True
-            aff.increase_in_10b5_1_selling = increase_in_10b5_1
-            aff.expected_recent_10b5_1_sale_amount =\
-                min(hist / len_hist_over_len_recent,
-                    hist / clusters_in_hist_period)
-            trigger_detected = False
-            for date, price in transaction_date_price_info:
-                trigger_10b5_1_price_perf =\
-                    price_perf(ticker_sec_dict[prim_security.pk],
-                               date - price_trigger_lookback,
-                               price_trigger_lookback, price_dict)
-                # recent_10b5_1_price_perf =\
-                #     price_perf(prim_security.pk,
-                #                date - recent_sale_period,
-                #                -recent_sale_period, price_dict)
-                if increase_in_10b5_1 is True and\
-                        trigger_10b5_1_price_perf > Decimal(0):
-                    aff.price_trigger_detected = True
-                    trigger_detected = False
-                    aff.selling_price = price
-                    aff.selling_date = date
-                    aff.selling_prior_performance = trigger_10b5_1_price_perf
-                    aff.selling_subs_performance =\
-                        price_perf(prim_security.pk,
-                                   date,
-                                   today - date, price_dict)
-                if increase_in_10b5_1 is True and\
-                        trigger_detected is False:
-                    aff.selling_price = price
-                    aff.selling_date = date
-                    aff.selling_prior_performance = trigger_10b5_1_price_perf
-                    aff.selling_subs_performance =\
-                        price_perf(prim_security.pk,
-                                   date,
-                                   today - date, price_dict)
+        expected_recent_share_sale_amount_10b5_1 =\
+            min(hist / len_hist_over_len_recent,
+                hist / clusters_in_hist_period)
+    else:
+        recent = None
+        len_hist_over_len_recent = None
+        expected_recent_share_sale_amount_10b5_1 = None
 
+    is_10b5_1 = True
+    increase_in_xns, price_trigger_detected, selling_date, selling_price,\
+        selling_prior_performance, selling_subs_performance, xn_days =\
+        calc_increase_in_xns(
+            'D', aff, expected_recent_share_sale_amount_10b5_1, is_10b5_1,
+            issuer, price_dict, prim_security, recent,
+            reporting_owner,
+            ticker_sec_dict, ticker_sec_ids, transaction_date_price_info)
+    aff.increase_in_selling_10b5_1 = increase_in_xns
+    aff.expected_recent_share_sale_amount_10b5_1 =\
+        expected_recent_share_sale_amount_10b5_1
+    aff.recent_share_sale_amount_10b5_1 = recent
+    aff.selling_date_10b5_1 = selling_date
+    aff.selling_price_10b5_1 = selling_price
+    aff.selling_prior_performance_10b5_1 = selling_prior_performance
+    aff.selling_subs_performance_10b5_1 = selling_subs_performance
+    aff.price_trigger_detected_10b5_1 = price_trigger_detected
+    aff.xn_days_10b5_1 = xn_days
     # Placeholder behavior calculation
     if number_of_recent_shares_sold > Decimal(0):
         behavior = buyer
