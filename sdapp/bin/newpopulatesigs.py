@@ -17,7 +17,7 @@ from sdapp.bin.globals import (abs_sig_min, big_xn_amt, buy,
                                seller, signal_detect_lookback,
                                significant_stock_move, hist_sale_period,
                                today, todaymid)
-from sdapp.bin.update_affiliation_data import calc_grants
+# from sdapp.bin.update_affiliation_data import calc_grants
 
 
 def appendif(startlist, newitem):
@@ -254,8 +254,13 @@ def replace_person_signals():
         last_file_date = entryfiledates[-1]
         transactions = len(entryfiledates)
         #
+        # eq_annual_share_grants =\
+        #    calc_grants(issuer, reporting_person, security)
+        # THE BELOW NEEDS TO BE FIXED -- ASSUMES EQUITY GRANTS ARE ZERO
+        # PLACEHOLDER HERE BECAUSE CALC MAY BE OBVIATED ONCE NEW
+        # update_affiliation_data script is done
         eq_annual_share_grants =\
-            calc_grants(issuer, reporting_person, security)
+            Decimal(0)
         #
         # Get holdings before form filed
         prior_holding_value =\
