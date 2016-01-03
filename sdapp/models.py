@@ -58,11 +58,61 @@ class Affiliation(models.Model):
     prior_conversion_to_price_ratio =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
 
+    recent_xns_shares_disc =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    recent_xns_value_disc =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    hist_xns_shares_disc =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    hist_xns_value_disc =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+
+    # non 10b5-1 selling activity
+    increase_in_selling_disc =\
+        models.BooleanField(default=False)
+    expected_recent_share_sale_amount_disc =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    selling_date_disc =\
+        models.DateField(null=True)
+    selling_close_price_disc =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    price_motivated_sale_detected_disc =\
+        models.BooleanField(default=False)
+    selling_prior_performance_disc =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    selling_subs_performance_disc =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+
+    # non 10b5-1 buying activity
+    increase_in_buying_disc =\
+        models.BooleanField(default=False)
+    buying_date_disc =\
+        models.DateField(null=True)
+    buying_close_price_disc =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    price_motivated_buy_detected_disc =\
+        models.BooleanField(default=False)
+    buying_prior_performance_disc =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    buying_subs_performance_disc =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+
+    # Below is the number of selling days in the recent signal.  The point is
+    # so we know whether one big xn on this day or prior/subsequent activity
+    # and just detected on this day.
+    xn_days_disc = models.IntegerField(null=True)
+
+    recent_xns_shares_10b5_1 =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    recent_xns_value_10b5_1 =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    hist_xns_shares_10b5_1 =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    hist_xns_value_10b5_1 =\
+        models.DecimalField(max_digits=15, decimal_places=2, null=True)
     increase_in_selling_10b5_1 =\
         models.BooleanField(default=False)
     expected_recent_share_sale_amount_10b5_1 =\
-        models.DecimalField(max_digits=15, decimal_places=2, null=True)
-    recent_share_sale_amount_10b5_1 =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
     selling_date_10b5_1 =\
         models.DateField(null=True)
@@ -71,51 +121,45 @@ class Affiliation(models.Model):
     price_trigger_detected_10b5_1 =\
         models.BooleanField(default=False)
     selling_prior_performance_10b5_1 =\
-        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
     selling_subs_performance_10b5_1 =\
-        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
     # Below is the number of selling days in the recent signal.  The point is
     # so we know whether one big xn on this day or prior/subsequent activity
     # and just detected on this day.
     xn_days_10b5_1 = models.IntegerField(null=True)
 
-    avg_prior_trigger_perf_10b5_1 =\
-        models.DecimalField(max_digits=15, decimal_places=2, null=True)
-    num_in_avg_prior_trigger_perf_10b5_1 = models.IntegerField(null=True)
-    avg_prior_trigger_perf_10b5_1 =\
-        models.DecimalField(max_digits=15, decimal_places=2, null=True)
-    num_in_avg_prior_trigger_perf_10b5_1 = models.IntegerField(null=True)
-
-    quarters_with_sales_since_beg_2012 = models.IntegerField(null=True)
+    quarters_with_disc_sales_in_tracking_period =\
+        models.IntegerField(null=True)
     quarter_count_3_mo_decline = models.IntegerField(null=True)
     quarter_count_6_mo_decline = models.IntegerField(null=True)
     quarter_count_9_mo_decline = models.IntegerField(null=True)
     quarter_count_12_mo_decline = models.IntegerField(null=True)
     post_sale_perf_3mo =\
-        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
     post_sale_perf_6mo =\
-        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
     post_sale_perf_9mo =\
-        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
     post_sale_perf_12mo =\
-        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
 
-    quarters_with_10b_sales_since_beg_2012 = models.IntegerField(null=True)
+    quarters_with_10b_sales_in_tracking_period = models.IntegerField(null=True)
     quarter_count_3_mo_decline_10b = models.IntegerField(null=True)
     quarter_count_6_mo_decline_10b = models.IntegerField(null=True)
     quarter_count_9_mo_decline_10b = models.IntegerField(null=True)
     quarter_count_12_mo_decline_10b = models.IntegerField(null=True)
     post_sale_perf_10b_3mo =\
-        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
     post_sale_perf_10b_6mo =\
-        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
     post_sale_perf_10b_9mo =\
-        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
     post_sale_perf_10b_12mo =\
-        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
 
-    annualized_perf_from_beg_2012_to_today =\
-        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    annualized_perf_in_tracking_period =\
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
     # share_equivalents_value_percentile = \
     #     models.DecimalField(max_digits=15, decimal_places=2, null=True)
     # average_conversion_price_ratio_percentile = \

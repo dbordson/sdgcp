@@ -91,21 +91,21 @@ def price_perf(sph_obj, date, timedelta, sp_dict):
 
 def post_sale_perf(forms, sph_obj, timedelta, sp_dict):
     perf_l = []
-    shares_l = []
+    value_l = []
     for form in forms:
         xn_price_perf =\
             price_perf(sph_obj, form.transaction_date, timedelta, sp_dict)
         xn_shares = form.transaction_shares
-        adj_factor = form.adjustment_factor
-        if xn_price_perf is not None\
-                and xn_shares is not None:
+        xn_price = form.xn_price_per_share
+        if xn_price_perf is not None and not is_none_or_zero(xn_shares)\
+                and not is_none_or_zero(xn_price):
             perf_l.append(xn_price_perf)
-            shares_l.append(xn_shares * adj_factor)
+            value_l.append(xn_shares * xn_price)
     if len(perf_l) == 1:
         return perf_l[0]
     if len(perf_l) > 1:
         post_sale_perf =\
-            sum(x * y for x, y in zip(perf_l, shares_l)) / sum(shares_l)
+            sum(x * y for x, y in zip(perf_l, value_l)) / sum(value_l)
         return post_sale_perf
     else:
         return None

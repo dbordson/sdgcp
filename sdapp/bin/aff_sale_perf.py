@@ -17,7 +17,7 @@ from sdapp.bin.sdapptools import (
 )
 
 from sdapp.bin.update_affiliation_data import(
-    calc_disc_xns, hist_10b5_1_sales_per_year, recent_10b5_1_dates_prices
+    calc_disc_xns, hist_net_xn_clusters_per_year, recent_dates_prices
 )
 
 
@@ -37,33 +37,33 @@ def weighted_avg(vector_input_weight_table):
 def calc_prior_trigger_perf_for_sale(
         aff, sale, issuer, reporting_owner, ticker_sec_ids, prim_sec_id,
         price_dict, ticker_sec_dict, transaction_date, recent_period_start,
-        hist_period_start, only_10b5_1
+        hist_period_start, is_10b5_1
 ):
 
-    recent_share_sell_rate_for_10b5_1_plans, recent_10b5_1_xn_value =\
+    recent_xns_shares_10b5_1, recent_xns_value_10b5_1 =\
         calc_disc_xns(
             issuer, reporting_owner, ticker_sec_ids, prim_sec_id, price_dict,
-            ticker_sec_dict, recent_period_start, transaction_date, True
+            ticker_sec_dict, recent_period_start, transaction_date, is_10b5_1
         )
 
-    historical_share_sell_rate_for_10b5_1_plans, hist_10b5_1_xn_value =\
+    hist_xns_shares_10b5_1, hist_xns_value_10b5_1 =\
         calc_disc_xns(
             issuer, reporting_owner, ticker_sec_ids, prim_sec_id, price_dict,
-            ticker_sec_dict, hist_period_start, recent_period_start, True
+            ticker_sec_dict, hist_period_start, recent_period_start, is_10b5_1
         )
 
     clusters_in_hist_period =\
-        hist_10b5_1_sales_per_year(
+        hist_net_xn_clusters_per_year(
             issuer, reporting_owner, ticker_sec_ids, prim_sec_id, price_dict,
-            ticker_sec_dict, hist_period_start, recent_period_start
+            ticker_sec_dict, hist_period_start, recent_period_start, is_10b5_1
         )
     transaction_date_price_info = \
-        recent_10b5_1_dates_prices(
+        recent_dates_prices(
             issuer, reporting_owner, ticker_sec_ids, prim_sec_id, price_dict,
-            ticker_sec_dict, recent_period_start, transaction_date
+            ticker_sec_dict, recent_period_start, transaction_date, is_10b5_1
         )
-    recent = recent_share_sell_rate_for_10b5_1_plans
-    hist = historical_share_sell_rate_for_10b5_1_plans
+    recent = recent_xns_shares_10b5_1
+    hist = hist_xns_shares_10b5_1
     len_hist_over_len_recent =\
         (hist_sale_period - recent_sale_period).days /\
         (recent_sale_period).days

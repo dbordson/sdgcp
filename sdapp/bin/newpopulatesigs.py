@@ -693,7 +693,9 @@ def replace_company_signals():
 
             if sell_xns >= 3 and net_xn_value <= -abs_sig_min\
                     and annual_grant_rate is not None\
-                    and net_shares <= -annual_grant_rate:
+                    and net_shares <= -annual_grant_rate\
+                    and issuer_xns.filter(xn_acq_disp_code='D')\
+                    .exclude(filedate=None).exists():
                 if insider_num > 1:
                     cs_plural_insiders = True
                 else:

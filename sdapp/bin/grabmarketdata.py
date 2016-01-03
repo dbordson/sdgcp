@@ -17,13 +17,13 @@ def savetickerinfo(SPH_id, ticker, security_id):
                                              enddate.day))
     tickerdata['Adj Factor'] =\
         tickerdata['Close'].divide(tickerdata['Adj Close'])
-
+    #
     tickerdata['Adj Factor Shifted'] =\
         tickerdata['Adj Factor'].shift(1)
-
+    #
     tickerdata['Adj Factor Old/New'] =\
         tickerdata['Adj Factor Shifted'].divide(tickerdata['Adj Factor'])
-
+    #
     # The data_to_cp does not need to exit if we are not limited on rows
     # to the extent we need past prices for the full period,
     # we may collapse these two calls into one DataFrame
@@ -34,15 +34,15 @@ def savetickerinfo(SPH_id, ticker, security_id):
                                                  enddate.day))
         data_to_cp['Adj Factor'] =\
             data_to_cp['Close'].divide(data_to_cp['Adj Close'])
-
+        #
         data_to_cp['Adj Factor Shifted'] =\
             data_to_cp['Adj Factor'].shift(1)
-
+        #
         data_to_cp['Adj Factor Old/New'] =\
             data_to_cp['Adj Factor Shifted'].divide(data_to_cp['Adj Factor'])
     else:
         data_to_cp = tickerdata
-
+    #
     closepricesforsave = []
     for a in data_to_cp.itertuples():
         newcloseprice = ClosePrice(close_price=a[4],
@@ -53,11 +53,11 @@ def savetickerinfo(SPH_id, ticker, security_id):
     ClosePrice.objects.filter(securitypricehist_id=SPH_id)\
         .delete()
     ClosePrice.objects.bulk_create(closepricesforsave)
-
+    #
     splitrecords = tickerdata.loc[tickerdata['Adj Factor Old/New'] >= 1.1]
-
+    #
     dictforsave = splitrecords.to_dict()['Adj Factor Old/New']
-
+    #
     for key in dictforsave:
         if not SplitOrAdjustmentEvent.objects.filter(security_id=security_id)\
                 .filter(event_date=str(datetime.date(key)))\

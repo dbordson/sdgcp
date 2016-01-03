@@ -2,12 +2,15 @@ import datetime
 import pytz
 from decimal import Decimal
 
+tracking_period_calendar_years = 5
 signal_detect_lookback = datetime.timedelta(180)
 recent_sale_period = datetime.timedelta(91)
 hist_sale_period = datetime.timedelta(91+365)
 grant_period_calc_lookback = datetime.timedelta(730)
 min_day_gap_for_10b51_trigger_sell_rate = 10
 price_trigger_lookback = datetime.timedelta(30)
+trigger_min_stock_move = Decimal(.1000)
+# Get rid of below at some point
 significant_stock_move = Decimal(10)  # percent
 abs_sig_min = Decimal(10 * 1000)
 rel_sig_min = Decimal(.1)
