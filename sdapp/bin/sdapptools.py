@@ -77,6 +77,17 @@ def price_decline(sph_obj, date, timedelta, sp_dict):
         return False
 
 
+def price_increase(sph_obj, date, timedelta, sp_dict):
+    earlier_price =\
+        get_price(sph_obj, date, sp_dict)
+    later_price =\
+        get_price(sph_obj, date + timedelta, sp_dict)
+    if earlier_price < later_price:
+        return True
+    else:
+        return False
+
+
 def price_perf(sph_obj, date, timedelta, sp_dict):
     earlier_price =\
         get_price(sph_obj, date, sp_dict)
@@ -89,7 +100,7 @@ def price_perf(sph_obj, date, timedelta, sp_dict):
         return (later_price / earlier_price) - Decimal(1)
 
 
-def post_sale_perf(forms, sph_obj, timedelta, sp_dict):
+def post_xn_perf(forms, sph_obj, timedelta, sp_dict):
     perf_l = []
     value_l = []
     for form in forms:
@@ -104,8 +115,8 @@ def post_sale_perf(forms, sph_obj, timedelta, sp_dict):
     if len(perf_l) == 1:
         return perf_l[0]
     if len(perf_l) > 1:
-        post_sale_perf =\
+        post_xn_perf =\
             sum(x * y for x, y in zip(perf_l, value_l)) / sum(value_l)
-        return post_sale_perf
+        return post_xn_perf
     else:
         return None

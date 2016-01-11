@@ -5,7 +5,7 @@ import django.db
 from django.db.models import Q
 
 from sdapp.bin.globals import (
-    hist_sale_period, perf_period_days_td, price_trigger_lookback,
+    abs_sig_min, hist_sale_period, perf_period_days_td, price_trigger_lookback,
     recent_sale_period, today
 )
 from sdapp.models import (
@@ -17,7 +17,8 @@ from sdapp.bin.sdapptools import (
 )
 
 from sdapp.bin.update_affiliation_data import(
-    calc_disc_xns, hist_net_xn_clusters_per_year, recent_dates_prices
+    calc_disc_xns, calc_increase_in_xns, calc_equity_grants,
+    hist_net_xn_clusters_per_year, recent_dates_prices
 )
 
 
@@ -37,102 +38,80 @@ def weighted_avg(vector_input_weight_table):
 def calc_prior_trigger_perf_for_sale(
         aff, sale, issuer, reporting_owner, ticker_sec_ids, prim_sec_id,
         price_dict, ticker_sec_dict, transaction_date, recent_period_start,
-        hist_period_start, is_10b5_1
-):
+        hist_period_start, is_10b5_1, acq_or_disp):
+    hist_lookback = True
 
-    recent_xns_shares_10b5_1, recent_xns_value_10b5_1 =\
+    recent_xn_shares, recent_xn_value =\
         calc_disc_xns(
             issuer, reporting_owner, ticker_sec_ids, prim_sec_id, price_dict,
             ticker_sec_dict, recent_period_start, transaction_date, is_10b5_1
         )
 
-    hist_xns_shares_10b5_1, hist_xns_value_10b5_1 =\
-        calc_disc_xns(
-            issuer, reporting_owner, ticker_sec_ids, prim_sec_id, price_dict,
-            ticker_sec_dict, hist_period_start, recent_period_start, is_10b5_1
-        )
+    if acq_or_disp == 'D':
+        hist_xns_shares, hist_xns_value_disc =\
+            calc_disc_xns(
+                issuer, reporting_owner, ticker_sec_ids, prim_sec_id,
+                price_dict, ticker_sec_dict, hist_period_start,
+                recent_period_start, is_10b5_1
+            )
+    else:
+        hist_xns_shares =\
+            None
 
-    clusters_in_hist_period =\
-        hist_net_xn_clusters_per_year(
-            issuer, reporting_owner, ticker_sec_ids, prim_sec_id, price_dict,
-            ticker_sec_dict, hist_period_start, recent_period_start, is_10b5_1
-        )
+    if acq_or_disp == 'D' and is_10b5_1 is True:
+        clusters_in_hist_period =\
+            hist_net_xn_clusters_per_year(
+                issuer, reporting_owner, ticker_sec_ids, prim_sec_id,
+                price_dict, ticker_sec_dict, hist_period_start,
+                recent_period_start, is_10b5_1
+            )
+        equity_grant_rate, avg_grant_conv_price, grants_per_year =\
+            None, None, None
+
+        cluster_rate = hist_xns_shares
+        clusters_in_hist_period = clusters_in_hist_period
+
+    else:
+        clusters_in_hist_period = None
+        equity_grant_rate, avg_grant_conv_price, grants_per_year =\
+            calc_equity_grants(
+                issuer, reporting_owner, ticker_sec_ids,
+                prim_sec_id, price_dict, ticker_sec_dict
+            )
+        cluster_rate = Decimal(-1) * equity_grant_rate
+        clusters_in_hist_period = grants_per_year
+
     transaction_date_price_info = \
         recent_dates_prices(
             issuer, reporting_owner, ticker_sec_ids, prim_sec_id, price_dict,
             ticker_sec_dict, recent_period_start, transaction_date, is_10b5_1
         )
-    recent = recent_xns_shares_10b5_1
-    hist = hist_xns_shares_10b5_1
+
+    recent = recent_xn_shares
+
     len_hist_over_len_recent =\
         (hist_sale_period - recent_sale_period).days /\
         (recent_sale_period).days
-    if rep_none_with_zero(hist) == 0 or\
+    if acq_or_disp == 'A':
+        exp_recent_rate = Decimal(0)
+    elif rep_none_with_zero(cluster_rate) == 0 or\
             rep_none_with_zero(clusters_in_hist_period) == 0:
-        exp_recent_rate = 0
+        exp_recent_rate = Decimal(0)
     else:
-        exp_recent_rate = min(hist / len_hist_over_len_recent,
-                              hist / clusters_in_hist_period)
+        exp_recent_rate = min(cluster_rate / len_hist_over_len_recent,
+                              cluster_rate / clusters_in_hist_period)
     # Note that the signs are flipped below because we are looking
     # for the most negative quantities.
-    if recent < Decimal(0) and\
-            hist < Decimal(0) and\
-            clusters_in_hist_period is not None and\
-            clusters_in_hist_period != 0 and\
-            recent < exp_recent_rate and\
-            len(transaction_date_price_info) != 0:
+    increase_in_xns, price_selling, selling_date, selling_price,\
+        selling_prior_performance, selling_subs_performance, xn_days =\
+        calc_increase_in_xns(
+            abs_sig_min, acq_or_disp, aff, exp_recent_rate, hist_lookback,
+            is_10b5_1, issuer, price_dict, prim_sec_id, recent,
+            recent_xn_value, reporting_owner, ticker_sec_dict, ticker_sec_ids,
+            transaction_date_price_info)
 
-        trigger_10b5_1_price_perf =\
-            price_perf(
-                ticker_sec_dict[prim_sec_id],
-                transaction_date - price_trigger_lookback,
-                price_trigger_lookback, price_dict
-            )
-
-        if sale.security.pk in ticker_sec_dict:
-            sec_id = sale.security.pk
-            underlying_conversion_mult = Decimal(1)
-        else:
-            sec_id = sale.underlying_security.pk
-            underlying_conversion_mult =\
-                sale.security__conversion_multiple
-
-        if sec_id != prim_sec_id and\
-                sale.underlying_security.pk != prim_sec_id:
-            sec_price = get_price(ticker_sec_dict[sec_id],
-                                  transaction_date, price_dict)
-            prim_price = get_price(ticker_sec_dict[prim_sec_id],
-                                   transaction_date, price_dict)
-            if sec_price is None or prim_price is None or\
-                    prim_price == Decimal(0):
-                return None, Decimal(0), Decimal(0)
-            share_conversion_mult_to_primary_ticker = \
-                sec_price / prim_price
-        else:
-            share_conversion_mult_to_primary_ticker = Decimal(1)
-
-        xn_sign = {'S': Decimal(-1), 'P': Decimal(1)}
-        prim_eq_shares = sale.transaction_shares *\
-            sale.adjustment_factor * underlying_conversion_mult *\
-            xn_sign[sale.transaction_code] *\
-            share_conversion_mult_to_primary_ticker
-        if trigger_10b5_1_price_perf > Decimal(0):
-            selling_subs_performance =\
-                price_perf(
-                    ticker_sec_dict[prim_sec_id], transaction_date,
-                    perf_period_days_td, price_dict
-                )
-            return True, rep_none_with_zero(selling_subs_performance),\
-                prim_eq_shares
-        else:
-            selling_subs_performance =\
-                price_perf(
-                    ticker_sec_dict[prim_sec_id], transaction_date,
-                    perf_period_days_td, price_dict
-                )
-            return False, rep_none_with_zero(selling_subs_performance),\
-                prim_eq_shares
-    return None, Decimal(0), Decimal(0)
+    return increase_in_xns, recent_xn_value, selling_date,\
+        selling_subs_performance
 
 
 def calc_avg_avg_prior_trigger_performance(aff):

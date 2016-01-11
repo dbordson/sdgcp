@@ -7,7 +7,5 @@ from sdapp.bin import formscraper, formparser, populateintermediate,\
     populateformadjustments, supersedeinit, adjsharesremaining
 
 from sdapp.bin import update_affiliation_data
-update_affiliation_data.upd()
-update_affiliation_data.annotatestats()
 
 from sdapp.bin import populateviews, newpopulatesigs

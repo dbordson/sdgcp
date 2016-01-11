@@ -7,15 +7,127 @@ from django.db.models import F, Q
 
 from sdapp.bin.globals import (
     abs_sig_min, buyer, grant_period_calc_lookback, hist_sale_period,
-    min_day_gap_for_10b51_trigger_sell_rate, now, price_trigger_lookback,
-    seller, recent_sale_period, today, todaymid,
+    min_day_gap_for_10b51_trigger_sell_rate, now, perf_period_days_td,
+    price_trigger_lookback, seller, recent_sale_period, today, todaymid,
     tracking_period_calendar_years, trigger_min_stock_move)
 from sdapp.bin.sdapptools import (
-    get_price, median, is_none_or_zero, post_sale_perf, price_decline,
+    get_price, median, is_none_or_zero, post_xn_perf,
     price_perf, rep_none_with_zero
 )
 from sdapp.models import (Affiliation, Form345Entry,
                           IssuerCIK, SecurityPriceHist)
+
+
+def price_reponse_count(
+        sph_obj, enddate, td, sp_dict, perf_sign):
+    period_price_perf =\
+        price_perf(sph_obj, enddate, td, sp_dict)
+    if period_price_perf is None:
+        favorable_outcome = 0
+        measured_outcome = 0
+        return favorable_outcome, measured_outcome
+    elif period_price_perf * perf_sign > Decimal(0):
+        favorable_outcome = 1
+        measured_outcome = 1
+        return favorable_outcome, measured_outcome
+    else:
+        favorable_outcome = 0
+        measured_outcome = 1
+        return favorable_outcome, measured_outcome
+
+
+def update_xn_counts(
+        period_xns, acq_or_disp, sph_obj, enddate,
+        sp_dict):
+    td3mo = datetime.timedelta(91)
+    td6mo = datetime.timedelta(182)
+    td9mo = datetime.timedelta(275)
+    td12mo = datetime.timedelta(365)
+    if acq_or_disp == 'A':
+        perf_sign = Decimal(1)
+    else:
+        perf_sign = Decimal(-1)
+
+    if period_xns.exists():
+        qtr_with_disc_xns_in_tracking_period = 1
+
+        xn_qtr_3_mo_favorable, xn_qtr_3_mo_measured =\
+            price_reponse_count(
+                sph_obj, enddate, td3mo, sp_dict, perf_sign)
+
+        xn_qtr_6_mo_favorable, xn_qtr_6_mo_measured =\
+            price_reponse_count(
+                sph_obj, enddate, td6mo, sp_dict, perf_sign)
+
+        xn_qtr_9_mo_favorable, xn_qtr_9_mo_measured =\
+            price_reponse_count(
+                sph_obj, enddate, td9mo, sp_dict, perf_sign)
+
+        xn_qtr_12_mo_favorable, xn_qtr_12_mo_measured =\
+            price_reponse_count(
+                sph_obj, enddate, td12mo, sp_dict, perf_sign)
+
+        return qtr_with_disc_xns_in_tracking_period,\
+            xn_qtr_3_mo_favorable, xn_qtr_3_mo_measured,\
+            xn_qtr_6_mo_favorable, xn_qtr_6_mo_measured,\
+            xn_qtr_9_mo_favorable, xn_qtr_9_mo_measured,\
+            xn_qtr_12_mo_favorable, xn_qtr_12_mo_measured
+    else:
+        return 0,\
+            0, 0, 0, 0,\
+            0, 0, 0, 0
+
+
+def calc_response_quarters(
+        xn_forms, years, acq_or_disp, sph_obj, sp_dict):
+    month_day_tuples =\
+        [[1, 1, 3, 31],
+         [4, 1, 6, 30],
+         [7, 1, 9, 30],
+         [10, 1, 12, 31]]
+    qtrs_with_disc_xns_in_tracking_period = 0
+    xn_qtrs_3_mo_favorable = 0
+    xn_qtrs_6_mo_favorable = 0
+    xn_qtrs_9_mo_favorable = 0
+    xn_qtrs_12_mo_favorable = 0
+
+    xn_qtrs_3_mo_measured = 0
+    xn_qtrs_6_mo_measured = 0
+    xn_qtrs_9_mo_measured = 0
+    xn_qtrs_12_mo_measured = 0
+
+    for year in years:
+        for startmonth, startday, endmonth, endday in month_day_tuples:
+            startdate = datetime.date(year, startmonth, startday)
+            enddate = datetime.date(year, endmonth, endday)
+            total_period_xns = xn_forms\
+                .filter(transaction_date__gte=startdate)\
+                .filter(transaction_date__lte=enddate)
+
+            qtr_with_disc_xns_in_tracking_period,\
+                xn_qtr_3_mo_favorable, xn_qtr_3_mo_measured,\
+                xn_qtr_6_mo_favorable, xn_qtr_6_mo_measured,\
+                xn_qtr_9_mo_favorable, xn_qtr_9_mo_measured,\
+                xn_qtr_12_mo_favorable, xn_qtr_12_mo_measured =\
+                update_xn_counts(
+                    total_period_xns, acq_or_disp, sph_obj, enddate,
+                    sp_dict)
+            qtrs_with_disc_xns_in_tracking_period +=\
+                qtr_with_disc_xns_in_tracking_period
+            xn_qtrs_3_mo_favorable += xn_qtr_3_mo_favorable
+            xn_qtrs_6_mo_favorable += xn_qtr_6_mo_favorable
+            xn_qtrs_9_mo_favorable += xn_qtr_9_mo_favorable
+            xn_qtrs_12_mo_favorable += xn_qtr_12_mo_favorable
+
+            xn_qtrs_3_mo_measured += xn_qtr_3_mo_measured
+            xn_qtrs_6_mo_measured += xn_qtr_6_mo_measured
+            xn_qtrs_9_mo_measured += xn_qtr_9_mo_measured
+            xn_qtrs_12_mo_measured += xn_qtr_12_mo_measured
+    return qtrs_with_disc_xns_in_tracking_period,\
+        xn_qtrs_3_mo_favorable, xn_qtrs_3_mo_measured,\
+        xn_qtrs_6_mo_favorable, xn_qtrs_6_mo_measured,\
+        xn_qtrs_9_mo_favorable, xn_qtrs_9_mo_measured,\
+        xn_qtrs_12_mo_favorable, xn_qtrs_12_mo_measured
 
 
 def sale_perf_attributes(issuer, reporting_owner):
@@ -26,18 +138,18 @@ def sale_perf_attributes(issuer, reporting_owner):
         sph_obj = primary_tickers[0]
     else:
         return
-    aff = Affiliation.objects\
+    a = Affiliation.objects\
         .get(issuer=issuer, reporting_owner=reporting_owner)
     todayyear = today.year
     startyear = todayyear - tracking_period_calendar_years
     years = range(startyear, todayyear + 1)
     test_begin_date = datetime.date(startyear, 1, 1)
-    month_day_tuples =\
-        [[1, 1, 3, 31],
-         [4, 1, 6, 30],
-         [7, 1, 9, 30],
-         [10, 1, 12, 31]]
-    sale_forms = \
+    td3mo = datetime.timedelta(91)
+    td6mo = datetime.timedelta(182)
+    td9mo = datetime.timedelta(275)
+    td12mo = datetime.timedelta(365)
+
+    xn_forms =\
         Form345Entry.objects.filter(issuer_cik=issuer)\
         .filter(reporting_owner_cik=reporting_owner)\
         .filter(transaction_date__gte=F('filedatetime') +
@@ -45,125 +157,65 @@ def sale_perf_attributes(issuer, reporting_owner):
         .filter(transaction_date__gte=test_begin_date)\
         .filter(transaction_date__lt=today - recent_sale_period)\
         .exclude(xn_price_per_share=None)\
-        .exclude(transaction_shares=None)\
-        .filter(transaction_code='S')
+        .exclude(transaction_shares=None)
+    # Sales
+    sale_forms_disc = xn_forms.filter(transaction_code='S')\
+        .exclude(tenbfive_note=True)
+    acq_or_disp = 'D'
+    a.qtrs_with_disc_sales_in_tracking_period,\
+        a.sale_qtr_ct_3_mo_decline_disc, a.sale_qtr_ct_3_mo_measured_disc,\
+        a.sale_qtr_ct_6_mo_decline_disc, a.sale_qtr_ct_6_mo_measured_disc,\
+        a.sale_qtr_ct_9_mo_decline_disc, a.sale_qtr_ct_9_mo_measured_disc,\
+        a.sale_qtr_ct_12_mo_decline_disc, a.sale_qtr_ct_12_mo_measured_disc =\
+        calc_response_quarters(
+            sale_forms_disc, years, acq_or_disp, sph_obj, sp_dict)
+    a.post_sale_perf_3mo_disc =\
+        post_xn_perf(sale_forms_disc, sph_obj, td3mo, sp_dict)
+    a.post_sale_perf_6mo_disc =\
+        post_xn_perf(sale_forms_disc, sph_obj, td6mo, sp_dict)
+    a.post_sale_perf_9mo_disc =\
+        post_xn_perf(sale_forms_disc, sph_obj, td9mo, sp_dict)
+    a.post_sale_perf_12mo_disc =\
+        post_xn_perf(sale_forms_disc, sph_obj, td12mo, sp_dict)
 
-    td3mo = datetime.timedelta(91)
-    td6mo = datetime.timedelta(182)
-    td9mo = datetime.timedelta(275)
-    td12mo = datetime.timedelta(365)
+    # Buys
+    buy_forms = xn_forms.filter(transaction_code='P')
+    acq_or_disp = 'A'
+    a.qtrs_with_buys_in_tracking_period,\
+        a.buy_qtr_ct_3_mo_increase, a.buy_qtr_ct_3_mo_measured,\
+        a.buy_qtr_ct_6_mo_increase, a.buy_qtr_ct_6_mo_measured,\
+        a.buy_qtr_ct_9_mo_increase, a.buy_qtr_ct_9_mo_measured,\
+        a.buy_qtr_ct_12_mo_increase, a.buy_qtr_ct_12_mo_measured =\
+        calc_response_quarters(
+            buy_forms, years, acq_or_disp, sph_obj, sp_dict)
+    a.post_buy_perf_3mo =\
+        post_xn_perf(buy_forms, sph_obj, td3mo, sp_dict)
+    a.post_buy_perf_6mo =\
+        post_xn_perf(buy_forms, sph_obj, td6mo, sp_dict)
+    a.post_buy_perf_9mo =\
+        post_xn_perf(buy_forms, sph_obj, td9mo, sp_dict)
+    a.post_buy_perf_12mo =\
+        post_xn_perf(buy_forms, sph_obj, td12mo, sp_dict)
 
-    quarters_with_disc_sales_in_tracking_period = 0
-    quarter_count_3_mo_decline = 0
-    quarter_count_6_mo_decline = 0
-    quarter_count_9_mo_decline = 0
-    quarter_count_12_mo_decline = 0
-    quarters_with_10b_sales_in_tracking_period = 0
-    quarter_count_3_mo_decline_10b = 0
-    quarter_count_6_mo_decline_10b = 0
-    quarter_count_9_mo_decline_10b = 0
-    quarter_count_12_mo_decline_10b = 0
-
-    for year in years:
-        for startmonth, startday, endmonth, endday in month_day_tuples:
-            startdate = datetime.date(year, startmonth, startday)
-            enddate = datetime.date(year, endmonth, endday)
-            total_period_sales = sale_forms\
-                .filter(transaction_date__gte=startdate)\
-                .filter(transaction_date__lte=enddate)
-            period_disc_sales = total_period_sales\
-                .exclude(tenbfive_note=True)
-            # Disc sales
-            if period_disc_sales.exists():
-                quarters_with_disc_sales_in_tracking_period += 1
-
-                price_decline_3mo =\
-                    price_decline(sph_obj, enddate, td3mo, sp_dict)
-                if price_decline_3mo:
-                    quarter_count_3_mo_decline += 1
-
-                price_decline_6mo =\
-                    price_decline(sph_obj, enddate, td6mo, sp_dict)
-                if price_decline_6mo:
-                    quarter_count_6_mo_decline += 1
-
-                price_decline_9mo =\
-                    price_decline(sph_obj, enddate, td9mo, sp_dict)
-                if price_decline_9mo:
-                    quarter_count_9_mo_decline += 1
-
-                price_decline_12mo =\
-                    price_decline(sph_obj, enddate, td12mo, sp_dict)
-                if price_decline_12mo:
-                    quarter_count_12_mo_decline += 1
-            # 10b5-1 sales
-            period_sale_10b_forms =\
-                total_period_sales.filter(tenbfive_note=True)
-            if period_sale_10b_forms.exists():
-                quarters_with_10b_sales_in_tracking_period += 1
-
-                price_decline_3mo =\
-                    price_decline(sph_obj, enddate, td3mo, sp_dict)
-                if price_decline_3mo:
-                    quarter_count_3_mo_decline_10b += 1
-
-                price_decline_6mo =\
-                    price_decline(sph_obj, enddate, td6mo, sp_dict)
-                if price_decline_6mo:
-                    quarter_count_6_mo_decline_10b += 1
-
-                price_decline_9mo =\
-                    price_decline(sph_obj, enddate, td9mo, sp_dict)
-                if price_decline_9mo:
-                    quarter_count_9_mo_decline_10b += 1
-
-                price_decline_12mo =\
-                    price_decline(sph_obj, enddate, td12mo, sp_dict)
-                if price_decline_12mo:
-                    quarter_count_12_mo_decline_10b += 1
-
-    aff.quarters_with_disc_sales_in_tracking_period =\
-        quarters_with_disc_sales_in_tracking_period
-    aff.quarter_count_3_mo_decline =\
-        quarter_count_3_mo_decline
-    aff.quarter_count_6_mo_decline =\
-        quarter_count_6_mo_decline
-    aff.quarter_count_9_mo_decline =\
-        quarter_count_9_mo_decline
-    aff.quarter_count_12_mo_decline =\
-        quarter_count_12_mo_decline
-    aff.quarters_with_10b_sales_in_tracking_period =\
-        quarters_with_10b_sales_in_tracking_period
-    aff.quarter_count_3_mo_decline_10b =\
-        quarter_count_3_mo_decline_10b
-    aff.quarter_count_6_mo_decline_10b =\
-        quarter_count_6_mo_decline_10b
-    aff.quarter_count_9_mo_decline_10b =\
-        quarter_count_9_mo_decline_10b
-    aff.quarter_count_12_mo_decline_10b =\
-        quarter_count_12_mo_decline_10b
-
-    disc_sales =\
-        sale_forms.exclude(tenbfive_note=True)
-    aff.post_sale_perf_3mo =\
-        post_sale_perf(disc_sales, sph_obj, td3mo, sp_dict)
-    aff.post_sale_perf_6mo =\
-        post_sale_perf(disc_sales, sph_obj, td6mo, sp_dict)
-    aff.post_sale_perf_9mo =\
-        post_sale_perf(disc_sales, sph_obj, td9mo, sp_dict)
-    aff.post_sale_perf_12mo =\
-        post_sale_perf(disc_sales, sph_obj, td12mo, sp_dict)
-
-    sale_10b_forms =\
-        sale_forms.filter(tenbfive_note=True)
-    aff.post_sale_perf_10b_3mo =\
-        post_sale_perf(sale_10b_forms, sph_obj, td3mo, sp_dict)
-    aff.post_sale_perf_10b_6mo =\
-        post_sale_perf(sale_10b_forms, sph_obj, td6mo, sp_dict)
-    aff.post_sale_perf_10b_9mo =\
-        post_sale_perf(sale_10b_forms, sph_obj, td9mo, sp_dict)
-    aff.post_sale_perf_10b_12mo =\
-        post_sale_perf(sale_10b_forms, sph_obj, td12mo, sp_dict)
+    # 10b5_1
+    sale_forms_10b = xn_forms.filter(transaction_code='S')\
+        .filter(tenbfive_note=True)
+    acq_or_disp = 'D'
+    a.qtrs_with_10b_sales_in_tracking_period,\
+        a.sale_qtr_ct_3_mo_decline_10b, a.sale_qtr_ct_3_mo_measured_10b,\
+        a.sale_qtr_ct_6_mo_decline_10b, a.sale_qtr_ct_6_mo_measured_10b,\
+        a.sale_qtr_ct_9_mo_decline_10b, a.sale_qtr_ct_9_mo_measured_10b,\
+        a.sale_qtr_ct_12_mo_decline_10b, a.sale_qtr_ct_12_mo_measured_10b =\
+        calc_response_quarters(
+            sale_forms_10b, years, acq_or_disp, sph_obj, sp_dict)
+    a.post_sale_perf_3mo_10b =\
+        post_xn_perf(sale_forms_10b, sph_obj, td3mo, sp_dict)
+    a.post_sale_perf_6mo_10b =\
+        post_xn_perf(sale_forms_10b, sph_obj, td6mo, sp_dict)
+    a.post_sale_perf_9mo_10b =\
+        post_xn_perf(sale_forms_10b, sph_obj, td9mo, sp_dict)
+    a.post_sale_perf_12mo_10b =\
+        post_xn_perf(sale_forms_10b, sph_obj, td12mo, sp_dict)
 
     td_since_begin = today - test_begin_date
     cumulativeperformance =\
@@ -171,18 +223,18 @@ def sale_perf_attributes(issuer, reporting_owner):
                    td_since_begin, sp_dict)
     years_since_begin = Decimal(td_since_begin.days) / Decimal(365)
     if cumulativeperformance is not None:
-        aff.annualized_perf_in_tracking_period =\
+        a.annualized_perf_in_tracking_period =\
             (cumulativeperformance +
              Decimal(1))**(Decimal(1)/years_since_begin)\
             - Decimal(1)
-    aff.save()
+    a.save()
     return
 
 
-def calc_holdings(issuer, reporting_owner, sec_ids, primary_sec_id, calc_dt,
+def calc_holdings(issuer, reporting_owner, sec_ids, prim_sec_id, calc_dt,
                   price_dict, ticker_sec_dict):
     calc_date = calc_dt.date()
-    prim_price = get_price(ticker_sec_dict[primary_sec_id],
+    prim_price = get_price(ticker_sec_dict[prim_sec_id],
                            calc_date, price_dict)
     if prim_price is None or prim_price == Decimal(0):
         return None, None, None, None
@@ -208,7 +260,7 @@ def calc_holdings(issuer, reporting_owner, sec_ids, primary_sec_id, calc_dt,
             sec_id = h['underlying_security']
             underlying_conversion_mult = h['security__conversion_multiple']
         # If pricing secondary security, calculate conversion multiple.
-        if sec_id != primary_sec_id:
+        if sec_id != prim_sec_id:
             holding_price = get_price(ticker_sec_dict[sec_id],
                                       calc_date, price_dict)
             if holding_price is None or prim_price is None or\
@@ -242,7 +294,7 @@ def calc_holdings(issuer, reporting_owner, sec_ids, primary_sec_id, calc_dt,
     return total_shares_held, avg_conv_price, total_value, conv_to_price_ratio
 
 
-def calc_equity_grants(issuer, reporting_owner, sec_ids, primary_sec_id,
+def calc_equity_grants(issuer, reporting_owner, sec_ids, prim_sec_id,
                        price_dict, ticker_sec_dict):
     grants = Form345Entry.objects.filter(issuer_cik=issuer)\
         .filter(reporting_owner_cik=reporting_owner)\
@@ -297,10 +349,10 @@ def calc_equity_grants(issuer, reporting_owner, sec_ids, primary_sec_id,
             sec_id = g['underlying_security']
             underlying_conversion_mult = g['security__conversion_multiple']
         # If pricing secondary security, calculate conversion multiple.
-        if sec_id != primary_sec_id:
+        if sec_id != prim_sec_id:
             grant_sec_price = get_price(ticker_sec_dict[sec_id],
                                         g['transaction_date'], price_dict)
-            prim_price = get_price(ticker_sec_dict[primary_sec_id],
+            prim_price = get_price(ticker_sec_dict[prim_sec_id],
                                    g['transaction_date'], price_dict)
             if grant_sec_price is None or prim_price is None or\
                     prim_price == Decimal(0):
@@ -328,7 +380,7 @@ def calc_equity_grants(issuer, reporting_owner, sec_ids, primary_sec_id,
     return annual_grant_shares, avg_conv_price, grants_per_year
 
 
-def calc_disc_xns(issuer, reporting_owner, sec_ids, primary_sec_id,
+def calc_disc_xns(issuer, reporting_owner, sec_ids, prim_sec_id,
                   price_dict, ticker_sec_dict, startdate, enddate,
                   is_10b5_1):
     disc_xns = Form345Entry.objects.filter(issuer_cik=issuer)\
@@ -361,11 +413,11 @@ def calc_disc_xns(issuer, reporting_owner, sec_ids, primary_sec_id,
             sec_id = x['underlying_security']
             underlying_conversion_mult = x['security__conversion_multiple']
         # If pricing secondary security, calculate conversion multiple.
-        if sec_id != primary_sec_id and\
-                x['underlying_security'] != primary_sec_id:
+        if sec_id != prim_sec_id and\
+                x['underlying_security'] != prim_sec_id:
             sec_price = get_price(ticker_sec_dict[sec_id],
                                   x['transaction_date'], price_dict)
-            prim_price = get_price(ticker_sec_dict[primary_sec_id],
+            prim_price = get_price(ticker_sec_dict[prim_sec_id],
                                    x['transaction_date'], price_dict)
             if sec_price is None or prim_price is None or\
                     prim_price == Decimal(0):
@@ -389,9 +441,8 @@ def calc_disc_xns(issuer, reporting_owner, sec_ids, primary_sec_id,
 
 def hist_net_xn_clusters_per_year(
         issuer, reporting_owner, sec_ids,
-        primary_sec_id, price_dict, ticker_sec_dict,
-        startdate, enddate, is_10b5_1
-):
+        prim_sec_id, price_dict, ticker_sec_dict,
+        startdate, enddate, is_10b5_1):
     sales = Form345Entry.objects.filter(issuer_cik=issuer)\
         .filter(reporting_owner_cik=reporting_owner)\
         .filter(Q(security__in=sec_ids) |
@@ -433,7 +484,7 @@ def hist_net_xn_clusters_per_year(
 
 
 def recent_dates_prices(
-        issuer, reporting_owner, sec_ids, primary_sec_id, price_dict,
+        issuer, reporting_owner, sec_ids, prim_sec_id, price_dict,
         ticker_sec_dict, startdate, enddate, is_10b5_1):
     sales = Form345Entry.objects.filter(issuer_cik=issuer)\
         .filter(reporting_owner_cik=reporting_owner)\
@@ -457,7 +508,7 @@ def recent_dates_prices(
     else:
         transaction_date_price_info = []
         for date in sale_dates:
-            price = get_price(ticker_sec_dict[primary_sec_id],
+            price = get_price(ticker_sec_dict[prim_sec_id],
                               date, price_dict)
             transaction_date_price_info.append((date, price))
 
@@ -465,9 +516,10 @@ def recent_dates_prices(
 
 
 def calc_increase_in_xns(
-        abs_sig_min, acq_or_disp, aff, expected_recent_xn_amount, is_10b5_1,
-        issuer, price_dict, prim_security, recent, recent_val, reporting_owner,
-        ticker_sec_dict, ticker_sec_ids, transaction_date_price_info):
+        abs_sig_min, acq_or_disp, aff, expected_recent_xn_amount,
+        is_10b5_1, issuer, price_dict, prim_sec_id, recent,
+        recent_val, reporting_owner, ticker_sec_dict, ticker_sec_ids,
+        transaction_date_price_info):
     if acq_or_disp == 'D':
         xn_sign = Decimal(-1)
     elif acq_or_disp == 'A':
@@ -492,7 +544,7 @@ def calc_increase_in_xns(
             net_xn_shares, net_xn_value =\
                 calc_disc_xns(
                     issuer, reporting_owner, ticker_sec_ids,
-                    prim_security.pk, price_dict, ticker_sec_dict,
+                    prim_sec_id, price_dict, ticker_sec_dict,
                     startdate, enddate, is_10b5_1
                 )
             total_net_xn_shares += net_xn_shares
@@ -508,14 +560,18 @@ def calc_increase_in_xns(
                 xns_price = price
                 xns_prior_performance =\
                     price_perf(
-                        ticker_sec_dict[prim_security.pk],
+                        ticker_sec_dict[prim_sec_id],
                         date - price_trigger_lookback, price_trigger_lookback,
                         price_dict
                     )
+                # if hist_lookback is True:
+                #     subs_perf_date = date + perf_period_days_td
+                # else:
+                subs_perf_date = today
                 xns_subs_performance =\
                     price_perf(
-                        ticker_sec_dict[prim_security.pk],
-                        date, today - date,
+                        ticker_sec_dict[prim_sec_id],
+                        date, subs_perf_date - date,
                         price_dict
                     )
                 if xns_prior_performance * Decimal(-1) * xn_sign >\
@@ -543,9 +599,10 @@ def calc_increase_in_xns(
         xns_prior_performance, xns_subs_performance, xn_days
 
 
-def calc_person_affiliation(issuer, reporting_owner, price_dict):
+def calc_person_affiliation(
+        issuer, reporting_owner, price_dict):
     affiliation_forms = Form345Entry.objects.filter(issuer_cik=issuer)\
-            .filter(reporting_owner_cik=reporting_owner)
+        .filter(reporting_owner_cik=reporting_owner)
     latest_form = affiliation_forms.latest('filedatetime')
     aff =\
         Affiliation.objects.get(issuer=issuer,
@@ -574,7 +631,7 @@ def calc_person_affiliation(issuer, reporting_owner, price_dict):
         aff.save()
         return
     prim_ticker = primary_tickers[0]
-    prim_security = prim_ticker.security
+    prim_sec_id = prim_ticker.security.pk
     all_tickers = SecurityPriceHist.objects.filter(issuer=issuer)\
         .exclude(security=None)
     ticker_sec_ids = all_tickers.values_list('security', flat=True)
@@ -583,20 +640,20 @@ def calc_person_affiliation(issuer, reporting_owner, price_dict):
     aff.share_equivalents_held, aff.average_conversion_price,\
         aff.share_equivalents_value, aff.conversion_to_price_ratio =\
         calc_holdings(issuer, reporting_owner, ticker_sec_ids,
-                      prim_security.pk, todaymid, price_dict, ticker_sec_dict)
+                      prim_sec_id, todaymid, price_dict, ticker_sec_dict)
 
     prior_datetime = todaymid - recent_sale_period
     aff.prior_share_equivalents_held, aff.prior_average_conversion_price,\
         aff.prior_share_equivalents_value,\
         aff.prior_conversion_to_price_ratio =\
         calc_holdings(issuer, reporting_owner, ticker_sec_ids,
-                      prim_security.pk, prior_datetime, price_dict,
+                      prim_sec_id, prior_datetime, price_dict,
                       ticker_sec_dict)
 
     # Populate grant rate info
     equity_grant_rate, aff.avg_grant_conv_price, grants_per_year =\
         calc_equity_grants(issuer, reporting_owner, ticker_sec_ids,
-                           prim_security.pk, price_dict, ticker_sec_dict)
+                           prim_sec_id, price_dict, ticker_sec_dict)
     aff.equity_grant_rate = equity_grant_rate
     # Recent / hist sale data
     recent_period_start = today - recent_sale_period
@@ -606,7 +663,7 @@ def calc_person_affiliation(issuer, reporting_owner, price_dict):
     is_10b5_1 = False
     recent_xns_shares_disc, recent_xns_value_disc =\
         calc_disc_xns(issuer, reporting_owner, ticker_sec_ids,
-                      prim_security.pk, price_dict, ticker_sec_dict,
+                      prim_sec_id, price_dict, ticker_sec_dict,
                       recent_period_start,
                       today, is_10b5_1)
     aff.recent_xns_shares_disc, aff.recent_xns_value_disc =\
@@ -614,7 +671,7 @@ def calc_person_affiliation(issuer, reporting_owner, price_dict):
 
     hist_xns_shares_disc, hist_xns_value_disc =\
         calc_disc_xns(issuer, reporting_owner, ticker_sec_ids,
-                      prim_security.pk, price_dict, ticker_sec_dict,
+                      prim_sec_id, price_dict, ticker_sec_dict,
                       hist_period_start,
                       recent_period_start, is_10b5_1)
     aff.hist_xns_shares_disc, aff.hist_xns_value_disc =\
@@ -623,7 +680,7 @@ def calc_person_affiliation(issuer, reporting_owner, price_dict):
     # Detect non-10b5-1 sale increases
     transaction_date_price_info = \
         recent_dates_prices(
-            issuer, reporting_owner, ticker_sec_ids, prim_security.pk,
+            issuer, reporting_owner, ticker_sec_ids, prim_sec_id,
             price_dict, ticker_sec_dict, recent_period_start, today, is_10b5_1)
     # First determine if there is enough data to know expected selling rate.
 
@@ -649,8 +706,8 @@ def calc_person_affiliation(issuer, reporting_owner, price_dict):
         selling_prior_performance, selling_subs_performance, xn_days =\
         calc_increase_in_xns(
             abs_sig_min, 'D', aff, expected_recent_share_sale_amount_disc,
-            is_10b5_1, issuer, price_dict, prim_security, recent, recent_val,
-            reporting_owner, ticker_sec_dict, ticker_sec_ids,
+            is_10b5_1, issuer, price_dict, prim_sec_id, recent,
+            recent_val, reporting_owner, ticker_sec_dict, ticker_sec_ids,
             transaction_date_price_info)
     aff.increase_in_selling_disc = increase_in_xns
     aff.expected_recent_share_sale_amount_disc =\
@@ -668,8 +725,8 @@ def calc_person_affiliation(issuer, reporting_owner, price_dict):
         buying_prior_performance, buying_subs_performance, xn_days =\
         calc_increase_in_xns(
             abs_sig_min, 'A', aff, expected_recent_share_buying_amount_disc,
-            is_10b5_1, issuer, price_dict, prim_security, recent, recent_val,
-            reporting_owner, ticker_sec_dict, ticker_sec_ids,
+            is_10b5_1, issuer, price_dict, prim_sec_id, recent,
+            recent_val, reporting_owner, ticker_sec_dict, ticker_sec_ids,
             transaction_date_price_info)
     aff.increase_in_buying_disc = increase_in_xns
     aff.buying_date_disc = buying_date
@@ -682,7 +739,7 @@ def calc_person_affiliation(issuer, reporting_owner, price_dict):
     is_10b5_1 = True
     recent_xns_shares_10b5_1, recent_xns_value_10b5_1 =\
         calc_disc_xns(issuer, reporting_owner, ticker_sec_ids,
-                      prim_security.pk, price_dict, ticker_sec_dict,
+                      prim_sec_id, price_dict, ticker_sec_dict,
                       recent_period_start,
                       today, is_10b5_1)
     aff.recent_xns_shares_10b5_1, aff.recent_xns_value_10b5_1 =\
@@ -690,7 +747,7 @@ def calc_person_affiliation(issuer, reporting_owner, price_dict):
 
     hist_xns_shares_10b5_1, hist_xns_value_10b5_1 =\
         calc_disc_xns(issuer, reporting_owner, ticker_sec_ids,
-                      prim_security.pk, price_dict, ticker_sec_dict,
+                      prim_sec_id, price_dict, ticker_sec_dict,
                       hist_period_start,
                       recent_period_start, is_10b5_1)
     aff.hist_xns_shares_10b5_1, aff.hist_xns_value_10b5_1 =\
@@ -699,12 +756,12 @@ def calc_person_affiliation(issuer, reporting_owner, price_dict):
 
     clusters_in_hist_period_10b5_1 =\
         hist_net_xn_clusters_per_year(
-            issuer, reporting_owner, ticker_sec_ids, prim_security.pk,
+            issuer, reporting_owner, ticker_sec_ids, prim_sec_id,
             price_dict, ticker_sec_dict, hist_period_start,
             recent_period_start, is_10b5_1)
     transaction_date_price_info = \
         recent_dates_prices(
-            issuer, reporting_owner, ticker_sec_ids, prim_security.pk,
+            issuer, reporting_owner, ticker_sec_ids, prim_sec_id,
             price_dict, ticker_sec_dict, recent_period_start, today, is_10b5_1)
     # First determine if there is enough data to know expected selling rate.
     # Note that if historical selling rate is zero, we do not proceed.  The
@@ -734,8 +791,8 @@ def calc_person_affiliation(issuer, reporting_owner, price_dict):
         selling_prior_performance, selling_subs_performance, xn_days =\
         calc_increase_in_xns(
             abs_sig_min, 'D', aff, expected_recent_share_sale_amount_10b5_1,
-            is_10b5_1, issuer, price_dict, prim_security, recent, recent_val,
-            reporting_owner, ticker_sec_dict, ticker_sec_ids,
+            is_10b5_1, issuer, price_dict, prim_sec_id, recent,
+            recent_val, reporting_owner, ticker_sec_dict, ticker_sec_ids,
             transaction_date_price_info)
     aff.increase_in_selling_10b5_1 = increase_in_xns
     aff.expected_recent_share_sale_amount_10b5_1 =\
@@ -784,10 +841,12 @@ def upd():
     looplength = float(len(affiliations_with_new_forms))
     price_dict = {}
     for issuer, reporting_owner in affiliations_with_new_forms:
-        calc_person_affiliation(issuer, reporting_owner, price_dict)
+        calc_person_affiliation(
+            issuer, reporting_owner, price_dict
+        )
         counter += 1.0
         percentcomplete = round(counter / looplength * 100, 2)
-        sys.stdout.write("\r%s / %s affiliation to update: %.2f%%" %
+        sys.stdout.write("\r%s / %s affiliations to update: %.2f%%" %
                          (int(counter), int(looplength), percentcomplete))
         sys.stdout.flush()
 
@@ -828,24 +887,45 @@ def annotatestats():
             'issuer', 'reporting_owner', 'increase_in_selling_disc',
             'increase_in_buying_disc', 'increase_in_selling_10b5_1')
     affiliations.update(
-        quarters_with_disc_sales_in_tracking_period=None,
-        quarter_count_3_mo_decline=None,
-        quarter_count_6_mo_decline=None,
-        quarter_count_9_mo_decline=None,
-        quarter_count_12_mo_decline=None,
-        post_sale_perf_3mo=None,
-        post_sale_perf_6mo=None,
-        post_sale_perf_9mo=None,
-        post_sale_perf_12mo=None,
-        quarters_with_10b_sales_in_tracking_period=None,
-        quarter_count_3_mo_decline_10b=None,
-        quarter_count_6_mo_decline_10b=None,
-        quarter_count_9_mo_decline_10b=None,
-        quarter_count_12_mo_decline_10b=None,
-        post_sale_perf_10b_3mo=None,
-        post_sale_perf_10b_6mo=None,
-        post_sale_perf_10b_9mo=None,
-        post_sale_perf_10b_12mo=None,
+        qtrs_with_disc_sales_in_tracking_period=None,
+        sale_qtr_ct_3_mo_decline_disc=None,
+        sale_qtr_ct_3_mo_measured_disc=None,
+        sale_qtr_ct_6_mo_decline_disc=None,
+        sale_qtr_ct_6_mo_measured_disc=None,
+        sale_qtr_ct_9_mo_decline_disc=None,
+        sale_qtr_ct_9_mo_measured_disc=None,
+        sale_qtr_ct_12_mo_decline_disc=None,
+        sale_qtr_ct_12_mo_measured_disc=None,
+        post_sale_perf_3mo_disc=None,
+        post_sale_perf_6mo_disc=None,
+        post_sale_perf_9mo_disc=None,
+        post_sale_perf_12mo_disc=None,
+        qtrs_with_buys_in_tracking_period=None,
+        buy_qtr_ct_3_mo_increase=None,
+        buy_qtr_ct_3_mo_measured=None,
+        buy_qtr_ct_6_mo_increase=None,
+        buy_qtr_ct_6_mo_measured=None,
+        buy_qtr_ct_9_mo_increase=None,
+        buy_qtr_ct_9_mo_measured=None,
+        buy_qtr_ct_12_mo_increase=None,
+        buy_qtr_ct_12_mo_measured=None,
+        post_buy_perf_3mo=None,
+        post_buy_perf_6mo=None,
+        post_buy_perf_9mo=None,
+        post_buy_perf_12mo=None,
+        qtrs_with_10b_sales_in_tracking_period=None,
+        sale_qtr_ct_3_mo_decline_10b=None,
+        sale_qtr_ct_3_mo_measured_10b=None,
+        sale_qtr_ct_6_mo_decline_10b=None,
+        sale_qtr_ct_6_mo_measured_10b=None,
+        sale_qtr_ct_9_mo_decline_10b=None,
+        sale_qtr_ct_9_mo_measured_10b=None,
+        sale_qtr_ct_12_mo_decline_10b=None,
+        sale_qtr_ct_12_mo_measured_10b=None,
+        post_sale_perf_3mo_10b=None,
+        post_sale_perf_6mo_10b=None,
+        post_sale_perf_9mo_10b=None,
+        post_sale_perf_12mo_10b=None,
         annualized_perf_in_tracking_period=None,
     )
     counter = 0.0
@@ -857,12 +937,13 @@ def annotatestats():
             .order_by('-share_equivalents_value')\
             .values_list('reporting_owner', flat=True)
         top_3_holders = list(top_holders)[:3]
-        if reporting_owner in top_3_holders or increase_in_selling_disc or\
-                increase_in_buying_disc or increase_in_selling_10b5_1:
+        if reporting_owner in top_3_holders:
+                # or increase_in_selling_disc or\
+                # increase_in_buying_disc or increase_in_selling_10b5_1:
             sale_perf_attributes(issuer, reporting_owner)
         counter += 1.0
         percentcomplete = round(counter / looplength * 100, 2)
-        sys.stdout.write("\r%s / %s affiliations to update: %.2f%%" %
+        sys.stdout.write("\r%s / %s affiliations to annotate: %.2f%%" %
                          (int(counter), int(looplength), percentcomplete))
         sys.stdout.flush()
         django.db.reset_queries()

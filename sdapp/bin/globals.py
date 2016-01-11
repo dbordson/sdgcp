@@ -2,6 +2,9 @@ import datetime
 import pytz
 from decimal import Decimal
 
+# Below tracking period starts at beginning of calendar year
+# that begins such that period begins as of 1/1/X, where
+# X = current calendar year - tracking_period_calendar_years.
 tracking_period_calendar_years = 5
 signal_detect_lookback = datetime.timedelta(180)
 recent_sale_period = datetime.timedelta(91)

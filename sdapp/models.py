@@ -129,33 +129,60 @@ class Affiliation(models.Model):
     # and just detected on this day.
     xn_days_10b5_1 = models.IntegerField(null=True)
 
-    quarters_with_disc_sales_in_tracking_period =\
+    qtrs_with_disc_sales_in_tracking_period =\
         models.IntegerField(null=True)
-    quarter_count_3_mo_decline = models.IntegerField(null=True)
-    quarter_count_6_mo_decline = models.IntegerField(null=True)
-    quarter_count_9_mo_decline = models.IntegerField(null=True)
-    quarter_count_12_mo_decline = models.IntegerField(null=True)
-    post_sale_perf_3mo =\
+    sale_qtr_ct_3_mo_decline_disc = models.IntegerField(null=True)
+    sale_qtr_ct_3_mo_measured_disc = models.IntegerField(null=True)
+    sale_qtr_ct_6_mo_decline_disc = models.IntegerField(null=True)
+    sale_qtr_ct_6_mo_measured_disc = models.IntegerField(null=True)
+    sale_qtr_ct_9_mo_decline_disc = models.IntegerField(null=True)
+    sale_qtr_ct_9_mo_measured_disc = models.IntegerField(null=True)
+    sale_qtr_ct_12_mo_decline_disc = models.IntegerField(null=True)
+    sale_qtr_ct_12_mo_measured_disc = models.IntegerField(null=True)
+    post_sale_perf_3mo_disc =\
         models.DecimalField(max_digits=15, decimal_places=4, null=True)
-    post_sale_perf_6mo =\
+    post_sale_perf_6mo_disc =\
         models.DecimalField(max_digits=15, decimal_places=4, null=True)
-    post_sale_perf_9mo =\
+    post_sale_perf_9mo_disc =\
         models.DecimalField(max_digits=15, decimal_places=4, null=True)
-    post_sale_perf_12mo =\
+    post_sale_perf_12mo_disc =\
         models.DecimalField(max_digits=15, decimal_places=4, null=True)
 
-    quarters_with_10b_sales_in_tracking_period = models.IntegerField(null=True)
-    quarter_count_3_mo_decline_10b = models.IntegerField(null=True)
-    quarter_count_6_mo_decline_10b = models.IntegerField(null=True)
-    quarter_count_9_mo_decline_10b = models.IntegerField(null=True)
-    quarter_count_12_mo_decline_10b = models.IntegerField(null=True)
-    post_sale_perf_10b_3mo =\
+    qtrs_with_buys_in_tracking_period =\
+        models.IntegerField(null=True)
+    buy_qtr_ct_3_mo_increase = models.IntegerField(null=True)
+    buy_qtr_ct_3_mo_measured = models.IntegerField(null=True)
+    buy_qtr_ct_6_mo_increase = models.IntegerField(null=True)
+    buy_qtr_ct_6_mo_measured = models.IntegerField(null=True)
+    buy_qtr_ct_9_mo_increase = models.IntegerField(null=True)
+    buy_qtr_ct_9_mo_measured = models.IntegerField(null=True)
+    buy_qtr_ct_12_mo_increase = models.IntegerField(null=True)
+    buy_qtr_ct_12_mo_measured = models.IntegerField(null=True)
+    post_buy_perf_3mo =\
         models.DecimalField(max_digits=15, decimal_places=4, null=True)
-    post_sale_perf_10b_6mo =\
+    post_buy_perf_6mo =\
         models.DecimalField(max_digits=15, decimal_places=4, null=True)
-    post_sale_perf_10b_9mo =\
+    post_buy_perf_9mo =\
         models.DecimalField(max_digits=15, decimal_places=4, null=True)
-    post_sale_perf_10b_12mo =\
+    post_buy_perf_12mo =\
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+
+    qtrs_with_10b_sales_in_tracking_period = models.IntegerField(null=True)
+    sale_qtr_ct_3_mo_decline_10b = models.IntegerField(null=True)
+    sale_qtr_ct_3_mo_measured_10b = models.IntegerField(null=True)
+    sale_qtr_ct_6_mo_decline_10b = models.IntegerField(null=True)
+    sale_qtr_ct_6_mo_measured_10b = models.IntegerField(null=True)
+    sale_qtr_ct_9_mo_decline_10b = models.IntegerField(null=True)
+    sale_qtr_ct_9_mo_measured_10b = models.IntegerField(null=True)
+    sale_qtr_ct_12_mo_decline_10b = models.IntegerField(null=True)
+    sale_qtr_ct_12_mo_measured_10b = models.IntegerField(null=True)
+    post_sale_perf_3mo_10b =\
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    post_sale_perf_6mo_10b =\
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    post_sale_perf_9mo_10b =\
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    post_sale_perf_12mo_10b =\
         models.DecimalField(max_digits=15, decimal_places=4, null=True)
 
     annualized_perf_in_tracking_period =\
