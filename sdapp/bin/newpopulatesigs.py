@@ -892,13 +892,6 @@ def replace_company_signals():
                 value_of_recent_shares_sold=value_of_recent_shares_sold,
                 historical_selling_rate_shares=historical_selling_rate_shares,
                 historical_selling_rate_value=historical_selling_rate_value,
-                ,
-                ,
-                ,
-                ,
-                ,
-
-
                 # mixed_signals=mixed_signals,
                 signal_is_new=signal_is_new)
 
