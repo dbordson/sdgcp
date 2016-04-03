@@ -85,7 +85,8 @@ def filepathfinder(line):
     return line[filepathstart:filepathend].rstrip()
 
 
-def downloadindices(storedquarterlist):
+def downloadindices(storedquarterlist, qindexbasepath):
+    thisyear = datetime.date.today().year
     print "Connecting to SEC FTP site..."
     ftp = ftplogin()
     # LOAD LIST OF STORED INDICES. IF ANY ARE OMITTED FROM THE LIST, DOWNLOAD
@@ -95,7 +96,7 @@ def downloadindices(storedquarterlist):
     indexyearlist = []
     ftp.retrlines('nlst', rawindexyearlist.append)
     for entry in rawindexyearlist:
-        if len(entry) == 4 and entry.find('.') == -1:
+        if len(entry) == 4 and entry.isdigit() and int(entry) >= thisyear - 11:
             indexyearlist.append(entry)
     #
     # Replacing latest index stored (bc/ updated daily by SEC)
@@ -210,7 +211,7 @@ for filename in os.listdir(qindexdirectory):
 datestringtoday = datetime.date.today().strftime('%Y%m%d')
 if lastdl != datestringtoday:
     print 'Running index download function'
-    downloadindices(storedquarterlist)
+    downloadindices(storedquarterlist, qindexbasepath)
 else:
     print 'Already updated indices today. Skipping index download function.'
 
