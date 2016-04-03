@@ -153,17 +153,23 @@ def supersede_stale_entries(cutoff_years, is_officer):
     cutoffdatetime =\
         today - datetime.timedelta(cutoff_years * 365)
     staleness_delay = datetime.timedelta(cutoff_years * 365)
+    print '...sorting...'
     # All affiliations
-    affiliation_list =\
-        Affiliation.objects.filter(form345entry__supersededdt=None)\
-        .filter(form345entry__is_officer=is_officer).distinct()
+    # affiliation_list =\
+    #     Affiliation.objects.filter(form345entry__supersededdt=None)\
+    #     .filter(form345entry__is_officer=is_officer).distinct()
 
+    affiliation_list =\
+        Form345Entry.objects.filter(supersededdt=None)\
+        .filter(is_officer=is_officer).distinct()\
+        .values_list('affiliation', flat=True)
     looplength = float(len(affiliation_list))
     counter = 0.0
     # This cycles through the affiliations and finds dormant ones, based on
     # the inputs (in supersedeinit) of [2] years for officers and [5] years
     # for nonofficers with no filings.  If it finds one, it sets any
     # outstanding entries as superseded.
+    print '...reviewing and saving...'
     for affiliation in affiliation_list:
         relevant_forms =\
             Form345Entry.objects.filter(affiliation=affiliation)\

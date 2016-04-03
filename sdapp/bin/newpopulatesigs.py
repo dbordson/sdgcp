@@ -118,7 +118,7 @@ def calc_perf(later_price, earlier_price):
 
 def is_ceo(person_title_list):
     keywords = ['ceo', 'chief executive officer',
-                'principal exeuctive officer']
+                'principal executive officer']
     ceo_match = False
     for person_title in person_title_list:
         if person_title is not None:
@@ -443,7 +443,7 @@ def agg_selling_activity(issuer, startdate, enddate):
                     number_of_shares_sold += prim_share_eqs
     else:
         number_of_shares_sold = Decimal(0)
-
+    #
     value_of_shares_sold =\
         issuer_sale_xns.aggregate(Sum('xn_val'))['xn_val__sum']
     return number_of_shares_sold, value_of_shares_sold
@@ -547,8 +547,7 @@ def replace_company_signals():
                 issuer_xns.aggregate(Sum('xn_val'))['xn_val__sum']
             insider_num = len(issuer_xns.filter(xn_acq_disp_code='A')
                               .values_list('reporting_person').distinct())
-            cb_net_xn_value
-            if cb_buy_xns >= 3 and net_xn_value >= abs_sig_min:
+            if buy_xns >= 3 and net_xn_value >= abs_sig_min:
                 if insider_num > 1:
                     cb_plural_insiders = True
                 else:
@@ -578,7 +577,7 @@ def replace_company_signals():
         db_security_name = None
         db_xn_pct_holdings = None
 
-        if weakness_buys.count() <= 1 and clusterbuy is None:
+        if weakness_buys.count() <= 1 and clusterbuy is False:
             person_signals =\
                 PersonSignal.objects.filter(issuer=issuer)\
                 .filter(signal_name=buy)\
@@ -671,14 +670,13 @@ def replace_company_signals():
         cs_plural_insiders = None
         cs_sell_xns = None
         cs_net_xn_value = None
+        cs_net_shares = None
+        cs_annual_grant_rate = None
         if weakness_sells.count() <= 1:
             sig_sales =\
                 PersonSignal.objects.filter(issuer=issuer)\
                 .filter(significant=True)\
                 .filter(net_signal_value__lt=Decimal(0))
-            annual_grant_rate =\
-                sig_sales.aggregate(Sum('eq_annual_share_grants'))[
-                    'eq_annual_share_grants__sum']
             net_xn_value =\
                 sig_sales.aggregate(Sum('net_signal_value'))[
                     'net_signal_value__sum']
@@ -688,9 +686,16 @@ def replace_company_signals():
             net_shares =\
                 sig_sales.aggregate(Sum('net_signal_shares'))[
                     'net_signal_shares__sum']
-            insider_num = len(issuer_xns.filter(xn_acq_disp_code='D')
-                              .values_list('reporting_person').distinct())
-
+            issuer_xns =\
+                DiscretionaryXnEvent.objects.filter(issuer=issuer)\
+                .filter(filedate__gte=today - signal_detect_lookback)
+            insiders = issuer_xns.filter(xn_acq_disp_code='D')\
+                .values_list('reporting_person', flat=True).distinct()
+            insider_num = len(insiders)
+            annual_grant_rate =\
+                Affiliation.objects.filter(reporting_owner__in=insiders)\
+                .aggregate(Sum('equity_grant_rate'))[
+                    'equity_grant_rate__sum']
             if sell_xns >= 3 and net_xn_value <= -abs_sig_min\
                     and annual_grant_rate is not None\
                     and net_shares <= -annual_grant_rate\
@@ -728,7 +733,7 @@ def replace_company_signals():
         ds_security_name = None
         ds_xn_pct_holdings = None
 
-        if weakness_sells.count() <= 1 and clustersell is None:
+        if weakness_sells.count() <= 1 and clustersell is False:
             person_signals =\
                 PersonSignal.objects.filter(issuer=issuer)\
                 .filter(signal_name=sell)\
@@ -805,77 +810,97 @@ def replace_company_signals():
             value_of_hist_shares_sold * Decimal(recent_sale_period.days) /\
             Decimal(hist_sale_period.days)
 
+        # percent_change_in_shares_historical_to_recent
+
+        # percent_change_in_value_historical_to_recent
+
+        # percent_options_converted_to_expire_in_current_year
+
+        # percent_recent_shares_sold_under_10b5_1_plans
+
+        # recent_share_sell_rate_for_10b5_1_plans
+
+        # historical_share_sell_rate_for_10b5_1_plans
+
         sigtoappend =\
-            SigDisplay(issuer_id=issuer,
-                       sec_price_hist=sec_price_hist,
-                       last_signal=last_signal,
-                       buyonweakness=buyonweakness,
-                       bow_plural_insiders=bow_plural_insiders,
-                       bow_start_date=bow_start_date,
-                       bow_end_date=bow_end_date,
-                       bow_first_sig_detect_date=bow_first_sig_detect_date,
-                       bow_person_name=bow_person_name,
-                       bow_includes_ceo=bow_includes_ceo,
-                       bow_net_signal_value=bow_net_signal_value,
-                       bow_first_perf_period_days=bow_first_perf_period_days,
-                       bow_first_pre_stock_perf=bow_first_pre_stock_perf,
-                       bow_first_post_stock_perf=bow_first_post_stock_perf,
-                       clusterbuy=clusterbuy,
-                       cb_start_date=cb_start_date,
-                       cb_end_date=cb_end_date,
-                       cb_plural_insiders=cb_plural_insiders,
-                       cb_buy_xns=cb_buy_xns,
-                       cb_net_xn_value=cb_net_xn_value,
-                       discretionarybuy=discretionarybuy,
-                       db_large_xn_size=db_large_xn_size,
-                       db_was_ceo=db_was_ceo,
-                       db_start_date=db_start_date,
-                       db_end_date=db_end_date,
-                       db_detect_date=db_detect_date,
-                       db_person_name=db_person_name,
-                       db_xn_val=db_xn_val,
-                       db_security_name=db_security_name,
-                       db_xn_pct_holdings=db_xn_pct_holdings,
-                       sellonstrength=sellonstrength,
-                       sos_plural_insiders=sos_plural_insiders,
-                       sos_start_date=sos_start_date,
-                       sos_end_date=sos_end_date,
-                       sos_first_sig_detect_date=sos_first_sig_detect_date,
-                       sos_person_name=sos_person_name,
-                       sos_includes_ceo=sos_includes_ceo,
-                       sos_net_signal_value=sos_net_signal_value,
-                       sos_first_perf_period_days=sos_first_perf_period_days,
-                       sos_first_pre_stock_perf=sos_first_pre_stock_perf,
-                       sos_first_post_stock_perf=sos_first_post_stock_perf,
-                       clustersell=clustersell,
-                       cs_start_date=cs_start_date,
-                       cs_end_date=cs_end_date,
-                       cs_plural_insiders=cs_plural_insiders,
-                       cs_sell_xns=cs_sell_xns,
-                       cs_net_xn_value=cs_net_xn_value,
-                       cs_net_shares=cs_net_shares,
-                       cs_annual_grant_rate=cs_annual_grant_rate,
-                       discretionarysell=discretionarysell,
-                       ds_large_xn_size=ds_large_xn_size,
-                       ds_was_ceo=ds_was_ceo,
-                       ds_start_date=ds_start_date,
-                       ds_end_date=ds_end_date,
-                       ds_detect_date=ds_detect_date,
-                       ds_person_name=ds_person_name,
-                       ds_xn_val=ds_xn_val,
-                       ds_security_name=ds_security_name,
-                       ds_xn_pct_holdings=ds_xn_pct_holdings,
-                       total_transactions=total_transactions,
-                       active_insiders=active_insiders,
-                       sellers=sellers,
-                       insiders_reduced_holdings=insiders_reduced_holdings,
-                       average_holding_reduction=average_holding_reduction,
-                       number_of_recent_shares_sold=number_of_recent_shares_sold,
-                       value_of_recent_shares_sold=value_of_recent_shares_sold,
-                       historical_selling_rate_shares=historical_selling_rate_shares,
-                       historical_selling_rate_value=historical_selling_rate_value,
-                       # mixed_signals=mixed_signals,
-                       signal_is_new=signal_is_new)
+            SigDisplay(
+                issuer_id=issuer,
+                sec_price_hist=sec_price_hist,
+                last_signal=last_signal,
+                buyonweakness=buyonweakness,
+                bow_plural_insiders=bow_plural_insiders,
+                bow_start_date=bow_start_date,
+                bow_end_date=bow_end_date,
+                bow_first_sig_detect_date=bow_first_sig_detect_date,
+                bow_person_name=bow_person_name,
+                bow_includes_ceo=bow_includes_ceo,
+                bow_net_signal_value=bow_net_signal_value,
+                bow_first_perf_period_days=bow_first_perf_period_days,
+                bow_first_pre_stock_perf=bow_first_pre_stock_perf,
+                bow_first_post_stock_perf=bow_first_post_stock_perf,
+                clusterbuy=clusterbuy,
+                cb_start_date=cb_start_date,
+                cb_end_date=cb_end_date,
+                cb_plural_insiders=cb_plural_insiders,
+                cb_buy_xns=cb_buy_xns,
+                cb_net_xn_value=cb_net_xn_value,
+                discretionarybuy=discretionarybuy,
+                db_large_xn_size=db_large_xn_size,
+                db_was_ceo=db_was_ceo,
+                db_start_date=db_start_date,
+                db_end_date=db_end_date,
+                db_detect_date=db_detect_date,
+                db_person_name=db_person_name,
+                db_xn_val=db_xn_val,
+                db_security_name=db_security_name,
+                db_xn_pct_holdings=db_xn_pct_holdings,
+                sellonstrength=sellonstrength,
+                sos_plural_insiders=sos_plural_insiders,
+                sos_start_date=sos_start_date,
+                sos_end_date=sos_end_date,
+                sos_first_sig_detect_date=sos_first_sig_detect_date,
+                sos_person_name=sos_person_name,
+                sos_includes_ceo=sos_includes_ceo,
+                sos_net_signal_value=sos_net_signal_value,
+                sos_first_perf_period_days=sos_first_perf_period_days,
+                sos_first_pre_stock_perf=sos_first_pre_stock_perf,
+                sos_first_post_stock_perf=sos_first_post_stock_perf,
+                clustersell=clustersell,
+                cs_start_date=cs_start_date,
+                cs_end_date=cs_end_date,
+                cs_plural_insiders=cs_plural_insiders,
+                cs_sell_xns=cs_sell_xns,
+                cs_net_xn_value=cs_net_xn_value,
+                cs_net_shares=cs_net_shares,
+                cs_annual_grant_rate=cs_annual_grant_rate,
+                discretionarysell=discretionarysell,
+                ds_large_xn_size=ds_large_xn_size,
+                ds_was_ceo=ds_was_ceo,
+                ds_start_date=ds_start_date,
+                ds_end_date=ds_end_date,
+                ds_detect_date=ds_detect_date,
+                ds_person_name=ds_person_name,
+                ds_xn_val=ds_xn_val,
+                ds_security_name=ds_security_name,
+                ds_xn_pct_holdings=ds_xn_pct_holdings,
+                total_transactions=total_transactions,
+                active_insiders=active_insiders,
+                sellers=sellers,
+                insiders_reduced_holdings=insiders_reduced_holdings,
+                average_holding_reduction=average_holding_reduction,
+                number_of_recent_shares_sold=number_of_recent_shares_sold,
+                value_of_recent_shares_sold=value_of_recent_shares_sold,
+                historical_selling_rate_shares=historical_selling_rate_shares,
+                historical_selling_rate_value=historical_selling_rate_value,
+                ,
+                ,
+                ,
+                ,
+                ,
+
+
+                # mixed_signals=mixed_signals,
+                signal_is_new=signal_is_new)
 
         if buyonweakness is not None\
                 or clusterbuy is not None\

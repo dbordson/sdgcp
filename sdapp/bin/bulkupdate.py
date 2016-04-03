@@ -8,4 +8,4 @@ from sdapp.bin import formscraper, formparser, populateintermediate,\
 
 from sdapp.bin import update_affiliation_data
 
-from sdapp.bin import populateviews, newpopulatesigs
+from sdapp.bin import newpopulatesigs

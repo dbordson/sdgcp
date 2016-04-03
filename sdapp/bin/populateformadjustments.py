@@ -126,6 +126,58 @@ def populate_derivative_forms_with_split_adjustments():
     print 'done.'
 
 
+def populate_prim_adjustment_factors():
+    print 'Checking for unadjusted prim_security attributes...'
+    latest_split_set =\
+        set(SplitOrAdjustmentEvent.objects.values('security_id')
+            .annotate(max_date=models.Max('event_date'))
+            .values_list('max_date', 'security').distinct())
+
+    form_split_set =\
+        set(Form345Entry.objects
+            .exclude(prim_security__splitoradjustmentevent=None)
+            .exclude(prim_security__ticker=None)
+            .values_list('prim_adjustment_date', 'prim_security')
+            .distinct())
+    print '    Sorting...',
+    forms_to_update =\
+        form_split_set - (form_split_set & latest_split_set)
+
+    print 'linking and saving...',
+    for form_last_adjustment_date, prim_security_id in forms_to_update:
+        split_adj_factor_list = SplitOrAdjustmentEvent.objects\
+            .filter(security=prim_security_id)\
+            .order_by('-event_date')\
+            .values_list('adjustment_factor', 'event_date')
+        adjustment_entries = [list(row) for row in split_adj_factor_list]
+        # build date ranges to determine adjustment amounts
+        adjustmentfactor = 1
+        for index, row in enumerate(adjustment_entries):
+            if adjustment_entries.index(row) == len(adjustment_entries) - 1:
+                adjustmentfactor = adjustmentfactor * row[0]
+                row[0] = adjustmentfactor
+                row.append(datetime.date(1990, 1, 1))
+            else:
+                adjustmentfactor = adjustmentfactor * row[0]
+                row[0] = adjustmentfactor
+                row.append(adjustment_entries[index + 1][1])
+        for adjust_factor, end_filter_date, start_filter_date in\
+                adjustment_entries:
+            Form345Entry.objects.filter(prim_security=prim_security_id)\
+                .filter(adjustment_date=form_last_adjustment_date)\
+                .filter(period_of_report__lt=end_filter_date)\
+                .filter(period_of_report__gte=start_filter_date)\
+                .update(**{'prim_adjustment_factor': adjust_factor,
+                           'prim_adjustment_date': end_filter_date})
+        Form345Entry.objects.filter(prim_security=prim_security_id)\
+            .filter(adjustment_date=form_last_adjustment_date)\
+            .filter(period_of_report__gte=adjustment_entries[0][1])\
+            .update(**{'prim_adjustment_factor': 1.0,
+                       'prim_adjustment_date': adjustment_entries[0][1]})
+
+    print 'done.'
+
+
 def populate_conversion_factors():
     print 'Replacing Security object conversion factors...'
     latest_conv_list = Form345Entry.objects.exclude(transaction_shares=None)\
@@ -158,4 +210,5 @@ def populate_conversion_factors():
 
 populate_stock_forms_with_split_adjustments()
 populate_derivative_forms_with_split_adjustments()
+populate_prim_adjustment_factors()
 populate_conversion_factors()

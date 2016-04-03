@@ -7,18 +7,18 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.context_processors import csrf
 # from django.db.models import Sum
-from django.db.models import Q
+# from django.db.models import Q
 from django.shortcuts import (render_to_response, redirect,
                               RequestContext, HttpResponseRedirect)
 from django.template.defaulttags import register
 
 # from sdapp.bin import update_affiliation_data
 from sdapp.bin.globals import (perf_period_days_td, buy_on_weakness,
-                               cluster_buy, discretionary_buy, today,
+                               cluster_buy, discretionary_buy,
                                sell_on_strength, cluster_sell,
                                discretionary_sell, now, sel_person_id)
-from sdapp.models import (Affiliation, Form345Entry, PersonHoldingView,
-                          PersonSignal, Security, SecurityView, SigDisplay,
+from sdapp.models import (Affiliation, Form345Entry,
+                          PersonSignal, Security, SigDisplay,
                           SecurityPriceHist, WatchedName)
 from sdapp.misc.filingcodes import filingcodes, acq_disp_codes
 from sdapp import holdingbuild
@@ -558,98 +558,3 @@ def holdingdetail(request, ticker):
                                'issuer_pk': issuer_pk,
                                'watchedname': watchedname, },
                               context_instance=RequestContext(request),)
-
-
-@login_required()
-def byperson(request, ticker):
-    ticker = ticker.upper()
-    issuer = \
-        Security.objects.get(ticker=ticker).issuer
-    personviews = PersonHoldingView.objects.filter(issuer=issuer)\
-        .order_by('person_name', '-intrinsic_value')
-    watchedname = WatchedName.objects.filter(issuer=issuer)\
-        .filter(user__username=request.user.username)
-    return render_to_response('sdapp/personviews.html',
-                              {'ticker': ticker,
-                               'issuer_pk': issuer.pk,
-                               'personviews': personviews,
-                               'watchedname': watchedname, },
-                              context_instance=RequestContext(request),)
-
-
-def compile_holdings_into_table(person_view_set, total_view_set,
-                                deriv_or_nonderiv):
-    sec_ids_titles = \
-        total_view_set\
-        .filter(deriv_or_nonderiv=deriv_or_nonderiv)\
-        .values_list('security', 'short_sec_title').distinct()\
-        .order_by('-intrinsic_value')
-    holding_lists = []
-    for security_id, short_sec_title in sec_ids_titles:
-        sec_holdings = person_view_set.filter(security_id=security_id)\
-            .order_by('-units_held')[:5]
-        total = total_view_set.filter(security=security_id)[0]
-        holding_list = [short_sec_title, sec_holdings, total]
-        holding_lists.append(holding_list)
-    return holding_lists
-
-
-@login_required()
-def holdingtable(request, ticker):
-    ticker = ticker.upper()
-    common_stock_security = \
-        Security.objects.get(ticker=ticker)
-    issuer = common_stock_security.issuer
-    watchedname = WatchedName.objects.filter(issuer=issuer)\
-        .filter(user__username=request.user.username)
-    issuer_name = Form345Entry.objects.filter(issuer_cik=issuer)\
-        .latest('filedatetime').issuer_name
-
-    person_view_set = PersonHoldingView.objects.filter(issuer=issuer)\
-        .exclude(units_held=0.0).exclude(units_held=None)
-
-    total_view_set = SecurityView.objects.filter(issuer=issuer)\
-        .exclude(units_held=0.0).exclude(units_held=None)
-    non_deriv_table = \
-        compile_holdings_into_table(person_view_set, total_view_set, 'N')
-    deriv_table = \
-        compile_holdings_into_table(person_view_set, total_view_set, 'D')
-    return render_to_response('sdapp/holdingtable.html',
-                              {'ticker': ticker,
-                               'issuer_name': issuer_name,
-                               'non_deriv_table': non_deriv_table,
-                               'deriv_table': deriv_table,
-                               'watchedname': watchedname, },
-                              context_instance=RequestContext(request),
-                              )
-
-
-@login_required()
-def personholdingtable(request, ticker, owner):
-    ticker = ticker.upper()
-    common_stock_security = \
-        Security.objects.get(ticker=ticker)
-    issuer = common_stock_security.issuer
-    latest_form_filed = Form345Entry.objects\
-        .filter(issuer_cik=issuer).filter(reporting_owner_cik=owner)\
-        .latest('filedatetime')
-    person_name = latest_form_filed.reporting_owner_name
-    person_title = latest_form_filed.reporting_owner_title
-    person_view_set = PersonHoldingView.objects\
-        .filter(issuer=issuer).filter(owner=owner)\
-        .exclude(units_held=0.0).exclude(units_held=None)
-    # These should be reordered by intrinsic economic value, once available
-    nonderivativeholdings = person_view_set.filter(deriv_or_nonderiv='N')\
-        .order_by('-intrinsic_value', '-units_held')
-    derivativeholdings = person_view_set.filter(deriv_or_nonderiv='D')\
-        .order_by('-intrinsic_value', '-units_held')
-
-    return render_to_response('sdapp/personholdingtable.html',
-                              {'ticker': ticker,
-                               'person_name': person_name,
-                               'person_title': person_title,
-                               'issuer': issuer,
-                               'nonderivativeholdings': nonderivativeholdings,
-                               'derivativeholdings': derivativeholdings},
-                              context_instance=RequestContext(request),
-                              )

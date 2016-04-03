@@ -1,7 +1,7 @@
 import datetime
 from decimal import Decimal
 
-from sdapp.models import ClosePrice
+from sdapp.models import ClosePrice, SecurityPriceHist
 
 
 def median(medlist):
@@ -30,6 +30,19 @@ def is_none_or_zero(inputvar):
         return True
     else:
         return False
+
+
+def get_sph_pk(security, sph_pk_dict):
+    if security in sph_pk_dict:
+        sph_pk = sph_pk_dict[security]
+    else:
+        sph_qs = SecurityPriceHist.objects.filter(security=security)
+        if sph_qs.exists():
+            sph_pk = sph_qs[0].pk
+        else:
+            sph_pk = None
+        sph_pk_dict[security] = sph_pk
+    return sph_pk
 
 
 def laxer_start_price(sec_price_hist, pricedate):

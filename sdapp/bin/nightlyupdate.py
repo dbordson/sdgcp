@@ -10,6 +10,5 @@ from sdapp.bin import populateintermediate, grabmarketdata,\
     populateformadjustments, supersedeinit, adjsharesremaining
 
 from sdapp.bin import update_affiliation_data
-update_affiliation_data.upd()
 
-from sdapp.bin import populateviews, newpopulatesigs
+from sdapp.bin import newpopulatesigs

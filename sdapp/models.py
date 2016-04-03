@@ -1,6 +1,8 @@
-from django.db import models
-from decimal import Decimal
 from django.contrib.auth.models import User
+from django.db import models
+import datetime
+from decimal import Decimal
+
 # class StockHistories(models.Model):
 
 
@@ -43,7 +45,7 @@ class Affiliation(models.Model):
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
     conversion_to_price_ratio =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
-
+    # equity_grant_rate is in shares
     equity_grant_rate =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
     avg_grant_conv_price =\
@@ -244,7 +246,7 @@ class ClosePrice(models.Model):
 class SplitOrAdjustmentEvent(models.Model):
     security = models.ForeignKey(Security)
     adjustment_factor = models.DecimalField(max_digits=15, decimal_places=4)
-    event_date = models.DateField(null=True)
+    event_date = models.DateField(default=datetime.date(1900, 1, 1))
 
     def __unicode__(self):
         return unicode(self.security) or u''
@@ -345,84 +347,6 @@ class YearlyReportingPersonAtts(models.Model):
                                 str(self.activity_threshold))
 
 
-class SecurityView(models.Model):
-    issuer = models.ForeignKey(IssuerCIK)
-    security = models.ForeignKey(Security)
-    short_sec_title = models.CharField(max_length=80, null=True)
-    ticker = models.CharField(max_length=10, null=True)
-    last_close_price = \
-        models.DecimalField(max_digits=15, decimal_places=4, null=True)
-    # security_title = models.CharField(max_length=80, null=True)
-    units_held = \
-        models.DecimalField(max_digits=15, decimal_places=4, null=True)
-    deriv_or_nonderiv = models.CharField(max_length=1, null=True)
-    first_expiration_date = models.DateField(null=True)
-    last_expiration_date = models.DateField(null=True)
-    wavg_expiration_date = models.DateField(null=True)
-    min_conversion_price = \
-        models.DecimalField(max_digits=15, decimal_places=4, null=True)
-    max_conversion_price = \
-        models.DecimalField(max_digits=15, decimal_places=4, null=True)
-    wavg_conversion = \
-        models.DecimalField(max_digits=15, decimal_places=4, null=True)
-    # underlying_title = models.CharField(max_length=80, null=True)
-    scrubbed_underlying_title = models.CharField(max_length=80, null=True)
-    underlying_ticker = models.CharField(max_length=10, null=True)
-    underlying_shares_total = \
-        models.DecimalField(max_digits=15, decimal_places=4, null=True)
-    underlying_close_price = \
-        models.DecimalField(max_digits=15, decimal_places=4, null=True)
-    intrinsic_value = \
-        models.DecimalField(max_digits=16, decimal_places=4, null=True)
-    first_xn = models.DateField(null=True)
-    most_recent_xn = models.DateField(null=True)
-    wavg_xn_date = models.DateField(null=True)
-
-    def __unicode__(self):
-        return unicode(self.short_sec_title) or u''
-
-
-class PersonHoldingView(models.Model):
-    issuer = models.ForeignKey(IssuerCIK)
-    owner = models.ForeignKey(ReportingPerson)
-    person_name = models.CharField(max_length=80, null=True)
-    person_title = models.CharField(max_length=80, null=True)
-    security = models.ForeignKey(Security)
-    affiliation = models.ForeignKey(Affiliation)
-    short_sec_title = models.CharField(max_length=80, null=True)
-    ticker = models.CharField(max_length=10, null=True)
-    last_close_price = \
-        models.DecimalField(max_digits=15, decimal_places=4, null=True)
-    # security_title = models.CharField(max_length=80, null=True)
-    units_held = \
-        models.DecimalField(max_digits=15, decimal_places=4, null=True)
-    deriv_or_nonderiv = models.CharField(max_length=1, null=True)
-    first_expiration_date = models.DateField(null=True)
-    last_expiration_date = models.DateField(null=True)
-    wavg_expiration_date = models.DateField(null=True)
-    min_conversion_price = \
-        models.DecimalField(max_digits=15, decimal_places=4, null=True)
-    max_conversion_price = \
-        models.DecimalField(max_digits=15, decimal_places=4, null=True)
-    wavg_conversion = \
-        models.DecimalField(max_digits=15, decimal_places=4, null=True)
-    # underlying_title = models.CharField(max_length=80, null=True)
-    scrubbed_underlying_title = models.CharField(max_length=80, null=True)
-    underlying_ticker = models.CharField(max_length=10, null=True)
-    underlying_shares_total = \
-        models.DecimalField(max_digits=15, decimal_places=4, null=True)
-    underlying_close_price = \
-        models.DecimalField(max_digits=15, decimal_places=4, null=True)
-    intrinsic_value = \
-        models.DecimalField(max_digits=16, decimal_places=4, null=True)
-    first_xn = models.DateField(null=True)
-    most_recent_xn = models.DateField(null=True)
-    wavg_xn_date = models.DateField(null=True)
-
-    def __unicode__(self):
-        return unicode(self.short_sec_title) or u''
-
-
 class FTPFileList(models.Model):
     files = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True, auto_now=False)
@@ -512,6 +436,18 @@ class Form345Entry(models.Model):
     underlying_security = \
         models.ForeignKey(Security, null=True,
                           related_name="underlying_relationship")
+
+    prim_security = models.ForeignKey(Security, null=True)
+    xn_prim_share_eq =\
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    xn_value =\
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    xn_full_conv_cost =\
+        models.DecimalField(max_digits=15, decimal_places=4, null=True)
+    prim_adjustment_factor =\
+        models.DecimalField(max_digits=15, decimal_places=4,
+                            default=Decimal('1.00'))
+    prim_adjustment_date = models.DateField(null=True)
 
     def __unicode__(self):
         return str(self.entry_internal_id)
@@ -665,18 +601,18 @@ class SigDisplay(models.Model):
     ds_xn_pct_holdings =\
         models.DecimalField(max_digits=15, decimal_places=2, null=True)
 
-    # Sale of all shares
-    saleofall = models.BooleanField(default=False)
-    soa_detect_date = models.DateField(null=True)
-    soa_start_date = models.DateField(null=True)
-    soa_end_date = models.DateField(null=True)
-    soa_primary_affiliation = models.ForeignKey(Affiliation, null=True)
-    soa_inc_ceo = models.NullBooleanField(null=True)
-    soa_people_count = models.IntegerField(max_length=15, null=True)
-    soa_biggest_value = \
-        models.DecimalField(max_digits=15, decimal_places=2, null=True)
-    soa_total_value = \
-        models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    # # Sale of all shares
+    # saleofall = models.BooleanField(default=False)
+    # soa_detect_date = models.DateField(null=True)
+    # soa_start_date = models.DateField(null=True)
+    # soa_end_date = models.DateField(null=True)
+    # soa_primary_affiliation = models.ForeignKey(Affiliation, null=True)
+    # soa_inc_ceo = models.NullBooleanField(null=True)
+    # soa_people_count = models.IntegerField(max_length=15, null=True)
+    # soa_biggest_value = \
+    #     models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    # soa_total_value = \
+    #     models.DecimalField(max_digits=15, decimal_places=2, null=True)
 
     # Factors
     total_transactions = models.IntegerField(max_length=15, null=True)

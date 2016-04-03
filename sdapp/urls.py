@@ -2,7 +2,6 @@ from django.conf.urls import patterns, url
 # from django.views.generic import ListView
 # from sdapp.models import Security
 from sdapp.views import (options, formentrydetail, screens, holdingdetail,
-                         byperson, holdingtable, personholdingtable,
                          filterintermed, watchtoggle, index, tickersearch,
                          drilldown, searchsignals, watchlisttoggle)
 
@@ -23,13 +22,6 @@ urlpatterns = \
             name='formentrydetail'),
         url(r'^(?P<ticker>[^/]+)/holdings$', holdingdetail,
             name='holdingdetail'),
-        url(r'^(?P<ticker>[^/]+)/byperson$', byperson,
-            name='byperson'),
-        url(r'^(?P<ticker>[^/]+)/holdingtable$', holdingtable,
-            name='holdingtable'),
-        url(r'^(?P<ticker>[^/]+)/(?P<owner>[^/]+)/byperson$',
-            personholdingtable,
-            name='personholdingtable'),
         url(r'^(?P<ticker>[^/]+)/watchlisttoggle/', watchlisttoggle,
             name='watchlisttoggle'),
         )

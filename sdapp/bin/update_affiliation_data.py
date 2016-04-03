@@ -1,5 +1,6 @@
 import datetime
 from decimal import Decimal
+import gc
 import sys
 
 import django.db
@@ -7,15 +8,164 @@ from django.db.models import F, Q
 
 from sdapp.bin.globals import (
     abs_sig_min, buyer, grant_period_calc_lookback, hist_sale_period,
-    min_day_gap_for_10b51_trigger_sell_rate, now, perf_period_days_td,
+    min_day_gap_for_10b51_trigger_sell_rate, now,
     price_trigger_lookback, seller, recent_sale_period, today, todaymid,
     tracking_period_calendar_years, trigger_min_stock_move)
 from sdapp.bin.sdapptools import (
-    get_price, median, is_none_or_zero, post_xn_perf,
+    get_price, get_sph_pk, median, is_none_or_zero, post_xn_perf,
     price_perf, rep_none_with_zero
 )
 from sdapp.models import (Affiliation, Form345Entry,
                           IssuerCIK, SecurityPriceHist)
+
+
+def queryset_iterator(queryset, chunksize=50000):
+    # Iterate over a Django Queryset ordered by the primary key
+
+    # This method loads a maximum of chunksize (default: 1000) rows in it's
+    # memory at the same time while django normally would load all rows in it's
+    # memory. Using the iterator() method only causes it to not preload all the
+    # classes.
+
+    # Note that the implementation of the iterator does not support ordered
+    # query sets.
+    pk = 0
+    last_pk = queryset.order_by('-pk')[0].pk
+    queryset = queryset.order_by('pk')
+    while pk < last_pk:
+        for row in queryset.filter(pk__gt=pk)[:chunksize]:
+            pk = row.pk
+            yield row
+        django.db.reset_queries()
+        gc.collect()
+
+
+def fill_in_form_data():
+    print 'Filling in primary equivalent and form value data...'
+    print '    ...sorting...'
+    xns = Form345Entry.objects\
+        .filter(xn_full_conv_cost=None)\
+        .exclude(security=None)\
+        .exclude(xn_acq_disp_code=None)\
+        .exclude(prim_security=None)
+
+    # xns = xns\
+    #     .values(
+    #         'conversion_price', 'deriv_or_nonderiv', 'pk', 'prim_security',
+    #         'security', 'transaction_date', 'transaction_shares',
+    #         'underlying_shares', 'underlying_security')
+    counter = 0.0
+    looplength = float(xns.count())
+    price_dict = {}
+    sph_pk_dict = {}
+    print '    ...updating...'
+    for x in queryset_iterator(xns):
+        counter += 1.0
+        # Do we price security directly or underlying?
+        # Simplest case - what if the security is the primary security
+        conversion_price = rep_none_with_zero(x.conversion_price)
+        deriv_or_nonderiv = x.deriv_or_nonderiv
+        prim_security = x.prim_security
+        prim_security_sph_pk = get_sph_pk(prim_security, sph_pk_dict)
+        security = x.security
+        security_sph_pk = get_sph_pk(security, sph_pk_dict)
+        if x.transaction_date is not None:
+            xn_date = x.transaction_date
+        else:
+            xn_date = x.filedatetime.date
+        xn_shares = x.transaction_shares
+        xn_acq_disp_code = x.xn_acq_disp_code
+        underlying_security = x.underlying_security
+        underlying_security_sph_pk =\
+            get_sph_pk(underlying_security, sph_pk_dict)
+        underlying_shares = x.underlying_shares
+
+        if xn_acq_disp_code == 'A':
+            xn_sign = Decimal(1)
+        elif xn_acq_disp_code == 'D':
+            xn_sign = Decimal(-1)
+        else:
+            print '\nno transaction acq_or_disp code error for item pk', x.pk
+            print 'acq_or_disp is neither "A" nor "D"\n'
+            continue
+        prim_price = get_price(prim_security_sph_pk, xn_date, price_dict)
+        xn_value = None
+
+        # Calc conversion costs
+        if underlying_shares is not None:
+            xn_full_conv_cost = underlying_shares * conversion_price
+        elif xn_shares is not None:
+            xn_full_conv_cost = xn_shares * conversion_price
+        else:
+            xn_full_conv_cost = Decimal(0)
+
+        # Calc xn_value
+        if security.pk == prim_security.pk:
+            security_price = prim_price
+            if prim_price is not None and xn_shares is not None:
+                xn_value = xn_shares * prim_price * xn_sign
+            else:
+                xn_value = None
+        # What if not primary security but is nonderivative
+        elif deriv_or_nonderiv == 'N':
+            if security_sph_pk is not None:
+                security_price =\
+                    get_price(security_sph_pk, xn_date, price_dict)
+            if security_price is not None and xn_shares is not None:
+                xn_value = xn_shares * security_price * xn_sign
+            else:
+                xn_value = None
+        # Now we deal with derivative securities
+        # If there is direct pricing of the derivative (like class a
+        # convertible into class b).
+        elif deriv_or_nonderiv == 'D' and\
+                security_sph_pk is not None:
+            security_price = get_price(security_sph_pk, xn_date, price_dict)
+            if security_price is not None and xn_shares is not None:
+                xn_value = xn_shares * security_price * xn_sign
+            else:
+                xn_value = None
+        # If no direct pricing of derivative, but have underlying pricing.
+        elif deriv_or_nonderiv == 'D' and\
+                security_sph_pk is None and\
+                underlying_security_sph_pk is not None:
+            underlying_price =\
+                get_price(underlying_security_sph_pk, xn_date, price_dict)
+            if underlying_price is not None and underlying_shares is not None:
+                gross_value = underlying_shares * underlying_price
+                xn_value = \
+                    max(gross_value - xn_full_conv_cost, Decimal(0)) * xn_sign
+            else:
+                xn_value = None
+        elif deriv_or_nonderiv != 'D' and deriv_or_nonderiv != 'N':
+            print '\nError, deriv or nonderiv is blank for', x
+            print '\n'
+            continue
+        else:
+            continue
+
+        # Calc primary share equivalents
+        if security_sph_pk == prim_security_sph_pk and xn_shares is not None:
+            xn_prim_share_eq = xn_shares * xn_sign
+        elif underlying_security_sph_pk == prim_security_sph_pk\
+                and underlying_shares is not None:
+            xn_prim_share_eq = underlying_shares * xn_sign
+        elif prim_price is not None and xn_value is not None:
+            xn_prim_share_eq = xn_value / prim_price
+        else:
+            xn_prim_share_eq = None
+
+        x.xn_prim_share_eq = xn_prim_share_eq
+        x.xn_value = xn_value
+        x.xn_full_conv_cost = xn_full_conv_cost
+        x.save()
+
+        percentcomplete = round(counter / looplength * 100, 2)
+        sys.stdout.write("\r%s / %s forms to update: %.2f%%" %
+                         (int(counter), int(looplength), percentcomplete))
+        sys.stdout.flush()
+    print '\n   done.'
+    return
 
 
 def price_reponse_count(
@@ -331,9 +481,8 @@ def calc_equity_grants(issuer, reporting_owner, sec_ids, prim_sec_id,
     last_year_dates = grant_dates[:grants_per_year]
     grants_amounts = grants\
         .filter(transaction_date__in=last_year_dates)\
-        .values('transaction_shares', 'adjustment_factor',
-                'security__conversion_multiple', 'conversion_price',
-                'security', 'underlying_security', 'transaction_date')
+        .values('xn_prim_share_eq', 'xn_full_conv_cost',
+                'prim_adjustment_factor')
     # If no grants in last year, stop here.
     if grants_amounts.count() == 0:
         return Decimal(0), Decimal(0), 1
@@ -341,36 +490,12 @@ def calc_equity_grants(issuer, reporting_owner, sec_ids, prim_sec_id,
     annual_grant_shares = Decimal(0)
     total_conv_cost = Decimal(0)
     for g in grants_amounts:
-        # Do we price security directly or underlying?
-        if g['security'] in ticker_sec_dict:
-            sec_id = g['security']
-            underlying_conversion_mult = Decimal(1)
-        else:
-            sec_id = g['underlying_security']
-            underlying_conversion_mult = g['security__conversion_multiple']
-        # If pricing secondary security, calculate conversion multiple.
-        if sec_id != prim_sec_id:
-            grant_sec_price = get_price(ticker_sec_dict[sec_id],
-                                        g['transaction_date'], price_dict)
-            prim_price = get_price(ticker_sec_dict[prim_sec_id],
-                                   g['transaction_date'], price_dict)
-            if grant_sec_price is None or prim_price is None or\
-                    prim_price == Decimal(0):
-                continue
-            share_conversion_mult_to_primary_ticker = \
-                grant_sec_price / prim_price
-        else:
-            share_conversion_mult_to_primary_ticker = Decimal(1)
-        security_shares = g['transaction_shares'] * g['adjustment_factor'] *\
-            underlying_conversion_mult
-        prim_eq_shares = security_shares *\
-            share_conversion_mult_to_primary_ticker
-        #
-        adj_conversion_price = rep_none_with_zero(g['conversion_price']) /\
-            g['adjustment_factor']
-        conv_cost = adj_conversion_price * security_shares
-        annual_grant_shares += prim_eq_shares
-        total_conv_cost += conv_cost
+        xn_prim_share_eq = g['xn_prim_share_eq']
+        xn_full_conv_cost = g['xn_full_conv_cost']
+        prim_adjustment_factor = g['prim_adjustment_factor']
+        annual_grant_shares += rep_none_with_zero(xn_prim_share_eq)\
+            * prim_adjustment_factor
+        total_conv_cost += rep_none_with_zero(xn_full_conv_cost)
     #
     if annual_grant_shares != Decimal(0):
         avg_conv_price = total_conv_cost / annual_grant_shares
@@ -396,46 +521,20 @@ def calc_disc_xns(issuer, reporting_owner, sec_ids, prim_sec_id,
     else:
         disc_xns = disc_xns.exclude(tenbfive_note=True)
     disc_xns = disc_xns\
-        .values('transaction_shares', 'adjustment_factor',
-                'security__conversion_multiple', 'security',
-                'underlying_security', 'transaction_date', 'transaction_code')
+        .values('xn_prim_share_eq', 'xn_value',
+                'prim_adjustment_factor')
     if len(disc_xns) is 0:
         return Decimal(0), Decimal(0)
     net_xn_shares = Decimal(0)
     net_xn_value = Decimal(0)
-    xn_sign = {'S': Decimal(-1), 'P': Decimal(1)}
     for x in disc_xns:
-        # Do we price security directly or underlying?
-        if x['security'] in ticker_sec_dict:
-            sec_id = x['security']
-            underlying_conversion_mult = Decimal(1)
-        else:
-            sec_id = x['underlying_security']
-            underlying_conversion_mult = x['security__conversion_multiple']
-        # If pricing secondary security, calculate conversion multiple.
-        if sec_id != prim_sec_id and\
-                x['underlying_security'] != prim_sec_id:
-            sec_price = get_price(ticker_sec_dict[sec_id],
-                                  x['transaction_date'], price_dict)
-            prim_price = get_price(ticker_sec_dict[prim_sec_id],
-                                   x['transaction_date'], price_dict)
-            if sec_price is None or prim_price is None or\
-                    prim_price == Decimal(0):
-                continue
-            share_conversion_mult_to_primary_ticker = \
-                sec_price / prim_price
-        else:
-            share_conversion_mult_to_primary_ticker = Decimal(1)
-        price = get_price(ticker_sec_dict[sec_id],
-                          x['transaction_date'], price_dict)
-        if price is None:
-            continue
-        prim_eq_shares = x['transaction_shares'] * x['adjustment_factor'] *\
-            underlying_conversion_mult *\
-            xn_sign[x['transaction_code']] *\
-            share_conversion_mult_to_primary_ticker
-        net_xn_shares += prim_eq_shares
-        net_xn_value += prim_eq_shares * price
+        xn_prim_share_eq = x['xn_prim_share_eq']
+        xn_value = x['xn_value']
+        prim_adjustment_factor = x['prim_adjustment_factor']
+
+        net_xn_shares += rep_none_with_zero(xn_prim_share_eq)\
+            * prim_adjustment_factor
+        net_xn_value += rep_none_with_zero(xn_value)
     return net_xn_shares, net_xn_value
 
 
@@ -835,11 +934,14 @@ def calc_person_affiliation(
 
 
 def upd():
+    print 'Updating affiliations for new forms'
+    print '...sorting...'
     affiliations_with_new_forms = Affiliation.objects.all()\
         .values_list('issuer', 'reporting_owner')
     counter = 0.0
     looplength = float(len(affiliations_with_new_forms))
     price_dict = {}
+    print '...updating and saving...'
     for issuer, reporting_owner in affiliations_with_new_forms:
         calc_person_affiliation(
             issuer, reporting_owner, price_dict
@@ -850,7 +952,7 @@ def upd():
                          (int(counter), int(looplength), percentcomplete))
         sys.stdout.flush()
 
-    print '\n   ...determining who is active...'
+    print '\n   ...determining which affiliations are active...'
     general_include_date = now - datetime.timedelta(3 * 365)
     no_shares_include_date = now - datetime.timedelta(365)
     officer_include_date = now - datetime.timedelta(400)
@@ -949,5 +1051,6 @@ def annotatestats():
         django.db.reset_queries()
     return
 
+fill_in_form_data()
 upd()
 annotatestats()

@@ -310,7 +310,7 @@ def parse(root, child, child2, entrynumber, deriv_or_nonderiv, xmlfilepath,
         f_att(4, child2,
               'transactionAmounts/transactionPricePerShare/value')
     a.xn_acq_disp_code =\
-        t_att(2, child2,
+        t_att(1, child2,
               'transactionAmounts/transactionAcquiredDisposedCode/value')
     a.expiration_date = d_att(child2, 'expirationDate/value')
     a.underlying_title =\

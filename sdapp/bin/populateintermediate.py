@@ -222,13 +222,13 @@ def link_entries_for_reporting_person_and_affiliation_foreign_keys():
 
 
 def link_security_and_security_price_hist(cik, title):
-    print cik
-    print title
+    # print cik
+    # print title
     security_price_hist =\
         SecurityPriceHist.objects.filter(issuer_id=cik)\
         .filter(primary_ticker_sym=True)[0]
     ticker = security_price_hist.ticker_sym
-    print ticker
+    # print ticker
     security = \
         Security.objects.get(issuer_id=cik,
                              deriv_or_nonderiv='N',
@@ -318,6 +318,29 @@ def create_primary_security(cik):
         primary_security = securities.most_common(1)[0][0]
         primary_security_title = Security.objects.get(pk=primary_security)
         link_security_and_security_price_hist(cik, primary_security_title)
+
+
+def link_forms_to_prim_security():
+    print 'Linking forms to prim_security...'
+    unlinked_issuers =\
+        Form345Entry.objects.filter(prim_security=None)\
+        .values_list('issuer_cik', flat=True).distinct()
+    looplength = float(len(unlinked_issuers))
+    counter = 0.0
+    for issuer in unlinked_issuers:
+        prim_sph =\
+            SecurityPriceHist.objects.filter(issuer=issuer)\
+            .filter(primary_ticker_sym=True)
+        if prim_sph.exists and\
+                prim_sph[0].security is not None:
+            Form345Entry.objects.filter(issuer_cik=issuer)\
+                .update(prim_security=prim_sph[0].security)
+        counter += 1.0
+        percentcomplete = round(counter / looplength * 100, 2)
+        sys.stdout.write("\r%s / %s prim_security atts to assign: %.2f%%" %
+                         (int(counter), int(looplength), percentcomplete))
+        sys.stdout.flush()
+    print '\n    done.'
 
 
 # Must create all issuer foreign key linkages in Form345Entry before running
@@ -436,9 +459,11 @@ def update_securities():
         (issuers_with_unlinked_sph_objects & issuer_with_unlinked_securities)
 
     # print len(issuers_with_unlinked_sph_objects)
-    print '    linking and saving any new...'
+    print '    linking and saving any new securities...'
     for cik in ciks_with_tickers_unlinked:
         create_primary_security(cik)
+    print '    linking and saving any new prim_security atts...'
+    link_forms_to_prim_security()
     print 'done.'
 
 
