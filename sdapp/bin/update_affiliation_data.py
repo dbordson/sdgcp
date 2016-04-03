@@ -48,7 +48,9 @@ def fill_in_form_data():
         .exclude(security=None)\
         .exclude(xn_acq_disp_code=None)\
         .exclude(prim_security=None)
-
+    if not xns.exists():
+        print '    ....no new transactions; done.'
+        return
     # xns = xns\
     #     .values(
     #         'conversion_price', 'deriv_or_nonderiv', 'pk', 'prim_security',
@@ -952,7 +954,7 @@ def upd():
                          (int(counter), int(looplength), percentcomplete))
         sys.stdout.flush()
 
-    print '\n   ...determining which affiliations are active...'
+    print '\n   ...determining who is active...'
     general_include_date = now - datetime.timedelta(3 * 365)
     no_shares_include_date = now - datetime.timedelta(365)
     officer_include_date = now - datetime.timedelta(400)
