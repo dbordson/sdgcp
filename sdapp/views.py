@@ -135,7 +135,7 @@ def options(request, ticker):
         sig_dates = appendif(sig_dates, signal_entry.db_detect_date)
         sig_dates = appendif(sig_dates, signal_entry.sos_first_sig_detect_date)
         sig_dates = appendif(sig_dates, signal_entry.ds_detect_date)
-        sig_dates = appendif(sig_dates, signal_entry.soa_detect_date)
+        # sig_dates = appendif(sig_dates, signal_entry.soa_detect_date)
     sig_highlights = []
     for sig_date in sig_dates:
         sig_highlights.append(
