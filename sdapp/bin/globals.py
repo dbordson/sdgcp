@@ -58,4 +58,9 @@ signal_disp_list = \
 seller = "Seller"
 buyer = "Buyer"
 
+# quarterly index download options
+# indexyear lookback is the lookback from the nominal current year
+# e.g. 11 years looking back from 4/3/16 looks back to 1/1/2005.
+indexyearlookback = 11
+
 app_url = 'http://127.0.0.1:8000/sdapp/'

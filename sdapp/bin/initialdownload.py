@@ -5,6 +5,7 @@ import sys
 import time
 
 from sdapp.bin import addissuers
+from sdapp.bin.globals import indexyearlookback
 from sdapp.models import IssuerCIK, FTPFileList
 
 cwd = os.getcwd()
@@ -96,7 +97,8 @@ def downloadindices(storedquarterlist, qindexbasepath):
     indexyearlist = []
     ftp.retrlines('nlst', rawindexyearlist.append)
     for entry in rawindexyearlist:
-        if len(entry) == 4 and entry.isdigit() and int(entry) >= thisyear - 11:
+        if len(entry) == 4 and entry.isdigit()\
+                and int(entry) >= thisyear - indexyearlookback:
             indexyearlist.append(entry)
     #
     # Replacing latest index stored (bc/ updated daily by SEC)
@@ -200,12 +202,10 @@ if not(os.path.exists(qindexdirectory + lastdownloadfilename)):
 
 from qindex.lastdl import lastdl
 
-qindexfilelist = []
 storedquarterlist = []
 
 for filename in os.listdir(qindexdirectory):
     if filename.endswith('.txt'):
-        qindexfilelist.append(filename)
         storedquarterlist.append(filename[:6])
 
 datestringtoday = datetime.date.today().strftime('%Y%m%d')
@@ -214,6 +214,12 @@ if lastdl != datestringtoday:
     downloadindices(storedquarterlist, qindexbasepath)
 else:
     print 'Already updated indices today. Skipping index download function.'
+
+qindexfilelist = []
+
+for filename in os.listdir(qindexdirectory):
+    if filename.endswith('.txt'):
+        qindexfilelist.append(filename)
 
 print 'Now updating FTPFileList object.'
 generateFTPFileList(qindexfilelist, qindexdirectory)
