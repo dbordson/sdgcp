@@ -1051,6 +1051,7 @@ def annotatestats():
                          (int(counter), int(looplength), percentcomplete))
         sys.stdout.flush()
         django.db.reset_queries()
+    print "\ndone."
     return
 
 fill_in_form_data()
