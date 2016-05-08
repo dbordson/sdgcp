@@ -45,7 +45,6 @@ TEMPLATE_DIRS = (
     os.path.join(BASE_DIR, "static", "templates"),
 )
 
-
 # Application definition
 
 INSTALLED_APPS = (
@@ -66,8 +65,10 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # 'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # 'django.middleware.security.SecurityMiddleware',
 )
 
 ROOT_URLCONF = 'hellodjango.urls'
@@ -80,14 +81,26 @@ WSGI_APPLICATION = 'hellodjango.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'da29ata4en7cmb',
-        'USER': 'ikgoypfxauimde',
-        'PASSWORD': 'qGW1rvAFyqlsJvJvtCrM-YjXNi',
-        'HOST': 'ec2-54-243-50-213.compute-1.amazonaws.com',
-        'PORT': '5432',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'sdapp',
+        'USER': 'usersdapp',
+        'PASSWORD': 'coconut257',
+        'HOST': '173.194.81.219',
+        'PORT': '3306',
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
+#         'NAME': 'da29ata4en7cmb',
+#         'USER': 'ikgoypfxauimde',
+#         'PASSWORD': 'qGW1rvAFyqlsJvJvtCrM-YjXNi',
+#         'HOST': 'ec2-54-243-50-213.compute-1.amazonaws.com',
+#         'PORT': '5432',
+#     }
+# }
+
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql_psycopg2',
@@ -131,11 +144,16 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 ALLOWED_HOSTS = ['*']
 
 # Static asset configuration
-STATIC_ROOT = 'staticfiles'
-STATIC_URL = '/static/'
 
+# STATIC_URL = '/static/'
+STATIC_URL = 'http://storage.googleapis.com/sdapp-1305/static/'
+STATIC_ROOT = 'static/'
+
+# STATICFILES_DIRS = (
+#     os.path.join(BASE_DIR, 'static'),
+# )
 STATICFILES_DIRS = (
-    os.path.join(BASE_DIR, 'static'),
+    'http://storage.googleapis.com/sdapp-1305/static/',
 )
 
 # if DEBUG:

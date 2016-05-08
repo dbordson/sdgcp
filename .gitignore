@@ -1,6 +1,7 @@
 venv
+env
 *.pyc
-staticfiles
+static
 .env
 .DS_Store
 emailaddress.txt
