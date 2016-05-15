@@ -9,4 +9,4 @@ runtime_config:
 
 handlers:
 - url: /.*
-  script: sdgcp.app
+  script: manage.app
