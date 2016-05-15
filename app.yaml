@@ -9,4 +9,4 @@ runtime_config:
 
 handlers:
 - url: /.*
-  script: manage.app
+  script: manage.py
