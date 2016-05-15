@@ -5,22 +5,20 @@ runtime: python27
 api_version: 1
 threadsafe: true
 
-# # runtime: python
-# # vm: true
-# entrypoint: gunicorn -b :$PORT hellodjango.wsgi
-
 libraries:
 - name: django
   version: "1.5"
 
-  
+builtins:
+- django_wsgi: on
+
+# # runtime: python
+# # vm: true
+# entrypoint: gunicorn -b :$PORT hellodjango.wsgi  
 
 # runtime_config:
 #   python_version: 2
 # # [END runtime]
-
-builtins:
-- django_wsgi: on
 
 # handlers:
 # - url: /.*
