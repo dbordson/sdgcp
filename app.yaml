@@ -9,7 +9,7 @@ handlers:
 - url: /static
   static_dir: static/
 - url: .*
-  script: mysite.wsgi.application
+  script: hellodjango.wsgi.application
 
 # # runtime: python
 # # vm: true
