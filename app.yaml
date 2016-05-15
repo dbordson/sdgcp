@@ -1,24 +1,9 @@
 # [START runtime]
-runtime: python27
-api_version: 1
-threadsafe: yes
-version: 1
+runtime: python
+vm: true
+entrypoint: gunicorn -b :$PORT hellodjango.wsgi
 
+runtime_config:
+  python_version: 2
+# [END runtime]
 
-handlers:
-- url: /static
-  static_dir: static/
-- url: .*
-  script: hellodjango.wsgi.application
-
-# # runtime: python
-# # vm: true
-# entrypoint: gunicorn -b :$PORT hellodjango.wsgi  
-
-# runtime_config:
-#   python_version: 2
-# # [END runtime]
-
-# handlers:
-# - url: /.*
-#   script: manage.py
