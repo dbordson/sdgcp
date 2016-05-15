@@ -147,6 +147,7 @@ ALLOWED_HOSTS = ['*']
 
 # STATIC_URL = '/static/'
 STATIC_URL = 'http://storage.googleapis.com/sdapp-1305/static/'
+
 STATIC_ROOT = 'static/'
 
 # STATICFILES_DIRS = (
