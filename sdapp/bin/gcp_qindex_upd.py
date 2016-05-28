@@ -7,6 +7,7 @@ try:
     import cStringIO as sio
 except ImportError:
     import StringIO as sio
+
 from gcloud import storage
 
 from sdapp.bin import addissuers
@@ -55,7 +56,7 @@ def ftplogin():
             from emailaddress import email
         else:
             email = os.environ.get('EMAIL_ADDRESS')
-        ftp = FTP('ftp.sec.gov', 'anonymous', email, '', '120')
+        ftp = FTP('ftp.sec.gov', 'anonymous', email, '', 120)
         # ftp = FTP('ftp.sec.gov')
         # ftp.login('anonymous', email)
         print "Connected"
