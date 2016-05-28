@@ -213,7 +213,7 @@ if latestdl is None:
 else:
     td = nowUTC - latestdl
     hourslapsed = float(td.seconds) / float(3600)
-    if hourslapsed > float(12):
+    if hourslapsed > float(0):
         print 'Running index download function'
         downloadindices(
             storedquarterlist, qindexbasepath, bucket)
