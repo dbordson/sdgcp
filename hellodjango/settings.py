@@ -27,6 +27,8 @@ EMAIL_PORT = 587
 
 LOGIN_URL = '/accounts/login/'
 
+PROJECT_ID = 'sdapp-1305'
+CLOUD_STORAGE_BUCKET = 'indexbucket'
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.6/howto/deployment/checklist/

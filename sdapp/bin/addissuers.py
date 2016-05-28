@@ -35,7 +35,7 @@ def CIKFind(ticker):
 def newciks():
     print 'Linking unlinked SecurityPriceHist objects to IssuerCIK objects',
     print 'and creating any new IssuerCIK objects...'
-    print '    Sorting, linking and saving...',
+    print '    Sorting, linking and saving...'
     unlinked_tickers = SecurityPriceHist.objects.filter(issuer=None)
     # finds un
     count = 0.0

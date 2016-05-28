@@ -21,6 +21,9 @@ perf_period_days_td = datetime.timedelta(90)
 big_xn_amt = Decimal(100 * 1000)
 EST = pytz.timezone('America/New_York')
 now = datetime.datetime.now(EST)
+
+UTC = pytz.timezone('UTC')
+nowUTC = datetime.datetime.now(UTC)
 # THIS TIME ASSUMES THE SCRIPT WILL NOT RUN BTW 2 am and 3 am EST
 if now.time().hour >= 3:
     delta = datetime.timedelta(-1)
@@ -61,6 +64,6 @@ buyer = "Buyer"
 # quarterly index download options
 # indexyear lookback is the lookback from the nominal current year
 # e.g. 11 years looking back from 4/3/16 looks back to 1/1/2005.
-indexyearlookback = 11
+indexyearlookback = 10
 
 app_url = 'http://127.0.0.1:8000/sdapp/'
