@@ -81,45 +81,39 @@ WSGI_APPLICATION = 'hellodjango.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'sdapp',
-        'USER': 'usersdapp',
-        'PASSWORD': 'coconut257',
-        'HOST': '173.194.81.219',
-        'PORT': '3306',
+
+if os.getenv('SERVER_SOFTWARE', '').startswith('Google App Engine'):
+    # Running on production App Engine, so use a Google Cloud SQL database.
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'HOST': '/cloudsql/sdapp-1305:us-east1:sd',
+            'NAME': 'sd',
+            'USER': 'root',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'sd',
+            'USER': 'root',
+            'PASSWORD': 'coconut257',
+            'HOST': '104.196.140.6',
+            'PORT': '3306',
+        }
+    }
 
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-#         'NAME': 'da29ata4en7cmb',
-#         'USER': 'ikgoypfxauimde',
-#         'PASSWORD': 'qGW1rvAFyqlsJvJvtCrM-YjXNi',
-#         'HOST': 'ec2-54-243-50-213.compute-1.amazonaws.com',
-#         'PORT': '5432',
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'sd',
+#         'USER': 'root',
+#         'PASSWORD': 'coconut257',
+#         'HOST': '104.196.140.6',
+#         'PORT': '3306',
 #     }
 # }
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-#         'NAME': 'local sdapp',
-#         'USER': 'postgres',
-#         'PASSWORD': 'es33-69Cd',
-#         'HOST': ''
-#     }
-# }
-
-# Parse database configuration from $DATABASE_URL
-
-# try:
-#     import dj_database_url
-#     DATABASES['default'] = dj_database_url.config()
-# except:
-#     pass
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.6/topics/i18n/

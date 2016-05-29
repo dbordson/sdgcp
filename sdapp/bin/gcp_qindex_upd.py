@@ -83,7 +83,8 @@ def ftpdownload(filepath, local_filename, ftp, bucket):
         r = Reader()
         ftp.retrbinary('RETR %s' % filepath, r)
         blob = bucket.blob(local_filename)
-        blob.upload_from_string(r.data, content_type='text/plain')
+        blob.upload_from_string(unicode(r.data.decode('latin-1')),
+                                content_type='text/plain')
     except:
         print "Can't get file in ", filepath
 
@@ -149,7 +150,8 @@ def generateFTPFileList(storedquarterfilenames, bucket):
         print '...' + indexfilename
         downloadblob = bucket.blob(indexfilename)
 
-        indexstring = downloadblob.download_as_string() + endsignal
+        indexstring =\
+            downloadblob.download_as_string() + endsignal
         stringlinesobject = sio.StringIO(indexstring)
         while True:
             line = stringlinesobject.readline()
