@@ -63,6 +63,8 @@ def get_price(sph_obj, pricedate, price_dict):
         return None, price_dict
     if type(sph_obj) is int:
         sph_pk = sph_obj
+    elif type(sph_obj) is long:
+        sph_pk = sph_obj
     else:
         sph_pk = sph_obj.pk
     if (sph_pk, pricedate) in price_dict:
