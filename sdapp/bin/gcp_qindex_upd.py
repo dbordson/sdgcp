@@ -141,7 +141,7 @@ def generateFTPFileList(storedquarterfilenames, bucket):
 
     CIKsInit = IssuerCIK.objects.values_list('cik_num', flat=True)
 
-    print "Now genrating the list of forms we need from the indices we have."
+    print "Now generating the list of forms we need from the indices we have."
 
     LastCIK = '911911911911911911911911911'
     secfileset = set()
