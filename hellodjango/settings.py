@@ -142,16 +142,16 @@ ALLOWED_HOSTS = ['*']
 # Static asset configuration
 
 # STATIC_URL = '/static/'
-STATIC_URL = 'http://storage.googleapis.com/sdapp-1305/static/'
+STATIC_URL = 'http://storage.googleapis.com/sdapp-1305-static/static/'
 
 STATIC_ROOT = 'static/'
 
 # STATICFILES_DIRS = (
 #     os.path.join(BASE_DIR, 'static'),
 # )
-STATICFILES_DIRS = (
-    'http://storage.googleapis.com/sdapp-1305/static/',
-)
+# STATICFILES_DIRS = (
+#     'http://storage.googleapis.com/sdapp-1305-static/static/',
+# )
 
 # if DEBUG:
 #     MEDIA_URL = '/media/'

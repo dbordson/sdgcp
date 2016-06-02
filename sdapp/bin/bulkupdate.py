@@ -1,5 +1,5 @@
 # TO RUN THIS IN GCP:
-# First run "from sdapp.bin import initialdownload" in a local shell.
+# First run "from sdapp.bin import initialdownload, formscraper" in a local shell,
 # because GCP can't run "initialdownload.py" or formscraper.py, because it
 # does not appear to support FTP access.
 from sdapp.bin import formparser, populateintermediate,\
