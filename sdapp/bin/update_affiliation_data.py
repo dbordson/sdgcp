@@ -113,6 +113,8 @@ def fill_in_form_data():
             if security_sph_pk is not None:
                 security_price =\
                     get_price(security_sph_pk, xn_date, price_dict)
+            else:
+                security_price = None
             if security_price is not None and xn_shares is not None:
                 xn_value = xn_shares * security_price * xn_sign
             else:

@@ -4,9 +4,9 @@ import os
 import sys
 import time
 # try:
-    # import cStringIO as sio
+# import cStringIO as sio
 # except ImportError:
-import StringIO as sio
+# import StringIO as sio
 
 from gcloud import storage
 
