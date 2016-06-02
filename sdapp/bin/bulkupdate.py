@@ -1,7 +1,7 @@
 # TO RUN THIS IN GCP:
-# First run "from sdapp.bin import initialdownload, formscraper" in a local shell,
-# because GCP can't run "initialdownload.py" or formscraper.py, because it
-# does not appear to support FTP access.
+# First run "from sdapp.bin import gcp_qindex_upd, formscraper" in a local
+# shell, because GCP can't run "gcp_qindex_upd.py.py" or formscraper.py,
+# because it does not appear to support FTP access.
 from sdapp.bin import formparser, populateintermediate,\
     grabmarketdata,\
     populateformadjustments, supersedeinit, adjsharesremaining
