@@ -161,7 +161,6 @@ def generateFTPFileList(storedquarterfilenames, bucket):
         downloadblob.download_to_filename(targetfilename)
 
         with open(targetfilename) as infile:
-            print '...' + indexfilename
             for line in infile:
                 if 'edgar/data/' in line\
                         and line[:3] in searchformlist\
