@@ -3,10 +3,10 @@ from ftplib import FTP
 import os
 import sys
 import time
-try:
-    import cStringIO as sio
-except ImportError:
-    import StringIO as sio
+# try:
+    # import cStringIO as sio
+# except ImportError:
+import StringIO as sio
 
 from gcloud import storage
 
@@ -68,23 +68,29 @@ def ftplogin():
         print "Check emailaddress.txt file or EMAIL_ADDRESS global variable"
         print "And check your internet connection"
         # RUN FUNCTION TO QUIT AND EMAIL ERROR
+#
+#
+# class Reader:
+#     def __init__(self):
+#         self.data = ""
 
-
-class Reader:
-    def __init__(self):
-        self.data = ""
-
-    def __call__(self, s):
-        self.data += s
+#     def __call__(self, s):
+#         self.data += s
 
 
 def ftpdownload(filepath, local_filename, ftp, bucket):
     try:
-        r = Reader()
-        ftp.retrbinary('RETR %s' % filepath, r)
+        targetfilename = 'temp.txt'
+        target = open(targetfilename, 'wb')
+        ftp.retrbinary('RETR %s' % filepath, target.write)
+        target.close()
+        # r = Reader()
+        # ftp.retrbinary('RETR %s' % filepath, r)
         blob = bucket.blob(local_filename)
-        blob.upload_from_string(unicode(r.data.decode('latin-1')),
-                                content_type='text/plain')
+        blob.upload_from_filename(targetfilename,
+                                  content_type='text/plain')
+        os.remove(targetfilename)
+        # blob.upload_from_string(r.data, content_type='text/plain')
     except:
         print "Can't get file in ", filepath
 
@@ -145,33 +151,58 @@ def generateFTPFileList(storedquarterfilenames, bucket):
 
     LastCIK = '911911911911911911911911911'
     secfileset = set()
-    endsignal = u'\nEOF_EOF_EOF'
+
     for indexfilename in storedquarterfilenames:
         print '...' + indexfilename
         downloadblob = bucket.blob(indexfilename)
+        targetfilename = 'temp.txt'
+        target = open(targetfilename, 'wb')
+        target.close()
+        downloadblob.download_to_filename(targetfilename)
 
-        indexstring =\
-            downloadblob.download_as_string() + endsignal
-        stringlinesobject = sio.StringIO(indexstring)
-        while True:
-            line = stringlinesobject.readline()
-            if line == 'EOF_EOF_EOF':
-                break
+        with open(targetfilename) as infile:
+            print '...' + indexfilename
+            for line in infile:
+                if 'edgar/data/' in line\
+                        and line[:3] in searchformlist\
+                        and int(cikfinder(line)) == LastCIK:
+                    formfilename = filepathfinder(line)
+                    secfileset.add(formfilename)
 
-            if 'edgar/data/' in line\
-                    and line[:3] in searchformlist\
-                    and int(cikfinder(line)) == LastCIK:
-                formfilename = filepathfinder(line)
-                secfileset.add(formfilename)
-
-            elif 'edgar/data/' in line\
-                    and line[:3] in searchformlist\
-                    and int(cikfinder(line)) in CIKsInit:
-                LastCIK = int(cikfinder(line))
-                formfilename = filepathfinder(line)
-                secfileset.add(formfilename)
-
+                elif 'edgar/data/' in line\
+                        and line[:3] in searchformlist\
+                        and int(cikfinder(line)) in CIKsInit:
+                    LastCIK = int(cikfinder(line))
+                    formfilename = filepathfinder(line)
+                    secfileset.add(formfilename)
+        os.remove(targetfilename)
         LastCIK = '911911911911911911911911911'
+    # endsignal = u'\nEOF_EOF_EOF'
+    # for indexfilename in storedquarterfilenames:
+        # print '...' + indexfilename
+        # downloadblob = bucket.blob(indexfilename)
+        # indexstring =\
+        #     downloadblob.download_as_string() + endsignal
+        # stringlinesobject = sio.StringIO(indexstring)
+        # while True:
+        #     line = stringlinesobject.readline()
+        #     if line == 'EOF_EOF_EOF':
+        #         break
+
+        #     if 'edgar/data/' in line\
+        #             and line[:3] in searchformlist\
+        #             and int(cikfinder(line)) == LastCIK:
+        #         formfilename = filepathfinder(line)
+        #         secfileset.add(formfilename)
+
+        #     elif 'edgar/data/' in line\
+        #             and line[:3] in searchformlist\
+        #             and int(cikfinder(line)) in CIKsInit:
+        #         LastCIK = int(cikfinder(line))
+        #         formfilename = filepathfinder(line)
+        #         secfileset.add(formfilename)
+
+        # LastCIK = '911911911911911911911911911'
 
     'new list generated.'
     secfilestring = ','.join(secfileset)
