@@ -6,7 +6,6 @@ static
 .DS_Store
 emailaddress.txt
 *.DS_Store
-settings.py
 emailpw.py
 client_secret.json
 qindex/**
