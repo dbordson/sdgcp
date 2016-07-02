@@ -2,6 +2,8 @@ from sdapp.models import TransactionEvent
 import pandas as pd
 import statsmodels.api as sm
 import numpy as np
+# Try to take numpy out of this.  The package is not otherwise used.
+# Perhaps there is another NaN definition in pandas?
 
 
 def fl(x):

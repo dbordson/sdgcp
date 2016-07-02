@@ -12,7 +12,7 @@ def savetickerinfo(SPH_id, ticker, security_id):
     yrs_of_adj = 10
     enddate = date.today()
     tickerdata =\
-        DataReader(rp_tkr, "yahoo", datetime(enddate.year-yrs_of_adj,
+        DataReader(rp_tkr, "yahoo", datetime(enddate.year - yrs_of_adj,
                                              enddate.month,
                                              enddate.day))
     tickerdata['Adj Factor'] =\
@@ -29,7 +29,7 @@ def savetickerinfo(SPH_id, ticker, security_id):
     # we may collapse these two calls into one DataFrame
     if yrs_of_pricing != yrs_of_adj:
         data_to_cp =\
-            DataReader(rp_tkr, "yahoo", datetime(enddate.year-yrs_of_pricing,
+            DataReader(rp_tkr, "yahoo", datetime(enddate.year - yrs_of_pricing,
                                                  enddate.month,
                                                  enddate.day))
         data_to_cp['Adj Factor'] =\

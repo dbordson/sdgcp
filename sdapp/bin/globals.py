@@ -8,7 +8,7 @@ from decimal import Decimal
 tracking_period_calendar_years = 5
 signal_detect_lookback = datetime.timedelta(180)
 recent_sale_period = datetime.timedelta(91)
-hist_sale_period = datetime.timedelta(91+365)
+hist_sale_period = datetime.timedelta(91 + 365)
 grant_period_calc_lookback = datetime.timedelta(730)
 min_day_gap_for_10b51_trigger_sell_rate = 10
 price_trigger_lookback = datetime.timedelta(30)
@@ -33,7 +33,7 @@ today = datetime.date.today()
 # todaymid is midnight for the most recent filing index
 todaymid = datetime.datetime(today.year, today.month, today.day,
                              0, 0, 0, 0, tzinfo=EST)\
-           + datetime.timedelta(1)
+    + datetime.timedelta(1)
 date_of_any_new_filings = today + delta
 # Person Signal names
 buy = "Buy"

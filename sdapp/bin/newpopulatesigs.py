@@ -17,6 +17,8 @@ from sdapp.bin.globals import (abs_sig_min, big_xn_amt, buy,
                                seller, signal_detect_lookback,
                                significant_stock_move, hist_sale_period,
                                today, todaymid)
+
+from sdapp.bin.sdapptools import laxer_start_price, calc_perf
 # from sdapp.bin.update_affiliation_data import calc_grants
 
 
@@ -26,19 +28,6 @@ def appendif(startlist, newitem):
     else:
         startlist.append(newitem)
         return startlist
-
-
-def laxer_start_price(sec_price_hist, date):
-    wkd_td = datetime.timedelta(5)
-    close_prices = \
-        ClosePrice.objects.filter(securitypricehist=sec_price_hist)
-    price_list = \
-        close_prices.filter(close_date__gte=date-wkd_td)\
-        .filter(close_date__lte=date).order_by('close_date')
-    if price_list.exists():
-        return price_list[0].adj_close_price
-    else:
-        return None
 
 
 def get_price(sec_price_hist, date, issuer, hist_price_dict):
@@ -104,18 +93,6 @@ def calc_holdings(securities, issuer, reporting_person, hist_price_dict):
     return prior_holding_value
 
 
-def calc_perf(later_price, earlier_price):
-    stock_perf = None
-    if later_price is not None\
-            and earlier_price is not None:
-        stock_perf =\
-            Decimal(round((later_price /
-                          earlier_price) -
-                          Decimal(1), 4))\
-            * Decimal(100)
-    return stock_perf
-
-
 def is_ceo(person_title_list):
     keywords = ['ceo', 'chief executive officer',
                 'principal executive officer']
@@ -127,18 +104,6 @@ def is_ceo(person_title_list):
                 if lowercase_title in keyword:
                     ceo_match = True
     return ceo_match
-
-
-def median(medlist):
-    if len(medlist) == 0:
-        return Decimal(1)
-    medlist.sort()
-    i = len(medlist)/2
-    if len(medlist) % 2 == 0:
-        median_number = (medlist[i] + medlist[i-1])/2
-    else:
-        median_number = medlist[i]
-    return median_number
 
 
 def create_disc_xn_events():

@@ -21,9 +21,9 @@ def median(medlist):
     if len(medlist) == 0:
         return Decimal(1)
     medlist.sort()
-    i = len(medlist)/2
+    i = len(medlist) / 2
     if len(medlist) % 2 == 0:
-        median_number = (medlist[i] + medlist[i-1])/2
+        median_number = (medlist[i] + medlist[i - 1]) / 2
     else:
         median_number = medlist[i]
     return median_number

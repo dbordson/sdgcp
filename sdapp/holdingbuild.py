@@ -2,7 +2,6 @@ import datetime
 from decimal import Decimal
 import json
 from math import sqrt
-import pytz
 import time
 
 from django.core.serializers.json import DjangoJSONEncoder
@@ -10,7 +9,7 @@ from django.db.models import Q
 
 from sdapp.models import (SecurityPriceHist, ClosePrice,
                           Form345Entry)
-from sdapp.bin.globals import today
+from sdapp.bin.globals import now, today
 
 
 def mean(lst):
@@ -51,7 +50,6 @@ def nd(dt):
 
 def pull_person_holdings(ticker, issuer, person_cik, person_name,
                          firstpricedate):
-    now = datetime.datetime.now(pytz.UTC)
     startdate = today - datetime.timedelta(270)
     startdt = now - datetime.timedelta(270)
     ticker_security =\

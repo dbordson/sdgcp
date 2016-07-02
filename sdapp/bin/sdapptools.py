@@ -8,12 +8,24 @@ def median(medlist):
     if len(medlist) == 0:
         return Decimal(1)
     medlist.sort()
-    i = len(medlist)/2
+    i = len(medlist) / 2
     if len(medlist) % 2 == 0:
-        median_number = (medlist[i] + medlist[i-1])/2
+        median_number = (medlist[i] + medlist[i - 1]) / 2
     else:
         median_number = medlist[i]
     return median_number
+
+
+def calc_perf(later_price, earlier_price):
+    stock_perf = None
+    if later_price is not None\
+            and earlier_price is not None:
+        stock_perf =\
+            Decimal(round((later_price /
+                          earlier_price) -
+                          Decimal(1), 4))\
+            * Decimal(100)
+    return stock_perf
 
 
 def rep_none_with_zero(inputvar):
@@ -50,7 +62,7 @@ def laxer_start_price(sec_price_hist, pricedate):
     close_prices = \
         ClosePrice.objects.filter(securitypricehist=sec_price_hist)
     price_list = \
-        close_prices.filter(close_date__gte=pricedate-wkd_td)\
+        close_prices.filter(close_date__gte=pricedate - wkd_td)\
         .filter(close_date__lte=pricedate).order_by('close_date')
     if price_list.exists():
         return price_list[0].adj_close_price

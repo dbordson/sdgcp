@@ -403,7 +403,7 @@ def extracturl(sec_path, textstring):
     schemacodelocation = textstring.find('<schemaVersion>')\
         + len('<schemaVersion>')
     first_three_digits_of_schema_code =\
-        textstring[schemacodelocation:schemacodelocation+3]
+        textstring[schemacodelocation:schemacodelocation + 3]
     code = first_three_digits_of_schema_code
     #
     accession_number_start =\
