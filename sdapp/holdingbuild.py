@@ -89,8 +89,8 @@ def pull_person_holdings(ticker, issuer, person_cik, person_name,
     # all_values = list(stock_values) + list(stock_deriv_values)
     date_set = set()
     for f, s, r, a, c in all_values:
-        date_set.add(f)
-        date_set.add(s)
+        date_set.add(nd(f))
+        # date_set.add(s)
 
     # for values in all_values:
     #     print values
@@ -107,11 +107,15 @@ def pull_person_holdings(ticker, issuer, person_cik, person_name,
         if nd(superseddt) in xn_dict:
             xn_dict[nd(superseddt)] -=\
                 Decimal(rep_shares) * Decimal(adj_factor) * Decimal(conv_mult)
-        else:
+        # This code causes expirations of derivatives to be ignored for
+        # holdings display.  The idea is that if derivatives expired
+        # unexercised, they were either valueless or mistakenly
+        # present.
+        elif nd(superseddt) is None or nd(superseddt) in date_set:
             xn_dict[nd(superseddt)] =\
                 Decimal(-1) * Decimal(rep_shares) * Decimal(adj_factor)\
                 * Decimal(conv_mult)
-
+    # Grabs unsuperseded holdings by looking in the "None" dict entry
     if None in xn_dict:
         currentshares = Decimal(-1) * xn_dict.pop(None, None)
     else:
