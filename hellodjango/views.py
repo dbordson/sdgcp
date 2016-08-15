@@ -1,9 +1,11 @@
+import mailjet_rest
+
 from django.conf import settings
 from django.contrib import auth, messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.context_processors import csrf
-from django.core.mail import send_mail
+# from django.core.mail import send_mail
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, RequestContext
 
@@ -29,7 +31,7 @@ def auth_view(request):
                 and request.META['HTTP_REFERER'].find('/?next=/') != -1:
             source_url = request.META['HTTP_REFERER']
             redirect = \
-                source_url[source_url.find('/?next=/')+len('/?next=/')-1:]
+                source_url[source_url.find('/?next=/') + len('/?next=/') - 1:]
         else:
             redirect = '/sdapp/'
         return HttpResponseRedirect(redirect)
@@ -59,7 +61,7 @@ def changepwloggedout(request):
 
 
 def pwresetloggedoutemail(request):
-    email = request.POST.get('email', '')
+    to = request.POST.get('email', '')
     subject = 'Temporary [PRODUCT NAME] Password'
     new_pw = User.objects.make_random_password()
 
@@ -68,27 +70,38 @@ def pwresetloggedoutemail(request):
         + 'Your new password is %s and we suggest that you reset this to '\
         % new_pw\
         + 'something easier to remember. If you did not request a '\
-        + 'password reset, please contact us at [SUPPORT EMAIL ADDRESS].\n\n'\
+        + 'password reset, please contact us at [SUPPORT to ADDRESS].\n\n'\
         + 'If you have any questions, feel free to reply to this email.\n\n'\
         + 'Regards,\n'\
         + '[COMPANY NAME] Support'
-    from_email = settings.EMAIL_HOST_USER
+    # from_email = settings.EMAIL_HOST_USER
     # request.user.email
-    to_list = [email]
+    # to_list = [email]
     # print User.objects.filter(email=email)
-    if User.objects.filter(email=email).exists():
-        u = User.objects.get(email=email)
+    if User.objects.filter(email=to).exists():
+        u = User.objects.get(email=to)
     else:
         messagetext = \
-            'We do not have the email address "%s" on file.  ' % email\
+            'We do not have the email address "%s" on file.  ' % to\
             + 'If this email address is correct, '\
             + 'please contact [SUPPORT EMAIL ADDRESS]'
         messages.warning(request, messagetext)
         return HttpResponseRedirect('/changepwlo/')
     u.set_password(new_pw)
     u.save()
-    send_mail(subject, message, from_email, to_list, fail_silently=True)
-    print message
+    # send_mail(subject, message, from_email, to_list, fail_silently=True)
+    client = mailjet_rest.Client(
+        auth=(settings.MAILJET_API_KEY, settings.MAILJET_API_SECRET))
+    data = {
+        'FromEmail': settings.MAILJET_SENDER,
+        'FromName': 'sdapp automated email',
+        'Subject': subject,
+        'Text-part': message,
+        'Html-part': message,
+        'Recipients': [{'Email': to}]
+    }
+
+    client.send.create(data=data)
 
     messagetext = \
         'You should receive a new temporary password shortly.'

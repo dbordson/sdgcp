@@ -10,6 +10,7 @@ https://docs.djangoproject.com/en/1.6/ref/settings/
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
+from gcloud import storage
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # for gmail or google apps
@@ -18,6 +19,7 @@ try:
 except:
     SD_EMAIL_PW = os.environ['SD_EMAIL_PW']
     GOOGLE_CLIENT_SECRET = os.environ['GOOGLE_CLIENT_SECRET']
+
 
 EMAIL_USE_TLS = True
 EMAIL_HOST = 'smtp.gmail.com'
@@ -29,6 +31,16 @@ LOGIN_URL = '/accounts/login/'
 
 PROJECT_ID = 'sdapp-1305'
 CLOUD_STORAGE_BUCKET = 'indexbucket'
+MISC_STORAGE_BUCKET = 'sdapp-1305-misc'
+client = storage.Client(project=PROJECT_ID)
+bucket = client.get_bucket(MISC_STORAGE_BUCKET)
+targetblob = bucket.blob('mj.txt')
+s = targetblob.download_as_string()
+MAILJET_API_KEY = s[:s.find('\n')]
+MAILJET_API_SECRET = s[s.find('\n')+1:]
+MAILJET_SENDER = EMAIL_HOST_USER
+
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.6/howto/deployment/checklist/
