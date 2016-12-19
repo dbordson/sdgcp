@@ -1,66 +1,31 @@
 import os
 from sdapp.models import IssuerCIK, FTPFileList, FullForm
-from ftplib import FTP
-from StringIO import StringIO
+import urllib2
 import sys
 from datetime import date
-import time
 
 cwd = os.getcwd()
 today = date.today()
 
+# For reference
+# except:
+#     e = sys.exc_info()[0]
+#     print "Error: %s" % e
+#     print "Cannot connect"
+#     print "Check emailaddress.txt file or EMAIL_ADDRESS global variable"
+#     print "And check your internet connection"
+#
+#     exit(0)
 
-def ftplogin():
+
+def httpsdownload(url):
     try:
-        time.sleep(1)
-        if os.environ.get('EMAIL_ADDRESS') is None:
-            target = open(cwd + '/' + 'emailaddress.txt')
-            email = target.read()
-            email = email.strip()
-            target.close()
-        else:
-            email = os.environ.get('EMAIL_ADDRESS')
-        ftp = FTP('ftp.sec.gov')
-        ftp.login('anonymous', email)
-        print "Connected"
-        return ftp
-    except:
-        e = sys.exc_info()[0]
-        print "Error: %s" % e
-        print "Cannot connect"
-        print "Check emailaddress.txt file or EMAIL_ADDRESS global variable"
-        print "And check your internet connection"
-
-        exit(0)
-
-
-# def ftprefresh(ftp):
-#     try:
-#         ftp.voidcmd('NOOP')
-#         return ftp
-#     except IOError as e:
-#         print "I/O error({0}): {1}".format(e.errno, e.strerror)
-#         print "Retrying..."
-#         ftp = ftplogin()
-#         ftp.voidcmd('NOOP')
-#         print "Worked!"
-#         return ftp
-
-
-def ftpdownload(filepath, ftp):
-    try:
-        r = StringIO()
-        ftp.retrbinary('RETR %s' % filepath, r.write)
-        return r.getvalue()
+        urlobj = urllib2.urlopen(url)
+        data = urlobj.read()
+        return data
 
     except:
-        try:
-            ftp = ftplogin()
-            r = StringIO()
-            ftp.retrbinary('RETR %s' % filepath, r.write)
-            return r.getvalue()
-        except:
-            print "Can't get file in ", filepath
+        print "Can't get file in ", url
 
 
 def extractcik(fullpath):
@@ -77,20 +42,6 @@ def saveandclear(formsforsave):
     return formsforsave
 
 
-if not(os.path.isfile('emailaddress.txt')) and\
-        os.environ.get('EMAIL_ADDRESS') is None:
-    print "Let's locally store your email address as an ftp password",
-    print "(you won't be logged in yet)."
-    target = open(cwd + '/' + 'emailaddress.txt', 'w')
-    print "Created an email address storage file in", cwd + '/' + \
-        'emailaddress.txt'
-    print "What is your email address? (for anonymous ftp password)"
-    email = raw_input()
-    print>>target, email
-    target.close()
-    print ''
-
-
 cik_num_list = IssuerCIK.objects.values_list('cik_num', flat=True)
 
 allforms = set(FullForm.objects.values_list('sec_path',
@@ -100,7 +51,10 @@ try:
     filelistobjects = FTPFileList.objects.all()
     filestring = filelistobjects[len(filelistobjects) - 1].files
     filelist = filestring.split(',')
-    secfileset = set(filelist)
+    if filestring == u'':
+        secfileset = set()
+    else:
+        secfileset = set(filelist)
 except:
     print 'SEC download list is absent or improperly formed; ',
     print 'check FTPFileList table in database'
@@ -111,15 +65,14 @@ print len(secfileset)
 print len(allforms)
 print len(formdownloadset)
 formdownloadlist = list(formdownloadset)
+print formdownloadlist
 
-
-ftp = ftplogin()
 formsforsave = []
 count = 0.0
 totalformslength = float(len(formdownloadlist))
 for formpath in formdownloadlist:
-    fullpath = '/edgar/data/' + formpath
-    text = ftpdownload(fullpath, ftp)
+    url = 'https://www.sec.gov/Archives/edgar/data/' + formpath
+    text = httpsdownload(url)
     a = FullForm(sec_path=formpath,
                  save_date=today,
                  issuer_cik_num=extractcik(formpath),

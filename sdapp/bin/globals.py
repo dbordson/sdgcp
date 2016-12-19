@@ -35,6 +35,7 @@ todaymid = datetime.datetime(today.year, today.month, today.day,
                              0, 0, 0, 0, tzinfo=EST)\
     + datetime.timedelta(1)
 date_of_any_new_filings = today + delta
+update_lookback_days = 10
 # Person Signal names
 buy = "Buy"
 buy_response_to_perf = "Buy Responsive to Performance"

@@ -1,8 +1,9 @@
 # import datetime
-from ftplib import FTP
+import gzip
 import os
-import sys
-import time
+from StringIO import StringIO
+import re
+import urllib2
 # try:
 # import cStringIO as sio
 # except ImportError:
@@ -27,14 +28,7 @@ cwd = os.getcwd()
 #    what could have been downloading and delete it.  Partially downloaded
 #    files may raise unexpected exceptions or cause us to fail to capture data.
 #
-# 2. If you get a 550 error from ftplib, record the error and send it to me.
-#    Unfortunately, sometimes these errors are an issue with the server on the
-#    other side. Because of how this script runs, if you get this error, you
-#    may find blank files in the form 4 storage sections.  Check for these
-#    occassionally.  Also, if you get such an error/find empty storage files
-#    delete the empty files and re-run the program.  Definitely let me know
-#    if you get the error twice in a row, since that indicates a problem on our
-#    side.
+# 2. If you get a 550 error, record the error and send it to me.
 
 
 def cikfinder(line):
@@ -49,94 +43,89 @@ def filepathfinder(line):
     return line[filepathstart:filepathend].rstrip()
 
 
-def ftplogin():
+def generatestoredfileinfo():
+    storedquarterlist = []
+    storedquarterfilenames = []
+    latestdl = None
+    for file in storedfiles:
+        if file['name'].endswith('.txt') and file['name'][4] == 'Q':
+            storedquarterlist.append(file['name'][:6])
+            if latestdl is not None:
+                latestdl = max(latestdl, file['updated'])
+            else:
+                latestdl = file['updated']
+            storedquarterfilenames.append(file['name'])
+    return storedquarterlist, storedquarterfilenames, latestdl
+
+def httpsdownload(url, local_filename, bucket):
     try:
-        time.sleep(1)
-        if os.environ.get('EMAIL_ADDRESS') is None:
-            from emailaddress import email
-        else:
-            email = os.environ.get('EMAIL_ADDRESS')
-        ftp = FTP('ftp.sec.gov', 'anonymous', email, '', 120)
-        # ftp = FTP('ftp.sec.gov')
-        # ftp.login('anonymous', email)
-        print "Connected"
-        return ftp
-    except:
-        e = sys.exc_info()[0]
-        print "Error: %s" % e
-        print "Cannot connect"
-        print "Check emailaddress.txt file or EMAIL_ADDRESS global variable"
-        print "And check your internet connection"
-        # RUN FUNCTION TO QUIT AND EMAIL ERROR
-#
-#
-# class Reader:
-#     def __init__(self):
-#         self.data = ""
+        urlobj = urllib2.urlopen(url)
+        buf = StringIO(urlobj.read())
+        f = gzip.GzipFile(fileobj=buf)
+        data = f.read()
 
-#     def __call__(self, s):
-#         self.data += s
-
-
-def ftpdownload(filepath, local_filename, ftp, bucket):
-    try:
         targetfilename = 'temp.txt'
-        target = open(targetfilename, 'wb')
-        ftp.retrbinary('RETR %s' % filepath, target.write)
+        target = open(targetfilename, 'w')
+        target.write(data)
         target.close()
-        # r = Reader()
-        # ftp.retrbinary('RETR %s' % filepath, r)
+
         blob = bucket.blob(local_filename)
         blob.upload_from_filename(targetfilename,
                                   content_type='text/plain')
         os.remove(targetfilename)
         # blob.upload_from_string(r.data, content_type='text/plain')
     except:
-        print "Can't get file in ", filepath
+        print "Can't get file in ", url
 
 
-def downloadindices(
-        storedquarterlist, qindexbasepath, bucket):
+def downloadindices(storedquarterlist, qindexbasepath, bucket):
     thisyear = today.year
-    print "Connecting to SEC FTP site..."
-    ftp = ftplogin()
+    print "Accessing SEC HTTPS site..."
     # LOAD LIST OF STORED INDICES. IF ANY ARE OMITTED FROM THE LIST, DOWNLOAD
-    ftp.cwd(qindexbasepath)
+
     print "now in /edgar/full-index directory"
-    rawindexyearlist = []
-    indexyearlist = []
-    ftp.retrlines('nlst', rawindexyearlist.append)
-    for entry in rawindexyearlist:
-        if len(entry) == 4 and entry.isdigit()\
-                and int(entry) >= thisyear - indexyearlookback:
-            indexyearlist.append(entry)
+
+    url = "https://www.sec.gov/Archives/edgar/full-index/"
+    urlobj = urllib2.urlopen(url)
+    data = urlobj.read()
+    tag = '<img class="img_icon" src="/icons/folder.gif" alt="folder icon">'
+    years = []
+    for m in re.finditer(tag, data):
+        year = data[m.end():m.end()+4]
+        if int(year) >= thisyear - indexyearlookback:
+            years.append(data[m.end():m.end()+4])
+
     #
     # Replacing latest index stored (bc/ updated daily by SEC)
     if len(storedquarterlist) > 0:
         print 'Replacing latest stored index'
         year = storedquarterlist[-1][:4]
         quarter = storedquarterlist[-1][5]
-        ftp.cwd(qindexbasepath + "/" + year + "/QTR" + quarter)
-        sourcename = "form.idx"
         local_filename = year + "Q" + quarter + ".txt"
-        ftpdownload(sourcename, local_filename, ftp, bucket)
+        url = "https://www.sec.gov/Archives/edgar/full-index/" + year +\
+            "/QTR" + quarter + "/form.gz"
+        httpsdownload(url, local_filename, bucket)
     #
     print "Now going to go one level deeper and begin to save any missing",
     print "indices..."
-    for year in indexyearlist:
-        quarterlist = []
-        ftp.cwd(qindexbasepath + "/" + year)
-        ftp.retrlines('nlst', quarterlist.append)
-        for quarter in quarterlist:
-            if len(quarter) < 5 and quarter.startswith('QTR') and\
-                    not year + 'Q' + quarter[3] in storedquarterlist:
-                print year + 'Q' + quarter[3] + "..."
-                indexdirectory = qindexbasepath + "/" + year + "/" + quarter
-                sourcename = "form.idx"
-                local_filename = year + "Q" + quarter[3] + ".txt"
-                ftpdownload(indexdirectory + '/' + sourcename, local_filename,
-                            ftp, bucket)
-    ftp.close()
+    # Scrapes available quarters for each year.  Then pulls index for each QTR.
+    for year in years:
+        quarters = []
+        url = 'https://www.sec.gov/Archives/edgar/full-index/' + year + '/'
+        urlobj = urllib2.urlopen(url)
+        data = urlobj.read()
+        tag = '/icons/folder.gif" alt="folder icon">'
+        for m in re.finditer(tag, data):
+            quarters.append(data[m.end()+3:m.end()+4])
+        for quarter in quarters:
+            url = "https://www.sec.gov/Archives/edgar/full-index/" + year +\
+                "/QTR" + quarter + "/form.gz"
+
+            if len(quarter) < 5 and\
+                    not year + 'Q' + quarter in storedquarterlist:
+                print year + 'Q' + quarter + "..."
+                local_filename = year + "Q" + quarter + ".txt"
+                httpsdownload(url, local_filename, bucket)
     print "Done with index file download attempt"
     return
 
@@ -219,25 +208,14 @@ bucket = client.get_bucket(CLOUD_STORAGE_BUCKET)
 qindexbasepath = "/edgar/full-index"
 download = 0
 
-
 storedfiles = []
 storedfileslistiterator = bucket.list_blobs()
 
 for blob in storedfileslistiterator:
     storedfiles.append({'name': blob.name, 'updated': blob.updated})
 
-storedquarterlist = []
-storedquarterfilenames = []
-latestdl = None
-for file in storedfiles:
-    if file['name'].endswith('.txt') and file['name'][4] == 'Q':
-        storedquarterlist.append(file['name'][:6])
-        if latestdl is not None:
-            latestdl = max(latestdl, file['updated'])
-        else:
-            latestdl = file['updated']
-        storedquarterfilenames.append(file['name'])
-
+storedquarterlist, storedquarterfilenames, latestdl = \
+    generatestoredfileinfo()
 
 datestringtoday = today.strftime('%Y%m%d')
 if latestdl is None:
@@ -254,6 +232,9 @@ else:
     else:
         print 'Already updated indices today. Skipping index download.'
 
+# Update stored file info based on post-download status.
+storedquarterlist, storedquarterfilenames, latestdl = \
+    generatestoredfileinfo()
 
 print 'Now updating FTPFileList object.'
 generateFTPFileList(storedquarterfilenames, bucket)

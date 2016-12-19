@@ -1,15 +1,13 @@
 import datetime
-from ftplib import FTP
 import os
-import sys
-import time
+import urllib2
 
-from django.db.models import Max
-from django.utils import timezone
+# from django.db.models import Max
+# from django.utils import timezone
 
 from sdapp.models import IssuerCIK, FTPFileList, SECDayIndex
 from sdapp.bin import addissuers
-from sdapp.bin.globals import date_of_any_new_filings
+from sdapp.bin.globals import today, update_lookback_days
 
 cwd = os.getcwd()
 
@@ -20,37 +18,7 @@ cwd = os.getcwd()
 #    what could have been downloading and delete it.  Partially downloaded
 #    files may raise unexpected exceptions or cause us to fail to capture data.
 #
-# 2. If you get a 550 error from ftplib, record the error and send it to me.
-#    Unfortunately, sometimes these errors are an issue with the server on the
-#    other side. Because of how this script runs, if you get this error, you
-#    may find blank files in the form 4 storage sections.  Check for these
-#    occassionally.  Also, if you get such an error/find empty storage files
-#    delete the empty files and re-run the program.  Definitely let me know
-#    if you get the error twice in a row, since that indicates a problem on our
-#    side.
-
-
-def ftplogin():
-    try:
-        time.sleep(1)
-        if os.environ.get('EMAIL_ADDRESS') is None:
-            target = open(cwd + '/' + 'emailaddress.txt')
-            email = target.read()
-            email = email.strip()
-            target.close()
-        else:
-            email = os.environ.get('EMAIL_ADDRESS')
-        ftp = FTP('ftp.sec.gov')
-        ftp.login('anonymous', email)
-        print "Connected"
-        return ftp
-    except:
-        e = sys.exc_info()[0]
-        print "Error: %s" % e
-        print "Cannot connect"
-        print "Check emailaddress.txt file or EMAIL_ADDRESS global variable"
-        print "And check your internet connection"
-        # RUN FUNCTION TO QUIT AND EMAIL ERROR
+# 2. If you get a 550 error, record the error and send it to me.
 
 
 def isfloat(data):
@@ -80,60 +48,64 @@ def filepathfinder(line):
     return line[filepathstart:filepathend].rstrip()
 
 
-def updatedownload(latest_dayindex_name):
-    print "Connecting to SEC FTP site..."
-    ftp = ftplogin()
+def download_and_store(indexdate, downloadedindexes):
+    qdate = indexdate
+    qyear = str(qdate.year)
+    qQTR = str((qdate.month - 1)//3 + 1)
+    urldate = datetime.date.strftime(indexdate, "%Y%m%d")
+    parenturl = "https://www.sec.gov/Archives/edgar/daily-index/" + qyear +\
+        "/QTR" + qQTR + "/"
+    try:
+        parenturlobj = urllib2.urlopen(parenturl)
 
+    except urllib2.URLError as e:
+        if e.code == 404:
+            print 'No index available for ', urldate, '...'
+            return downloadedindexes
+        else:
+            print 'Connection error for:', parenturl
+            return downloadedindexes
+    parentdata = parenturlobj.read()
+    if "form." + urldate + ".idx" in parentdata:
+        print 'Downloading index for ', urldate, '...'
+        url = "https://www.sec.gov/Archives/edgar/daily-index/" + qyear +\
+            "/QTR" + qQTR + "/form." + urldate + ".idx"
+        urlobj = urllib2.urlopen(url)
+        data = urlobj.read()
+        indexname = "form." + urldate + ".idx"
+        SECDayIndex(indexname=indexname, indexcontents=data).save()
+        downloadedindexes.append(indexname)
+        return downloadedindexes
+    else:
+        print 'No index available for ', urldate, '...'
+        return downloadedindexes
+
+
+def updatedownload(latest_dayindex_name, latest_db_index_date,
+                   recentstoredindexdates):
+    print "Connecting to SEC HTTPS site..."
+    # Compare list of recent index dates to lookback dates to check.
+    dates_to_check = []
+    for x in range(0, update_lookback_days + 1):
+        testdate = today - datetime.timedelta(x)
+        if datetime.date.strftime(testdate, "%Y%m%d") not in \
+                recentstoredindexdates:
+            dates_to_check.append(testdate)
+
+    if len(dates_to_check) == 0:
+        print "No new indexes to download"
+    downloadedindexes = []
+    for indexdate in dates_to_check:
+        downloadedindexes = download_and_store(indexdate, downloadedindexes)
+
+    print "Creating the list of needed forms from any new indices..."
     # note that trailing spaces are important here.
     searchformlist = ['4  ', '3  ', '5  ', '4/A', '3/A', '5/A']
-
     CIKsInit = IssuerCIK.objects.values_list('cik_num', flat=True)
-
-    # LOAD A LIST OF ALL INDEX FILES.  GET THE FILES MORE RECENT THAN IN THE DB
-    # OR IF THERE ARE NO DAILY INDICES IN THE DB, SAVE ONLY THE LATEST INDEX
-    ftp.cwd(dindexbasepath)
-    print "now in /edgar/daily-index directory"
-
-    indexdaylist = []
-    contentslist = []
-    ftp.retrlines('nlst', contentslist.append)
-    for entry in contentslist:
-        if entry[:5] == 'form.' and entry[-4:] == '.idx':
-            indexdaylist.append(entry)
-    indexdaylist.sort(reverse=True)
-    indexesfordownload = []
-    if latest_dayindex_name is None:
-        indexesfordownload = indexdaylist[:10]
-    else:
-        # pull up to 10 most recent indexes.
-        for indexname in indexdaylist[:10]:
-            if indexname > latest_dayindex_name:
-                indexesfordownload.append(indexname)
-    if len(indexesfordownload) == 0:
-        print "No new indexes available"
-    else:
-        print "Now going to go one level deeper and begin to save any missing",
-        print "indices..."
-
-        for index in indexesfordownload:
-            filepath = dindexbasepath + "/" + index
-            textofindexes = []
-
-            def handle_binary(more_data):
-                textofindexes.append(more_data)
-
-            resp = ftp.retrbinary('RETR %s' % filepath, callback=handle_binary)
-            print resp
-            textofindexes = ''.join(textofindexes)
-            SECDayIndex(indexname=index, indexcontents=textofindexes).save()
-
-    ftp.close()
-
-    print "Creating the list of needed forms the update indices..."
 
     LastCIK = '911911911911911911911911911'
     secfileset = set()
-    for indexname in indexesfordownload:
+    for indexname in downloadedindexes:
         indexcontents = SECDayIndex.objects.get(indexname=indexname)\
             .indexcontents.split('\n')
         print '...' + indexname + '...'
@@ -171,20 +143,21 @@ secdayindexobjects =\
     SECDayIndex.objects.order_by('-indexname')
 if secdayindexobjects.exists():
     latest_dayindex_name = secdayindexobjects[0].indexname
-    if latest_dayindex_name[:5] == 'form.' \
-            and latest_dayindex_name[13:] == '.idx':
-        datetstring = latest_dayindex_name[5:13]
-        latest_db_index_date =\
-            datetime.datetime.strptime(datetstring, '%Y%m%d').date()
-    else:
-        latest_db_index_date = None
+    datetstring = latest_dayindex_name[5:13]
+    latest_db_index_date =\
+        datetime.datetime.strptime(datetstring, '%Y%m%d').date()
+
+    recentstoredindexnames = \
+        secdayindexobjects.values_list('indexname', flat=True)[0:11]
+    recentstoredindexdates = []
+    for name in recentstoredindexnames:
+        recentstoredindexdates.append(name[5:13])
+
 else:
     latest_dayindex_name = None
     latest_db_index_date = None
-if latest_db_index_date is not None\
-        and date_of_any_new_filings <= latest_db_index_date:
-    print "Last index created at:", latest_db_index_date
-    print 'FTPFileList already up to date. No update indices to download.'
-else:
-    updatedownload(latest_dayindex_name)
-    print 'Done'
+    recentstoredindexdates = []
+
+updatedownload(latest_dayindex_name, latest_db_index_date,
+               recentstoredindexdates)
+print 'Done'
