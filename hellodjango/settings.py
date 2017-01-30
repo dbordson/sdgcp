@@ -40,6 +40,9 @@ MAILJET_API_KEY = s[:s.find('\n')]
 MAILJET_API_SECRET = s[s.find('\n')+1:]
 MAILJET_SENDER = EMAIL_HOST_USER
 
+targetblob = bucket.blob('quandlapi.txt')
+s = targetblob.download_as_string()
+QUANDL_API_KEY = s[:s.find('\n')]
 
 
 # Quick-start development settings - unsuitable for production
