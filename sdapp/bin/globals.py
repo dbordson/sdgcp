@@ -22,6 +22,8 @@ big_xn_amt = Decimal(100 * 1000)
 EST = pytz.timezone('America/New_York')
 now = datetime.datetime.now(EST)
 
+earnings_transaction_lookback = datetime.timedelta(95)
+
 UTC = pytz.timezone('UTC')
 nowUTC = datetime.datetime.now(UTC)
 # THIS TIME ASSUMES THE SCRIPT WILL NOT RUN BTW 2 am and 3 am EST
