@@ -538,7 +538,7 @@ def formentryinsert():
             sys.stdout.flush()
 
             # This saves is 1 mb of entires have been parsed
-            if sys.getsizeof(entries) > 1000000:  # 1 mb
+            if sys.getsizeof(entries) > 100000:  # 100kb
                 print ''
                 print 'now saving'
                 Form345Entry.objects.bulk_create(entries)

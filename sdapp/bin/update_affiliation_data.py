@@ -726,7 +726,7 @@ def calc_person_affiliation(
         .exclude(security=None).values_list('security', 'pk')
     ticker_sec_dict = dict(ticker_list)
     primary_tickers = SecurityPriceHist.objects.filter(issuer=issuer)\
-        .filter(primary_ticker_sym=True)
+        .filter(primary_ticker_sym=True).exclude(security=None)
     # If no primary ticker, the numerical analysis is meaningless
     # This will catch errors if the script is run before db populated
     # of if a company's ticker wasn't linked. Should otherwise not happen.
@@ -1055,6 +1055,7 @@ def annotatestats():
         django.db.reset_queries()
     print "\ndone."
     return
+
 
 fill_in_form_data()
 upd()
