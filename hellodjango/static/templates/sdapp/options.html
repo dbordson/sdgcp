@@ -22,10 +22,10 @@
 <div class="col-md-2">
   <div class="spacer20"></div>
   <div class="pull-right">
-  
+
   <div id="watchstatus{{ ticker }}">
   {% csrf_token %}
-  
+
   {% include 'sdapp/watchtoggle.html' %}
   </div>
   <div class="spacer20"></div>
@@ -42,9 +42,9 @@
     </div>
 
     <ul class="list-group" style="height:460px; overflow-y: scroll;">
-      <li class="list-group-item">
+      <!--<li class="list-group-item">
         <p>[INSERT TAKEAWAYS]</p>
-      </li>
+      </li>-->
     {% if signal_entry != None %}
 
       {% include 'sdapp/signaldescriptions.html' %}
@@ -55,11 +55,11 @@
       </li>
     {% endif %}
 
-      <li class="list-group-item">
+      <!--<li class="list-group-item">
         [WHAT ELSE SHOULD BE ADDED?]
-      </li>
+      </li>-->
     </ul>
-  </div>  
+  </div>
 </div>
 
 <div class="col-md-6">
@@ -81,32 +81,32 @@
               <th style="text-align:center">Economic Interest</th>
               <th style="text-align:center">Behavior</th>
             </tr>
-          </thead>  
+          </thead>
           <tbody>
 
         {% for aff in holding_affiliations %}
             <tr>
               <td>{% if aff.is_officer == True %}{{ aff.reporting_owner_title }}{% elif aff.is_director == True %}Director{% elif aff.is_ten_percent == True %}10% Holder{% endif %}</td>
               <td>{{ aff.person_name }}</td>
-              
+
               <td nowrap align="center">{{ aff.share_equivalents_held|floatformat:0|intword|intcomma}}</td>
-              
+
               <td nowrap align="center">${{ aff.share_equivalents_value|floatformat:0|intword|intcomma}}</td>
               <td align="center">{% if aff.behavior != None %}{{ aff.behavior }}{% endif %}</td>
-                          
+
             </tr>
         {% endfor %}
 
           </tbody>
         </table>
-        
+
       {% else %}
           <p>No holdings are available.</p>
-        
+
       {% endif %}
 
       </div>
-    </div>  
+    </div>
   </div>
 
   <div class="col-md-12">
@@ -115,7 +115,7 @@
         <h3 class="panel-title">Stock Price Chart <i>{% if diff_prim_tkr %}(holdings in {{ diff_prim_tkr }} share equivalents){% endif %}</i></h3>
       </div>
       <div class="panel-body" style="height:200px; overflow-y: scroll;">
-        
+
         {% if graph_data_json_len != 0 %}<!-- We could set up an inequality that works to disable the graph when it would be empty, not sure if an empty graph would throw an error, but it might -->
         {% include 'optionsgraphjs.html' %}
 
@@ -123,8 +123,8 @@
           <p>No price information available.</p>
         {% endif %}
 
-      </div>  
-    </div>  
+      </div>
+    </div>
   </div>
 </div>
 
@@ -134,11 +134,11 @@
 </div>
 <div class="row">
 <div class="col-md-6">
-  <h3>Tabular Data [THIS SECTION WILL BE REMOVED]</h3>
+  <h3>Tabular Data [Development Reference]</h3>
 
   <div class="list-group">
 
-    <a href="{% url 'formentrydetail' ticker %}" class="list-group-item">Form Entries</a>
+    <a href="{% url 'formentrydetail' ticker %}" class="list-group-item">All Form Entries (Large Request)</a>
     <a href="{% url 'holdingdetail' ticker %}" class="list-group-item">Current Holdings</a>
   </div>
 </div>

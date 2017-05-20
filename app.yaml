@@ -3,6 +3,9 @@ runtime: python
 vm: true
 entrypoint: gunicorn -b :$PORT hellodjango.wsgi
 
+beta_settings:
+    cloud_sql_instances: sdapp-1305:us-east1:sd
+
 runtime_config:
   python_version: 2
 

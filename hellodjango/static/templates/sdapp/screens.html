@@ -28,7 +28,7 @@
     <ul class="list-group">
 
     {% for watched_name in watched_names %}
-      
+
       <a class="list-group-item" href="{% url 'options' watched_name.securitypricehist__ticker_sym %}">{{ watched_name.securitypricehist__ticker_sym }} - {% if watched_name.last_signal != None %}last signal {{ watched_name.last_signal }}{% else %}No recent signals{% endif %}</a>
     {% empty %}
       <a class="list-group-item disabled">No names followed.</a>
@@ -53,7 +53,7 @@
   </div>
 </div>
 
-
+<!--
 <div class="col-md-6">
   <div class="panel panel-default">
     <div class="panel-heading"><h4>WHAT SHOULD GO HERE?</h4></div>
@@ -65,8 +65,9 @@
     </div>
   </div>
 </div>
+-->
 <!--<form method="get" action="{% url 'screens' %}">
-          
+
 
 <label for="id_q">Search:</label>
            <input type="text" name="q" id="id_q"/>

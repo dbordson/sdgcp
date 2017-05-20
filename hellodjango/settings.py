@@ -161,6 +161,7 @@ STATIC_URL = 'http://storage.googleapis.com/sdapp-1305-static/static/'
 
 STATIC_ROOT = 'static/'
 
+# THE BELOW COMMAND SHOULD BE UNCOMMENTED FOR PREDEPLOYMENT COLLECTSTATIC
 # STATICFILES_DIRS = (
 #     os.path.join(BASE_DIR, 'static'),
 # )

@@ -10,7 +10,7 @@
     <!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>-->
     <script src="/../static/static/js/bootstrap.min.js"></script>
     <script src="/../static/static/js/ajax.js"></script>
-    
+
     <link href="//fonts.googleapis.com/css?family=Ubuntu:bold" rel="stylesheet" type="text/css">
     <link href="//fonts.googleapis.com/css?family=Vollkorn" rel="stylesheet" type="text/css">
 
@@ -54,16 +54,16 @@
 
             {% for message in messages %}
             <div class="spacer20"></div>
-            <p 
+            <p
             {% if message.tags == "success" %} class="alert alert-success fade in"{% endif %}
             {% if message.tags == "warning" %} class="alert alert-warning fade in"{% endif %}
             {% if message.tags == "info" %} class="alert alert-info fade in"
             {% endif %}>
             <button type="button" class="close" data-dismiss="alert" aria-hidden="true">
             &times;</button>{{ message }}</p>
-            
+
             {% endfor %}
-          
+
         </div>
       </div>
       {% endif %}
@@ -80,7 +80,7 @@
 
 
       <footer>
-        <p>&copy; 2015 SD</p>
+        <p><!--&copy; 2017 SD--></p>
       </footer>
     </div> <!-- /container -->
 
@@ -89,4 +89,3 @@
     <script src="/../static/static/assets/js/ie10-viewport-bug-workaround.js"></script> -->
   </body>
 </html>
-

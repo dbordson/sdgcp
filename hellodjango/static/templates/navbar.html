@@ -13,18 +13,20 @@
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <ul class="nav navbar-nav">
-            
+
             <li><a href='{% url "screens" %}'>Management Monitor</a></li>
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">More<span class="caret"></span></a>
               <ul class="dropdown-menu" role="menu">
                 <li><a href='{% url "aboutus" %}'>About Us <span class="sr-only">(current)</span></a></li>
+                <!--
                 <li><a href="#">Another action</a></li>
                 <li><a href="#">Something else here</a></li>
                 <li class="divider"></li>
                 <li><a href="#">Separated link</a></li>
                 <li class="divider"></li>
                 <li><a href="#">One more separated link</a></li>
+                -->
               </ul>
             </li>
           </ul>
@@ -36,12 +38,12 @@
             <button type="submit" class="btn btn-default">Submit</button>
           </form>-->
 
-        
+
           <!--Give option to log in if not logged in -->
           {% if not user.is_authenticated %}
           <form action="{% url 'accountsauth' %}" method='post' action='' class="navbar-form navbar-right"> {% csrf_token %}
             <div class="form-group">
-              <input type="text" name="username" placeholder="Email" class="form-control">
+              <input type="text" name="username" placeholder="Username" class="form-control">
             </div>
             <div class="form-group">
               <input type="password" name = "password" placeholder="Password" class="form-control">
@@ -67,12 +69,12 @@
             </div>
             <button type="submit" value="tickersearch" class="btn btn-info"><i class="glyphicon glyphicon-search"></i></button>
           </form>
-          
+
         </div><!--/.navbar-collapse -->
       </div>
     </nav>
 
-<!--Old navbar with join info 
+<!--Old navbar with join info
     <nav class="navbar navbar-inverse navbar-fixed-top">
       <div class="container">
         <div class="navbar-header">
