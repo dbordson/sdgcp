@@ -677,7 +677,8 @@ def calc_increase_in_xns(
                         date, subs_perf_date - date,
                         price_dict
                     )
-                if xns_prior_performance * Decimal(-1) * xn_sign >\
+                if xns_prior_performance is not None and\
+                        xns_prior_performance * Decimal(-1) * xn_sign >\
                         trigger_min_stock_move:
                     price_trigger_detected = True
                 else:

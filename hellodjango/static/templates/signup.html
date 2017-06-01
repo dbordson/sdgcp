@@ -5,8 +5,28 @@
     <!-- Main jumbotron for a primary marketing message or call to action -->
     <div class="jumbotron">
       <div class="container">
-        <h1>Management Trading Monitor</h1>
-        <p>This project organizes and analyzes insider trading of public company managers and attempts to infer the presence and nature of management sentiment as to company prospects.</p>
+          <h1>Management Stock Trading Monitor</h1>
+          <i>(Currently matches "about" page)</i>
+              <h2>Back End</h2>
+                  <ul>
+                  <li>Parses imperfect daily data from the U.S. Securities and Exchange Commission's public EDGAR database to build a database of transaction data for corporate insiders</li>
+                  <li>Processes data to create database objects relating to companies and stocks; translates transaction filing information so that database can output each insider’s daily holdings</li>
+                  <li>Pulls stock price data using pandas-datareader to (i) identify insider transaction signals and (ii) help user interpret transaction information</li>
+                  <li>Analyzes transaction data for signals and stores human-readable signal explanations</li>
+                  </ul>
+              <h2>Front End</h2>
+                  <ul>
+                  <li>Displays back end's human-readable signal explanations, along with underlying data and visualization to help user interpret signals</li>
+                  <li>Visualization customized using open-source JavaScript charting library; shows stock price data, transaction information, and signal timing</li>
+                  <li>Minor use of AJAX for signal search functionality and watch list toggles</li>
+                  </ul>
+              <h2>Code</h2>
+                  <ul>
+                  <li>Python back end with ElementTree xml parsing and stock data from pandas-datareader</li>
+                  <li>Django app with dygraphs charts and minor use of AJAX techniques</li>
+                  <li>MySQL database</li>
+                  <li>Runs on Google Cloud Platform</li>
+                  </ul>
         <!--<p><a class="btn btn-primary btn-lg" href="#" role="button">Learn more &raquo;</a></p>-->
       </div>
     </div>

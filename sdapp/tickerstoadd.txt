@@ -30,4 +30,3 @@ MRK
 V
 NVDA
 AMD
-TSMC

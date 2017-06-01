@@ -61,11 +61,11 @@ except:
     exit(0)
 
 formdownloadset = secfileset - (secfileset & allforms)
-print len(secfileset)
-print len(allforms)
-print len(formdownloadset)
+# print len(secfileset)
+# print len(allforms)
+# print len(formdownloadset)
 formdownloadlist = list(formdownloadset)
-print formdownloadlist
+# print formdownloadlist
 
 formsforsave = []
 count = 0.0

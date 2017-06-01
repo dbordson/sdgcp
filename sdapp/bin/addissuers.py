@@ -41,7 +41,7 @@ def newciks():
     count = 0.0
     looplength = len(unlinked_tickers)
     for entry in unlinked_tickers:
-        # print entry.ticker_sym
+        print entry.ticker_sym
         cik_num = int(CIKFind(str(entry.ticker_sym)))
         if not IssuerCIK.objects.filter(cik_num=cik_num).exists():
             new_issuer_cik = IssuerCIK(cik_num=cik_num)

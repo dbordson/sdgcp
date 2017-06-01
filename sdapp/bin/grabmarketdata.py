@@ -1,7 +1,8 @@
 from datetime import datetime, date
 import sys
 
-from pandas.io.data import DataReader
+# from pandas.io.data import DataReader
+from pandas_datareader.data import DataReader
 
 from sdapp.models import SecurityPriceHist, ClosePrice, SplitOrAdjustmentEvent
 
@@ -46,7 +47,7 @@ def savetickerinfo(SPH_id, ticker, security_id):
     closepricesforsave = []
     for a in data_to_cp.itertuples():
         newcloseprice = ClosePrice(close_price=a[4],
-                                   adj_close_price=a[6],
+                                   adj_close_price=a[5],
                                    close_date=str(datetime.date(a[0])),
                                    securitypricehist_id=SPH_id)
         closepricesforsave.append(newcloseprice)

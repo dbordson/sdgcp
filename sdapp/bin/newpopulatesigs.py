@@ -403,7 +403,7 @@ def agg_selling_activity(issuer, startdate, enddate):
                 price_date = xn.filedate
                 prim_price = \
                     get_price(prim_sph_obj, price_date, issuer, {})
-                if prim_price != Decimal(0):
+                if prim_price != Decimal(0) and prim_price is not None:
                     prim_share_eqs = xn.xn_val / prim_price
                     number_of_shares_sold += prim_share_eqs
     else:
