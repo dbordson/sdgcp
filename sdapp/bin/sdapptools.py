@@ -121,7 +121,7 @@ def price_perf(sph_obj, date, timedelta, sp_dict):
     later_price =\
         get_price(sph_obj, date + timedelta, sp_dict)
     if earlier_price is None or later_price is None\
-            or earlier_price is Decimal(0):
+            or earlier_price == Decimal(0):
         return None
     else:
         return (later_price / earlier_price) - Decimal(1)
