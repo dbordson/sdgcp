@@ -59,71 +59,129 @@ stopwords += ['yours', 'yourself', 'yourselves']
 
 def FileProcessor(document_object):
     transcriptstring = PlaintextWriter.write(document_object).read()
-
-    # Removes punctuation
-    replace_punctuation = string.maketrans(string.punctuation,
-                                           ' '*len(string.punctuation))
-    transcriptstring = transcriptstring.translate(replace_punctuation)
-
+    #
     # Removes non-text information from transcriptstring
     transcriptstring = re.sub(r'\b\w{50,}\b', '', transcriptstring)
-
+    #
     # Removes trailing spaces for each line in transcriptstring
     transcriptstring =\
         ''.join([line.rstrip()+'\n' for line in transcriptstring.splitlines()])
-
-    # Decodes string
-    transcriptstring = transcriptstring.decode('utf-8')
-
+    #
+    # Removes disclaimer at endcut
+    callendmarker = '\n\n\n\n\n\n\n\n\n\n\n\n\n'
+    endcut = transcriptstring.find(callendmarker)
+    if endcut is not -1:
+        transcriptstring = transcriptstring[:endcut]
+    #
     # Strips out certain escape characters that don't seem to get handled above
     # Below doesn't work properly because it also deletes all "s" characters
     # escchars = '\xc2\xa9\xe2\x80\x99s'
     # replace_esc = string.maketrans(escchars,
     #                                ' '*len(escchars))
     # transcriptstring = transcriptstring.translate(replace_esc)
-
-    stringlist = transcriptstring.split()
-    wordfreq = []
-    wordlist = []
-    worddict = {}
-    for w in stringlist:
-        if w not in stopwords:
-            wordlist.append(w)
-            wordfreq.append(wordlist.count(w))
-            worddict[w] = wordlist.count(w)
-    orderedworddict =\
-        OrderedDict(sorted(worddict.items(), key=lambda x: x[1], reverse=True))
-    return transcriptstring, worddict, orderedworddict
+    #
+    # Removes punctuation
+    replace_punctuation = string.maketrans(string.punctuation,
+                                           ' '*len(string.punctuation))
+    transcriptnopunctuation = transcriptstring.translate(replace_punctuation)
+    #
+    # Decodes strings
+    transcriptstring = transcriptstring.decode('utf-8')
+    transcriptnopunctuation.decode('utf-8')
+    #
+    return transcriptstring, transcriptnopunctuation
 
 
-def PullSpeakerSet(transcriptstring, startmarker, endmarker):
+def ExtractSpeakers(transcriptstring, startmarker, endmarker):
     startcut = transcriptstring.find(startmarker)+len(startmarker)
     endcut = transcriptstring.find(endmarker)
-    speakerstring = transcriptstring[startcut:endcut]
-    speakerlist = speakerstring.split('\n\n')
-    speakerlist = map(unicode.strip, speakerlist)
+    speakerstring = transcriptstring[startcut:endcut].strip()
+    speakerlist = map(unicode.strip, speakerstring.split('\n\n'))
+    # speakerlist = map(lambda x: x.split('\n'), speakerlist)
     return speakerlist
 
 
-def FindSpeakers(transcriptstring):
+def FindSpeakers(transcriptstring, legendendmarker):
     legendstartmarker = '\n\n\nCall Participants\n'
     executivestartmarker = '\nEXECUTIVES\n\n'
     analyststartmarker = '\nANALYSTS\n\n'
-    legendendmarker = '\nPresentation\n\n'
     operator = '\nOperator\n'
-
+    #
     executiveslist =\
-        PullSpeakerSet(transcriptstring, executivestartmarker, analyststartmarker)
+        ExtractSpeakers(transcriptstring, executivestartmarker,
+                        analyststartmarker)
     analystslist =\
-        PullSpeakerSet(transcriptstring, analyststartmarker, legendendmarker)
-
+        ExtractSpeakers(transcriptstring, analyststartmarker, legendendmarker)
+    #
     return executiveslist, analystslist, operator
 
+
+def OrganizeTransacriptBySpeaker(transcriptstring, executiveslist,
+                                 analystslist, operator):
+    callstartmarker = '\n\nPresentation\n........'
+    startcut = transcriptstring.find(callstartmarker)+len(callstartmarker)
+    callstring = transcriptstring[startcut:]
+    # questionandanswermarker = '\nQuestion and Answer\n.....'
+    # callstringlinelist = callstring.split('\n')
+    #
+    speakerlist = executiveslist + analystslist
+    speakerlist.append(operator)
+    speakerlocations =\
+        map(lambda x: [[x, m.start(), m.end()]
+                       for m in re.finditer(x, callstring)], speakerlist)
+    # Removes nesting
+    speakerlocations = [comment for speaker in speakerlocations
+                        for comment in speaker]
+    # sorts list
+    speakerlocations = sorted(speakerlocations, key=lambda comment: comment[1])
+    speakerlocations.append([u'', len(callstring)-1, None])
+    # for lineitem in callstringlinelist:
+    #     if lineitem
+    commentlist = []
+    # ADD OTHER SPEAKERS BESIDES MANAGEMENT (ANALYSTS and OPERATOR)
+    for i in range(0, len(speakerlocations)-1):
+        commentlist.append([
+            speakerlocations[i][0],
+            speakerlocations[i][1],
+            speakerlocations[i][2],
+            speakerlocations[i+1][1],
+            callstring[speakerlocations[i][2]:speakerlocations[i+1][1]].strip()
+        ])
+    return commentlist
+
+
+def AnalyzeTranscript(transcriptnopunctuation):
+        stringlist = transcriptnopunctuation.split()
+        wordfreq = []
+        wordlist = []
+        worddict = {}
+        for w in stringlist:
+            if w not in stopwords:
+                wordlist.append(w)
+                wordfreq.append(wordlist.count(w))
+                worddict[w] = wordlist.count(w)
+        orderedworddict =\
+            OrderedDict(sorted(worddict.items(),
+                        key=lambda x: x[1], reverse=True))
+        return transcriptstring, worddict, orderedworddict
+
+
 filename = 'Finisar.rtf'
+legendendmarker = 'Presentation\n'
+
 document_object = Rtf15Reader.read(open(filename, "rb"))
 # string and list objects relating from transcript
-transcriptstring, worddict, orderedworddict = FileProcessor(document_object)
+transcriptstring, transcriptnopunctuation = FileProcessor(document_object)
 # extract executive, analyst and operator strings used to idenfity speakers
-executiveslist, analystslist, operator = FindSpeakers
+executiveslist, analystslist, operator =\
+    FindSpeakers(transcriptstring, legendendmarker)
 
-# Next cut transacript string into segments by speaker
+# Next cut transcript string into segments by speaker
+organizedtranscript =\
+    OrganizeTransacriptBySpeaker(transcriptstring, executiveslist,
+                                 analystslist, operator)
+
+
+# Analyze transcript
+transcriptstring, worddict, orderedworddict =\
+    AnalyzeTranscript(transcriptnopunctuation)
