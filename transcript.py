@@ -1,60 +1,28 @@
 from collections import OrderedDict
+from operator import itemgetter
 from pyth.plugins.plaintext.writer import PlaintextWriter
 from pyth.plugins.rtf15.reader import Rtf15Reader
+from stopwords import stoplist
 import re
 import string
 
-stopwords = ['a', 'about', 'above', 'across', 'after', 'afterwards']
-stopwords += ['again', 'against', 'all', 'almost', 'alone', 'along']
-stopwords += ['already', 'also', 'although', 'always', 'am', 'among']
-stopwords += ['amongst', 'amoungst', 'amount', 'an', 'and', 'another']
-stopwords += ['any', 'anyhow', 'anyone', 'anything', 'anyway', 'anywhere']
-stopwords += ['are', 'around', 'as', 'at', 'back', 'be', 'became']
-stopwords += ['because', 'become', 'becomes', 'becoming', 'been']
-stopwords += ['before', 'beforehand', 'behind', 'being', 'below']
-stopwords += ['beside', 'besides', 'between', 'beyond', 'both']
-stopwords += ['bottom', 'but', 'by', 'call', 'can', 'cannot', 'cant']
-stopwords += ['co', 'computer', 'con', 'could', 'couldnt', 'cry', 'de']
-stopwords += ['describe', 'detail', 'did', 'do', 'done', 'down', 'due']
-stopwords += ['during', 'each', 'eg', 'eight', 'either', 'eleven', 'else']
-stopwords += ['elsewhere', 'empty', 'enough', 'etc', 'even', 'ever']
-stopwords += ['every', 'everyone', 'everything', 'everywhere', 'except']
-stopwords += ['few', 'fifteen', 'fifty', 'fill', 'find', 'fire', 'first']
-stopwords += ['five', 'for', 'former', 'formerly', 'forty', 'found']
-stopwords += ['four', 'from', 'front', 'full', 'further', 'get', 'give']
-stopwords += ['go', 'had', 'has', 'hasnt', 'have', 'he', 'hence', 'her']
-stopwords += ['here', 'hereafter', 'hereby', 'herein', 'hereupon', 'hers']
-stopwords += ['herself', 'him', 'himself', 'his', 'how', 'however']
-stopwords += ['hundred', 'i', 'ie', 'if', 'in', 'inc', 'indeed']
-stopwords += ['interest', 'into', 'is', 'it', 'its', 'itself', 'keep']
-stopwords += ['last', 'latter', 'latterly', 'least', 'less', 'll', 'ltd']
-stopwords += ['made', 'many', 'may', 'me', 'meanwhile', 'might', 'mill']
-stopwords += ['mine', 'more', 'moreover', 'most', 'mostly', 'move', 'much']
-stopwords += ['must', 'my', 'myself', 'name', 'namely', 'neither', 'never']
-stopwords += ['nevertheless', 'next', 'nine', 'no', 'nobody', 'none']
-stopwords += ['noone', 'nor', 'not', 'nothing', 'now', 'nowhere', 'of']
-stopwords += ['off', 'often', 'on', 'once', 'one', 'only', 'onto', 'or']
-stopwords += ['other', 'others', 'otherwise', 'our', 'ours', 'ourselves']
-stopwords += ['out', 'over', 'own', 'part', 'per', 'perhaps', 'please']
-stopwords += ['put', 'rather', 're', 's', 'same', 'see', 'seem', 'seemed']
-stopwords += ['seeming', 'seems', 'serious', 'several', 'she', 'should']
-stopwords += ['show', 'side', 'since', 'sincere', 'six', 'sixty', 'so']
-stopwords += ['some', 'somehow', 'someone', 'something', 'sometime']
-stopwords += ['sometimes', 'somewhere', 'still', 'such', 'system', 'take']
-stopwords += ['ten', 'than', 'that', 'the', 'their', 'them', 'themselves']
-stopwords += ['then', 'thence', 'there', 'thereafter', 'thereby']
-stopwords += ['therefore', 'therein', 'thereupon', 'these', 'they']
-stopwords += ['thick', 'thin', 'third', 'this', 'those', 'though', 'three']
-stopwords += ['three', 'through', 'throughout', 'thru', 'thus', 'to']
-stopwords += ['together', 'too', 'top', 'toward', 'towards', 'twelve']
-stopwords += ['twenty', 'two', 'un', 'under', 'until', 'up', 'upon']
-stopwords += ['us', 'very', 'via', 'was', 'we', 'well', 'were', 'what']
-stopwords += ['whatever', 'when', 'whence', 'whenever', 'where']
-stopwords += ['whereafter', 'whereas', 'whereby', 'wherein', 'whereupon']
-stopwords += ['wherever', 'whether', 'which', 'while', 'whither', 'who']
-stopwords += ['whoever', 'whole', 'whom', 'whose', 'why', 'will', 'with']
-stopwords += ['within', 'without', 'would', 'yet', 'you', 'your']
-stopwords += ['yours', 'yourself', 'yourselves']
+
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+
+def deletepunctuation(stringwithpunctuation):
+    # Removes punctuation
+    punctuation = unicode(string.punctuation)
+    translate_table = dict((ord(char), u' ') for char in punctuation)
+    stringwithoutpunctuation =\
+        stringwithpunctuation.translate(translate_table)
+    #
+    return stringwithoutpunctuation
 
 
 def FileProcessor(document_object):
@@ -80,10 +48,7 @@ def FileProcessor(document_object):
     #                                ' '*len(escchars))
     # transcriptstring = transcriptstring.translate(replace_esc)
     #
-    # Removes punctuation
-    replace_punctuation = string.maketrans(string.punctuation,
-                                           ' '*len(string.punctuation))
-    transcriptnopunctuation = transcriptstring.translate(replace_punctuation)
+    transcriptnopunctuation = deletepunctuation(unicode(transcriptstring))
     #
     # Decodes strings
     transcriptstring = transcriptstring.decode('utf-8')
@@ -105,7 +70,7 @@ def FindSpeakers(transcriptstring, legendendmarker):
     legendstartmarker = '\n\n\nCall Participants\n'
     executivestartmarker = '\nEXECUTIVES\n\n'
     analyststartmarker = '\nANALYSTS\n\n'
-    operator = '\nOperator\n'
+    operator = '\nOperator'
     #
     executiveslist =\
         ExtractSpeakers(transcriptstring, executivestartmarker,
@@ -138,7 +103,7 @@ def OrganizeTransacriptBySpeaker(transcriptstring, executiveslist,
     # for lineitem in callstringlinelist:
     #     if lineitem
     commentlist = []
-    # ADD OTHER SPEAKERS BESIDES MANAGEMENT (ANALYSTS and OPERATOR)
+    #
     for i in range(0, len(speakerlocations)-1):
         commentlist.append([
             speakerlocations[i][0],
@@ -147,23 +112,53 @@ def OrganizeTransacriptBySpeaker(transcriptstring, executiveslist,
             speakerlocations[i+1][1],
             callstring[speakerlocations[i][2]:speakerlocations[i+1][1]].strip()
         ])
-    return commentlist
+    # Put all comments for each person in one string
+    # organize comments by speaker
+    filteredcomments =\
+        map(lambda y: filter(lambda x: x[0] == y, commentlist), speakerlist)
+    # The below line is tricky -- it cuts apart the comments by speaker and
+    # extracts the speaker and the comments (which is zip(*x)[4]) and joins the
+    # comments
+    aggregatecommentlist =\
+        map(lambda x: [x[0][0], '\n'.join(zip(*x)[4])], filteredcomments)
+    #
+    return commentlist, aggregatecommentlist
 
 
 def AnalyzeTranscript(transcriptnopunctuation):
-        stringlist = transcriptnopunctuation.split()
-        wordfreq = []
-        wordlist = []
+    stringlist = transcriptnopunctuation.lower().split()
+    wordfreq = []
+    wordlist = []
+    worddict = {}
+    for w in stringlist:
+        if w not in stoplist and is_number(w) is False:
+            wordlist.append(w)
+            wordfreq.append(wordlist.count(w))
+            worddict[w] = wordlist.count(w)
+    orderedworddict =\
+        OrderedDict(sorted(worddict.items(),
+                    key=lambda x: x[1], reverse=True))
+    return transcriptstring, worddict, orderedworddict
+
+
+def AnalyzeComments(aggregatecommentlist):
+    # aggregatecommentsnopunctuation =\
+    #     map(lambda x: [x[0], deletepunctuation(x[1])], aggregatecommentlist)
+    personwordcounts = []
+    for person, comment in aggregatecommentlist:
+        commentnopunctuation = deletepunctuation(comment)
+        commentnopunctuationlist = commentnopunctuation.lower().split()
         worddict = {}
-        for w in stringlist:
-            if w not in stopwords:
+        wordlist = []
+        for w in commentnopunctuationlist:
+            if w not in stoplist and is_number(w) is False:
                 wordlist.append(w)
-                wordfreq.append(wordlist.count(w))
                 worddict[w] = wordlist.count(w)
         orderedworddict =\
             OrderedDict(sorted(worddict.items(),
                         key=lambda x: x[1], reverse=True))
-        return transcriptstring, worddict, orderedworddict
+        personwordcounts.append([person, orderedworddict, comment])
+    return personwordcounts
 
 
 filename = 'Finisar.rtf'
@@ -177,7 +172,7 @@ executiveslist, analystslist, operator =\
     FindSpeakers(transcriptstring, legendendmarker)
 
 # Next cut transcript string into segments by speaker
-organizedtranscript =\
+commentlist, aggregatecommentlist =\
     OrganizeTransacriptBySpeaker(transcriptstring, executiveslist,
                                  analystslist, operator)
 
@@ -185,3 +180,29 @@ organizedtranscript =\
 # Analyze transcript
 transcriptstring, worddict, orderedworddict =\
     AnalyzeTranscript(transcriptnopunctuation)
+
+personwordcounts = AnalyzeComments(aggregatecommentlist)
+
+# print personwordcounts
+
+
+print "AGGREGATE COMMENTS ORGANIZED BY EACH PERSON"
+for person, count, comment in personwordcounts:
+    print "Speaker:"
+    print person
+    print ""
+    print "Word Count:"
+    print count
+    print ""
+    print "All Comments of Speaker:"
+    print comment
+    print ""
+    print ""
+    print ""
+# 
+# print ""
+# print ""
+# print "FULL TRANSCRIPT"
+# print orderedworddict
+# print ""
+# print transcriptstring
