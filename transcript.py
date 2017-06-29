@@ -1,5 +1,6 @@
 from collections import OrderedDict
-from operator import itemgetter
+# from operator import itemgetter
+import os
 from pyth.plugins.plaintext.writer import PlaintextWriter
 from pyth.plugins.rtf15.reader import Rtf15Reader
 from stopwords import stoplist
@@ -138,7 +139,7 @@ def AnalyzeTranscript(transcriptnopunctuation):
     orderedworddict =\
         OrderedDict(sorted(worddict.items(),
                     key=lambda x: x[1], reverse=True))
-    return transcriptstring, worddict, orderedworddict
+    return orderedworddict
 
 
 def AnalyzeComments(aggregatecommentlist):
@@ -161,48 +162,47 @@ def AnalyzeComments(aggregatecommentlist):
     return personwordcounts
 
 
-filename = 'Finisar.rtf'
-legendendmarker = 'Presentation\n'
+def reviewfile(path, filename):
+    legendendmarker = 'Presentation\n'
+    document_object = Rtf15Reader.read(open(path + filename, "rb"))
+    # string and list objects relating from transcript
+    transcriptstring, transcriptnopunctuation = FileProcessor(document_object)
+    # extract executive, analyst and operator strings used to idenfity speakers
+    executiveslist, analystslist, operator =\
+        FindSpeakers(transcriptstring, legendendmarker)
 
-document_object = Rtf15Reader.read(open(filename, "rb"))
-# string and list objects relating from transcript
-transcriptstring, transcriptnopunctuation = FileProcessor(document_object)
-# extract executive, analyst and operator strings used to idenfity speakers
-executiveslist, analystslist, operator =\
-    FindSpeakers(transcriptstring, legendendmarker)
+    # Next cut transcript string into segments by speaker
+    commentlist, aggregatecommentlist =\
+        OrganizeTransacriptBySpeaker(transcriptstring, executiveslist,
+                                     analystslist, operator)
+    # Analyze transcript
+    # orderedworddict =\
+    #     AnalyzeTranscript(transcriptnopunctuation)
+    personwordcounts = AnalyzeComments(aggregatecommentlist)
+    # print "AGGREGATE COMMENTS ORGANIZED BY EACH PERSON"
+    # for person, count, comment in personwordcounts:
+    #     print "Speaker:"
+    #     print person
+    #     print ""
+    #     print "Word Count:"
+    #     print count
+    #     print ""
+    #     print "All Comments of Speaker:"
+    #     print comment
+    #     print ""
+    #     print ""
+    #     print ""
+    return personwordcounts
 
-# Next cut transcript string into segments by speaker
-commentlist, aggregatecommentlist =\
-    OrganizeTransacriptBySpeaker(transcriptstring, executiveslist,
-                                 analystslist, operator)
 
+print "Beginning Transcript Analysis"
+path = "./transcripts/"
+pathcontents = os.listdir(path)
+filewordcounts = []
+for location in pathcontents:
+    if location[-4:] == '.rtf':
+        filename = location
+        personwordcounts = reviewfile(path, filename)
+        filewordcounts.append(personwordcounts)
 
-# Analyze transcript
-transcriptstring, worddict, orderedworddict =\
-    AnalyzeTranscript(transcriptnopunctuation)
-
-personwordcounts = AnalyzeComments(aggregatecommentlist)
-
-# print personwordcounts
-
-
-print "AGGREGATE COMMENTS ORGANIZED BY EACH PERSON"
-for person, count, comment in personwordcounts:
-    print "Speaker:"
-    print person
-    print ""
-    print "Word Count:"
-    print count
-    print ""
-    print "All Comments of Speaker:"
-    print comment
-    print ""
-    print ""
-    print ""
-# 
-# print ""
-# print ""
-# print "FULL TRANSCRIPT"
-# print orderedworddict
-# print ""
-# print transcriptstring
+print filewordcounts
