@@ -8,6 +8,44 @@ import re
 import string
 
 
+class Speaker:
+    def __init__(self, tag, filename, isexecutive, isanalyst, wordod,
+                 comments):
+        # tag
+        self.tag = tag
+        tag_list = tag.split('\n')
+        # filename
+        self.filename = filename
+        # name
+        self.name = tag_list[0].strip()
+        # title
+        if len(tag_list) > 1:
+            self.title = tag_list[1].strip()
+        else:
+            self.title = None
+        # executive
+        if isexecutive is True:
+            self.executive = True
+        else:
+            self.executive = False
+        # analyst
+        if isanalyst is True:
+            self.analyst = True
+        else:
+            self.analyst = False
+        # wordod (Ordered Dict of word counts)
+        self.wordod = wordod
+        # comments (in string)
+        self.comments = comments
+
+    def __repr__(self):
+        return u'\n%r\n%r\n%r\n%r' % (
+            u'Tag: ' + unicode(self.tag).strip(),
+            u'Filename: ' + unicode(self.filename),
+            u'Top Words: ' + unicode(list(self.wordod.items())[:3]) + '...',
+            u'Comments: ' + unicode(self.comments[:50]) + '...'
+        )
+
 def is_number(s):
     try:
         float(s)
@@ -31,6 +69,7 @@ def FileProcessor(document_object):
     #
     # Removes non-text information from transcriptstring
     transcriptstring = re.sub(r'\b\w{50,}\b', '', transcriptstring)
+    # print len(transcriptstring)
     #
     # Removes trailing spaces for each line in transcriptstring
     transcriptstring =\
@@ -49,12 +88,13 @@ def FileProcessor(document_object):
     #                                ' '*len(escchars))
     # transcriptstring = transcriptstring.translate(replace_esc)
     #
-    transcriptnopunctuation = deletepunctuation(unicode(transcriptstring))
     #
     # Decodes strings
-    transcriptstring = transcriptstring.decode('utf-8')
-    transcriptnopunctuation.decode('utf-8')
-    #
+    transcriptstring = transcriptstring.decode('utf-8', 'replace')
+    transcriptnopunctuation = deletepunctuation(transcriptstring)
+    # transcriptnopunctuation =\
+    #     transcriptnopunctuation.decode('utf-8', 'replace')
+    # print len(transcriptnopunctuation)
     return transcriptstring, transcriptnopunctuation
 
 
@@ -62,35 +102,67 @@ def ExtractSpeakers(transcriptstring, startmarker, endmarker):
     startcut = transcriptstring.find(startmarker)+len(startmarker)
     endcut = transcriptstring.find(endmarker)
     speakerstring = transcriptstring[startcut:endcut].strip()
+    # print "speakerstring", len(speakerstring)
     speakerlist = map(unicode.strip, speakerstring.split('\n\n'))
+    # print "speakerlist", speakerlist
     # speakerlist = map(lambda x: x.split('\n'), speakerlist)
     return speakerlist
 
 
+def FindLegend(transcriptstring):
+    presentationstartmarker = '\n\nPresentation\n........'
+    questionandanswermarker = '\n\nQuestion and Answer\n........'
+    presentationstartfind =\
+        transcriptstring.find(presentationstartmarker)
+    questionandanswerfind =\
+        transcriptstring.find(questionandanswermarker)
+    # Logic below handles situations where call starts w/ Q&A or Presentation
+    if presentationstartfind != -1 and questionandanswerfind != -1:
+        legendstart = min(presentationstartfind,
+                          questionandanswerfind)
+        legendend = min(presentationstartfind + len(presentationstartmarker),
+                        questionandanswerfind + len(questionandanswermarker))
+    elif presentationstartfind == -1 and questionandanswerfind != -1:
+        legendstart = questionandanswerfind
+        legendend = questionandanswerfind + len(questionandanswermarker)
+    elif presentationstartfind != -1 and questionandanswerfind == -1:
+        legendstart = presentationstartfind
+        legendend = presentationstartfind + len(presentationstartmarker)
+    else:
+        print "ERROR COULD NOT FIND START OF CALL TRANSCRIPTION"
+        legendstart, legendend = 1, 2
+    legendendmarker = transcriptstring[legendstart:legendend]
+    return legendstart, legendend, legendendmarker
+
+
 def FindSpeakers(transcriptstring, legendendmarker):
-    legendstartmarker = '\n\n\nCall Participants\n'
+    # legendstartmarker = '\n\n\nCall Participants\n'
     executivestartmarker = '\nEXECUTIVES\n\n'
     analyststartmarker = '\nANALYSTS\n\n'
     operator = '\nOperator'
     #
+    # print transcriptstring
     executiveslist =\
         ExtractSpeakers(transcriptstring, executivestartmarker,
                         analyststartmarker)
+    # print "executiveslist", len(executiveslist), len(executiveslist[0])
     analystslist =\
         ExtractSpeakers(transcriptstring, analyststartmarker, legendendmarker)
+    # print "analystslist", analystslist
     #
     return executiveslist, analystslist, operator
 
 
-def OrganizeTransacriptBySpeaker(transcriptstring, executiveslist,
-                                 analystslist, operator):
-    callstartmarker = '\n\nPresentation\n........'
-    startcut = transcriptstring.find(callstartmarker)+len(callstartmarker)
-    callstring = transcriptstring[startcut:]
+def OrganizeTranscriptBySpeaker(transcriptstring, executiveslist,
+                                analystslist, operator, filename,
+                                legendend):
+    callstring = transcriptstring[legendend:]
+    # print "transcriptstring", len(transcriptstring)
     # questionandanswermarker = '\nQuestion and Answer\n.....'
     # callstringlinelist = callstring.split('\n')
     #
     speakerlist = executiveslist + analystslist
+    # print "analystslist", analystslist
     speakerlist.append(operator)
     speakerlocations =\
         map(lambda x: [[x, m.start(), m.end()]
@@ -120,6 +192,8 @@ def OrganizeTransacriptBySpeaker(transcriptstring, executiveslist,
     # The below line is tricky -- it cuts apart the comments by speaker and
     # extracts the speaker and the comments (which is zip(*x)[4]) and joins the
     # comments
+    # print len(commentlist), filename
+    # print filteredcomments
     aggregatecommentlist =\
         map(lambda x: [x[0][0], '\n'.join(zip(*x)[4])], filteredcomments)
     #
@@ -163,22 +237,35 @@ def AnalyzeComments(aggregatecommentlist):
 
 
 def reviewfile(path, filename):
-    legendendmarker = 'Presentation\n'
     document_object = Rtf15Reader.read(open(path + filename, "rb"))
     # string and list objects relating from transcript
     transcriptstring, transcriptnopunctuation = FileProcessor(document_object)
+    # find legend start and end which are used to distinguish between speakers
+    # section and body of transcript
+    legendstart, legendend, legendendmarker = FindLegend(transcriptstring)
     # extract executive, analyst and operator strings used to idenfity speakers
     executiveslist, analystslist, operator =\
         FindSpeakers(transcriptstring, legendendmarker)
-
     # Next cut transcript string into segments by speaker
     commentlist, aggregatecommentlist =\
-        OrganizeTransacriptBySpeaker(transcriptstring, executiveslist,
-                                     analystslist, operator)
+        OrganizeTranscriptBySpeaker(transcriptstring, executiveslist,
+                                    analystslist, operator, filename,
+                                    legendend)
     # Analyze transcript
     # orderedworddict =\
     #     AnalyzeTranscript(transcriptnopunctuation)
     personwordcounts = AnalyzeComments(aggregatecommentlist)
+    personobjects = []
+    for person in personwordcounts:
+        isexecutive = person[0] in executiveslist
+        isanalyst = person[0] in analystslist
+        personobject =\
+            Speaker(
+                person[0], filename, isexecutive, isanalyst,
+                person[1], person[2]
+            )
+        personobjects.append(personobject)
+    # personobjects = map()
     # print "AGGREGATE COMMENTS ORGANIZED BY EACH PERSON"
     # for person, count, comment in personwordcounts:
     #     print "Speaker:"
@@ -192,17 +279,21 @@ def reviewfile(path, filename):
     #     print ""
     #     print ""
     #     print ""
-    return personwordcounts
+    return personobjects
 
 
 print "Beginning Transcript Analysis"
 path = "./transcripts/"
 pathcontents = os.listdir(path)
-filewordcounts = []
+fileinformation = []
+nameset = set()
 for location in pathcontents:
     if location[-4:] == '.rtf':
         filename = location
-        personwordcounts = reviewfile(path, filename)
-        filewordcounts.append(personwordcounts)
-
-print filewordcounts
+        personobjects = reviewfile(path, filename)
+        fileinformation.append(personobjects)
+        for person in personobjects:
+            nameset.add(person.name)
+# INSERT NEARMATCH MECHANISM FOR NAMES
+print fileinformation
+print nameset
