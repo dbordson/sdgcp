@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import csv
 # from operator import itemgetter
 import os
 from pyth.plugins.plaintext.writer import PlaintextWriter
@@ -6,6 +7,7 @@ from pyth.plugins.rtf15.reader import Rtf15Reader
 from stopwords import stoplist
 import re
 import string
+import sys
 
 
 class Speaker:
@@ -13,11 +15,17 @@ class Speaker:
                  comments):
         # tag
         self.tag = tag
-        tag_list = tag.split('\n')
         # filename
         self.filename = filename
         # name
-        self.name = tag_list[0].strip()
+        tag_list = tag.strip().split('\n')
+        name = tag_list[0].strip()
+        self.name = name
+        # simplename
+        if name.find(' ') is not -1:
+            self.simplename = name[:name.find(' ')] + name[name.rfind(' '):]
+        else:
+            self.simplename = name
         # title
         if len(tag_list) > 1:
             self.title = tag_list[1].strip()
@@ -37,14 +45,16 @@ class Speaker:
         self.wordod = wordod
         # comments (in string)
         self.comments = comments
-
+    #
     def __repr__(self):
-        return u'\n%r\n%r\n%r\n%r' % (
+        return u'\n%r\n%r\n%r\n%r\n%r' % (
             u'Tag: ' + unicode(self.tag).strip(),
+            u'Simple Name: ' + self.simplename,
             u'Filename: ' + unicode(self.filename),
             u'Top Words: ' + unicode(list(self.wordod.items())[:3]) + '...',
             u'Comments: ' + unicode(self.comments[:50]) + '...'
         )
+
 
 def is_number(s):
     try:
@@ -161,7 +171,8 @@ def OrganizeTranscriptBySpeaker(transcriptstring, executiveslist,
     # questionandanswermarker = '\nQuestion and Answer\n.....'
     # callstringlinelist = callstring.split('\n')
     #
-    speakerlist = executiveslist + analystslist
+    # Below omits analysts because processed in bulk
+    speakerlist = executiveslist
     # print "analystslist", analystslist
     speakerlist.append(operator)
     speakerlocations =\
@@ -170,6 +181,14 @@ def OrganizeTranscriptBySpeaker(transcriptstring, executiveslist,
     # Removes nesting
     speakerlocations = [comment for speaker in speakerlocations
                         for comment in speaker]
+    # Handles analysts separately
+    analysttag = 'Analysts'
+    analystlocations = \
+        [[analysttag, m.start(), m.end()] for analyst in analystslist
+         for m in re.finditer(analyst, callstring)]
+    speakerlist.append(analysttag)
+    # addes analyst list to other speaker list
+    speakerlocations = speakerlocations + analystlocations
     # sorts list
     speakerlocations = sorted(speakerlocations, key=lambda comment: comment[1])
     speakerlocations.append([u'', len(callstring)-1, None])
@@ -286,14 +305,99 @@ print "Beginning Transcript Analysis"
 path = "./transcripts/"
 pathcontents = os.listdir(path)
 fileinformation = []
-nameset = set()
+simplenameset = set()
+counter = 0.0
+looplength = float(len(pathcontents))
 for location in pathcontents:
     if location[-4:] == '.rtf':
         filename = location
         personobjects = reviewfile(path, filename)
         fileinformation.append(personobjects)
         for person in personobjects:
-            nameset.add(person.name)
-# INSERT NEARMATCH MECHANISM FOR NAMES
-print fileinformation
-print nameset
+            simplenameset.add(person.simplename)
+    counter += 1.0
+    percentcomplete = round(counter / looplength * 100, 2)
+    sys.stdout.write("\r%s / %s transcripts to review: %.2f%%" %
+                     (int(counter), int(looplength), percentcomplete))
+    sys.stdout.flush()
+
+# Links speakers across periods
+speakerarray = []
+simplenamelist = list(simplenameset)
+if 'Operator' in simplenamelist:
+    simplenamelist.remove('Operator')
+# This line is not necessary and just improves readability for finisar data
+simplenamelist.reverse()
+# Iterate throguh simplenames to build list of information by person
+counter = 0.0
+looplength = float(len(simplenamelist))
+for simplename in simplenamelist:
+    nameinformation = []
+    for speaker_set in fileinformation:
+        simplenamefilter =\
+            filter(lambda x: x.simplename == simplename, speaker_set)
+        if len(simplenamefilter) == 1:
+            speakertoadd = simplenamefilter[0]
+            information_to_add =\
+                [speakertoadd.filename, speakertoadd.tag,
+                 speakertoadd.comments, speakertoadd.wordod]
+        else:
+            information_to_add = ['', 'Not on Call', '', OrderedDict()]
+        nameinformation.append(information_to_add)
+    speakerarray.append(nameinformation)
+    counter += 1.0
+    percentcomplete = round(counter / looplength * 100, 2)
+    sys.stdout.write("\r%s / %s simplified names to sort: %.2f%%" %
+                     (int(counter), int(looplength), percentcomplete))
+    sys.stdout.flush()
+
+# Iterate through array of speaker information to organize by full word list
+counter = 0.0
+looplength = float(len(speakerarray))
+speakerarraywithsortedwordcounts = []
+for speakerinformation in speakerarray:
+    speakertable = []
+    allwords = set()
+    listofwordcountdicts = zip(*speakerinformation)[3]
+    # Below builds list of all words
+    for wordcountdict in listofwordcountdicts:
+        allwords = allwords | set(wordcountdict.keys())
+    #
+    allwordlist = sorted(list(allwords))
+    # encoding just deals with left column to print as ASCII in csv module
+    allwordlistencoded =\
+        map(lambda x: x.encode('utf-8', 'replace'), allwordlist)
+    # The below constructs the actual table using the list of all words
+    namecolumnform = ['Filename', 'Speaker Tag', 'Comments', 'Words']
+    namecolumn = namecolumnform + allwordlistencoded
+    speakertable.append(namecolumn)
+    for filename, tag, comment, worddict in speakerinformation:
+        periodcolumntop =\
+            [filename, tag.replace('\n', ' '),
+             comment.encode('utf-8', 'replace'), '']
+        periodwordcounts = []
+        for word in allwordlist:
+            if word in worddict:
+                periodwordcounts.append(worddict[word])
+            else:
+                periodwordcounts.append(0)
+        periodcolumn = periodcolumntop + periodwordcounts
+        speakertable.append(periodcolumn)
+    speakerarraywithsortedwordcounts =\
+        speakerarraywithsortedwordcounts + zip(*speakertable)
+    counter += 1.0
+    percentcomplete = round(counter / looplength * 100, 2)
+    sys.stdout.write("\r%s / %s speakers to tabulate: %.2f%%" %
+                     (int(counter), int(looplength), percentcomplete))
+    sys.stdout.flush()
+
+print "Done with processing...now writing file."
+
+csvfilename = 'transcriptdata.csv'
+with open(csvfilename, 'wb') as out:
+    csv_out = csv.writer(out)
+    csv_out.writerow(['Transcript Word Counts'])
+    for row in speakerarraywithsortedwordcounts:
+        csv_out.writerow(row)
+
+print "Done. Information stored in", csvfilename
